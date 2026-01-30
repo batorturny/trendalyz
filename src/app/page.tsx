@@ -443,9 +443,17 @@ export default function Home() {
 
             <button
               onClick={() => setShowCompanyModal(true)}
-              className="h-12 rounded-xl bg-[#bc6aff]/20 px-4 font-bold text-[#bc6aff] hover:bg-[#bc6aff]/40"
+              className="h-12 rounded-xl bg-[#bc6aff]/20 px-4 font-bold text-[#bc6aff] hover:bg-[#bc6aff]/40 print:hidden"
             >
               ⚙️ Cégek
+            </button>
+
+            <button
+              onClick={() => window.print()}
+              disabled={!report}
+              className="h-12 rounded-xl bg-[#00f2ff]/20 px-4 font-bold text-[#00f2ff] hover:bg-[#00f2ff]/40 disabled:opacity-50 print:hidden"
+            >
+              📄 PDF Letöltés
             </button>
           </div>
         </div>
