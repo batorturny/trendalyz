@@ -20,6 +20,7 @@ interface VideoData {
 interface ReportData {
   companyName: string;
   dateRange: { from: string; to: string };
+  previousMonth: { prevFrom: string; prevTo: string; label: string };
   daily: {
     chartLabels: string[];
     likesData: number[];
@@ -39,6 +40,11 @@ interface ReportData {
       sharesChange: number;
       profileViewsChange: number;
       newFollowersChange: number;
+      prevLikes: number;
+      prevComments: number;
+      prevShares: number;
+      prevProfileViews: number;
+      prevNewFollowers: number;
     };
   };
   video: {
@@ -54,6 +60,10 @@ interface ReportData {
       avgEngagement: number;
       viewsChange: number;
       reachChange: number;
+      videoCountChange: number;
+      prevTotalViews: number;
+      prevTotalReach: number;
+      prevVideoCount: number;
     };
   };
   demographics: {
@@ -72,13 +82,17 @@ function formatPercent(n: number): string {
   return `${n.toFixed(1)}%`;
 }
 
-function ChangeBadge({ value }: { value: number }) {
+function ChangeBadge({ value, onClick }: { value: number; onClick?: () => void }) {
   if (value === 0) return null;
   const isPositive = value > 0;
   return (
-    <span className={`badge ${isPositive ? "badge-success" : "badge-danger"}`}>
+    <button
+      onClick={onClick}
+      className={`absolute right-3 top-3 rounded-lg px-2 py-1 text-xs font-bold transition-all hover:scale-110 ${isPositive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+        }`}
+    >
       {isPositive ? "↑" : "↓"} {Math.abs(value).toFixed(1)}%
-    </span>
+    </button>
   );
 }
 
@@ -87,21 +101,40 @@ function StatCard({
   value,
   change,
   icon,
+  prevValue,
+  prevLabel,
 }: {
   label: string;
   value: string | number;
   change?: number;
   icon: string;
+  prevValue?: number;
+  prevLabel?: string;
 }) {
+  const [showPrev, setShowPrev] = useState(false);
+
   return (
-    <div className="glass-card stat-card p-6">
+    <div
+      className="glass-card stat-card relative cursor-pointer p-6 transition-all hover:scale-[1.02]"
+      onClick={() => setShowPrev(!showPrev)}
+    >
+      {change !== undefined && change !== 0 && (
+        <ChangeBadge value={change} onClick={() => setShowPrev(!showPrev)} />
+      )}
       <div className="flex items-start justify-between">
         <span className="text-3xl">{icon}</span>
-        {change !== undefined && <ChangeBadge value={change} />}
       </div>
       <div className="mt-4">
         <div className="text-3xl font-black">{typeof value === "number" ? formatNumber(value) : value}</div>
         <div className="mt-1 text-sm font-semibold uppercase tracking-wider text-gray-400">{label}</div>
+
+        {/* Previous month popup */}
+        {showPrev && prevValue !== undefined && (
+          <div className="mt-3 rounded-lg bg-white/10 p-3 text-sm">
+            <div className="text-xs font-bold text-[#00f2ff]">{prevLabel || "Előző hónap"}</div>
+            <div className="mt-1 font-bold">{formatNumber(prevValue)}</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -192,7 +225,6 @@ function CompanyModal({
         </div>
 
         <div className="max-h-[50vh] overflow-y-auto p-6">
-          {/* Add New Company */}
           <div className="mb-6 rounded-xl bg-white/5 p-4">
             <h3 className="mb-3 font-bold text-[#00f2ff]">➕ Új cég hozzáadása</h3>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -220,7 +252,6 @@ function CompanyModal({
             </button>
           </div>
 
-          {/* Company List */}
           <h3 className="mb-3 font-bold text-[#bc6aff]">📋 Cégek listája ({companies.length})</h3>
           <div className="space-y-2">
             {companies.map((c) => (
@@ -262,7 +293,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load companies from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -275,14 +305,12 @@ export default function Home() {
     }
   }, []);
 
-  // Set default company after companies load
   useEffect(() => {
     if (companies.length > 0 && !selectedCompany) {
       setSelectedCompany(companies[0].id);
     }
   }, [companies, selectedCompany]);
 
-  // Save companies to localStorage
   const saveCompanies = (newCompanies: CompanyData[]) => {
     setCompanies(newCompanies);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newCompanies));
@@ -334,9 +362,10 @@ export default function Home() {
     }
   }, [selectedCompany, selectedMonth]);
 
+  const prevLabel = report?.previousMonth?.label || "Előző hónap";
+
   return (
     <div className="min-h-screen p-6 lg:p-10">
-      {/* Company Modal */}
       <CompanyModal
         isOpen={showCompanyModal}
         onClose={() => setShowCompanyModal(false)}
@@ -345,7 +374,6 @@ export default function Home() {
         onRemoveCompany={removeCompany}
       />
 
-      {/* Header with Selectors */}
       <header className="glass-card mb-8 overflow-hidden p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -413,15 +441,55 @@ export default function Home() {
 
       {report && !loading && (
         <>
+          {/* Info banner */}
+          <div className="mb-6 rounded-xl bg-[#00f2ff]/10 p-4 text-center text-sm text-[#00f2ff]">
+            💡 Kattints a kártyákra az előző hónap ({prevLabel}) értékeinek megtekintéséhez
+          </div>
+
           {/* Stats Grid */}
           <section className="mb-8">
             <h2 className="mb-4 text-xl font-bold">📊 Összefoglaló</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-              <StatCard icon="❤️" label="Like-ok" value={report.daily.totals.totalLikes} change={report.daily.totals.likesChange} />
-              <StatCard icon="💬" label="Kommentek" value={report.daily.totals.totalComments} change={report.daily.totals.commentsChange} />
-              <StatCard icon="🔁" label="Megosztások" value={report.daily.totals.totalShares} change={report.daily.totals.sharesChange} />
-              <StatCard icon="👁️" label="Profilnézetek" value={report.daily.totals.totalProfileViews} change={report.daily.totals.profileViewsChange} />
-              <StatCard icon="👥" label="Új követők" value={`${report.daily.totals.totalNewFollowers >= 0 ? "+" : ""}${formatNumber(report.daily.totals.totalNewFollowers)}`} change={report.daily.totals.newFollowersChange} />
+              <StatCard
+                icon="❤️"
+                label="Like-ok"
+                value={report.daily.totals.totalLikes}
+                change={report.daily.totals.likesChange}
+                prevValue={report.daily.totals.prevLikes}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="💬"
+                label="Kommentek"
+                value={report.daily.totals.totalComments}
+                change={report.daily.totals.commentsChange}
+                prevValue={report.daily.totals.prevComments}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="🔁"
+                label="Megosztások"
+                value={report.daily.totals.totalShares}
+                change={report.daily.totals.sharesChange}
+                prevValue={report.daily.totals.prevShares}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="👁️"
+                label="Profilnézetek"
+                value={report.daily.totals.totalProfileViews}
+                change={report.daily.totals.profileViewsChange}
+                prevValue={report.daily.totals.prevProfileViews}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="👥"
+                label="Új követők"
+                value={`${report.daily.totals.totalNewFollowers >= 0 ? "+" : ""}${formatNumber(report.daily.totals.totalNewFollowers)}`}
+                change={report.daily.totals.newFollowersChange}
+                prevValue={report.daily.totals.prevNewFollowers}
+                prevLabel={prevLabel}
+              />
             </div>
           </section>
 
@@ -429,10 +497,35 @@ export default function Home() {
           <section className="mb-8">
             <h2 className="mb-4 text-xl font-bold">🎬 Videó statisztika</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard icon="📹" label="Videók száma" value={report.video.totals.videoCount} />
-              <StatCard icon="👀" label="Össz megtekintés" value={report.video.totals.totalViews} change={report.video.totals.viewsChange} />
-              <StatCard icon="📢" label="Össz elérés" value={report.video.totals.totalReach} change={report.video.totals.reachChange} />
-              <StatCard icon="📈" label="Átlag ER%" value={formatPercent(report.video.totals.avgEngagement)} />
+              <StatCard
+                icon="📹"
+                label="Videók száma"
+                value={report.video.totals.videoCount}
+                change={report.video.totals.videoCountChange}
+                prevValue={report.video.totals.prevVideoCount}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="👀"
+                label="Össz megtekintés"
+                value={report.video.totals.totalViews}
+                change={report.video.totals.viewsChange}
+                prevValue={report.video.totals.prevTotalViews}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="📢"
+                label="Össz elérés"
+                value={report.video.totals.totalReach}
+                change={report.video.totals.reachChange}
+                prevValue={report.video.totals.prevTotalReach}
+                prevLabel={prevLabel}
+              />
+              <StatCard
+                icon="📈"
+                label="Átlag ER%"
+                value={formatPercent(report.video.totals.avgEngagement)}
+              />
             </div>
           </section>
 
@@ -570,7 +663,6 @@ export default function Home() {
         </>
       )}
 
-      {/* Footer */}
       <footer className="mt-12 text-center text-sm text-gray-500">
         <p>TikTok Report Dashboard • CAP Marketing</p>
       </footer>

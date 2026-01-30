@@ -29,6 +29,24 @@ function calcChange(current: number, previous: number): number {
     return ((current - previous) / previous) * 100;
 }
 
+// Calculate previous month date range
+function getPreviousMonth(dateFrom: string): { prevFrom: string; prevTo: string; label: string } {
+    const currentStart = new Date(dateFrom);
+    const prevMonthEnd = new Date(currentStart);
+    prevMonthEnd.setDate(prevMonthEnd.getDate() - 1);
+    const prevMonthStart = new Date(prevMonthEnd.getFullYear(), prevMonthEnd.getMonth(), 1);
+
+    const formatDate = (d: Date): string => {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    return {
+        prevFrom: formatDate(prevMonthStart),
+        prevTo: formatDate(prevMonthEnd),
+        label: `${prevMonthStart.getFullYear()}. ${String(prevMonthStart.getMonth() + 1).padStart(2, "0")}.`
+    };
+}
+
 interface DailyRow {
     date?: string;
     likes?: number;
@@ -182,24 +200,32 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        // Get previous month date range
+        const prevMonth = getPreviousMonth(dateFrom);
+
+        // Build URLs for current and previous month
         const urls = buildWindsorUrls(tiktokAccountId, dateFrom, dateTo);
+        const prevUrls = buildWindsorUrls(tiktokAccountId, prevMonth.prevFrom, prevMonth.prevTo);
 
-
-        // Fetch all data in parallel
-        const [dailyRes, videoRes, activityRes, ageRes, genderRes] = await Promise.all([
+        // Fetch all data in parallel (current + previous month)
+        const [dailyRes, videoRes, activityRes, ageRes, genderRes, prevDailyRes, prevVideoRes] = await Promise.all([
             fetch(urls.daily),
             fetch(urls.video),
             fetch(urls.activity),
             fetch(urls.age),
             fetch(urls.gender),
+            fetch(prevUrls.daily),
+            fetch(prevUrls.video),
         ]);
 
-        const [dailyJson, videoJson, activityJson, ageJson, genderJson] = await Promise.all([
+        const [dailyJson, videoJson, activityJson, ageJson, genderJson, prevDailyJson, prevVideoJson] = await Promise.all([
             dailyRes.json(),
             videoRes.json(),
             activityRes.json(),
             ageRes.json(),
             genderRes.json(),
+            prevDailyRes.json(),
+            prevVideoRes.json(),
         ]);
 
         const dailyData = dailyJson.data || [];
@@ -207,8 +233,10 @@ export async function GET(request: NextRequest) {
         const activityData = activityJson.data || [];
         const ageData = Array.isArray(ageJson) ? (ageJson[0]?.data || []) : (ageJson.data || []);
         const genderData = genderJson.data || [];
+        const prevDailyData = prevDailyJson.data || [];
+        const prevVideoData = prevVideoJson.data || [];
 
-        // Process daily data
+        // Process current month daily data
         const dailySorted = aggregateDaily(dailyData);
         const dailyChartLabels = dailySorted.map((r) => formatDateLabel(r.date));
         const likesData = dailySorted.map((r) => r.likes);
@@ -230,6 +258,23 @@ export async function GET(request: NextRequest) {
         const lastDayTotal = [...totalFollowersData].reverse().find((v) => v > 0) || 0;
         const newFollowersThisMonth = lastDayTotal - firstDayTotal;
 
+        // Process previous month daily data
+        const prevDailySorted = aggregateDaily(prevDailyData);
+        const prevLikes = sum(prevDailySorted.map((r) => r.likes));
+        const prevComments = sum(prevDailySorted.map((r) => r.comments));
+        const prevShares = sum(prevDailySorted.map((r) => r.shares));
+        const prevProfileViews = sum(prevDailySorted.map((r) => r.profile_views));
+
+        let prevTotalFollowersData = prevDailySorted.map((r) => r.total_followers_count);
+        let prevLastValid = prevTotalFollowersData.find((v) => v > 0) || 0;
+        prevTotalFollowersData = prevTotalFollowersData.map((v) => {
+            if (v > 0) { prevLastValid = v; return v; }
+            return prevLastValid;
+        });
+        const prevFirstDay = prevTotalFollowersData.find((v) => v > 0) || 0;
+        const prevLastDay = [...prevTotalFollowersData].reverse().find((v) => v > 0) || 0;
+        const prevNewFollowers = prevLastDay - prevFirstDay;
+
         const dailyTotals = {
             totalLikes: sum(likesData),
             totalComments: sum(commentsData),
@@ -238,16 +283,28 @@ export async function GET(request: NextRequest) {
             totalNewFollowers: newFollowersThisMonth,
             currentFollowers: lastDayTotal,
             startFollowers: firstDayTotal,
-            likesChange: 0,
-            commentsChange: 0,
-            sharesChange: 0,
-            profileViewsChange: 0,
-            newFollowersChange: 0,
+            likesChange: calcChange(sum(likesData), prevLikes),
+            commentsChange: calcChange(sum(commentsData), prevComments),
+            sharesChange: calcChange(sum(sharesData), prevShares),
+            profileViewsChange: calcChange(sum(profileViewsData), prevProfileViews),
+            newFollowersChange: calcChange(newFollowersThisMonth, prevNewFollowers),
+            // Previous month values for display
+            prevLikes,
+            prevComments,
+            prevShares,
+            prevProfileViews,
+            prevNewFollowers,
         };
 
-        // Process videos
+        // Process current month videos
         const videos = processVideos(videoData);
         const top3Videos = [...videos].sort((a, b) => b.views - a.views).slice(0, 3);
+
+        // Process previous month videos
+        const prevVideos = processVideos(prevVideoData);
+        const prevTotalViews = sum(prevVideos.map((v) => v.views));
+        const prevTotalReach = sum(prevVideos.map((v) => v.reach));
+        const prevVideoCount = prevVideos.length;
 
         const videoTotals = {
             totalViews: sum(videos.map((v) => v.views)),
@@ -262,9 +319,13 @@ export async function GET(request: NextRequest) {
             avgReachPerVideo: videos.length > 0 ? sum(videos.map((v) => v.reach)) / videos.length : 0,
             avgEngagement: videos.length > 0 ? sum(videos.map((v) => v.engagementRate)) / videos.length : 0,
             avgFullWatchRate: videos.length > 0 ? sum(videos.map((v) => v.fullWatchRate)) / videos.length : 0,
-            viewsChange: 0,
-            reachChange: 0,
-            videoCountChange: 0,
+            viewsChange: calcChange(sum(videos.map((v) => v.views)), prevTotalViews),
+            reachChange: calcChange(sum(videos.map((v) => v.reach)), prevTotalReach),
+            videoCountChange: calcChange(videos.length, prevVideoCount),
+            // Previous month values
+            prevTotalViews,
+            prevTotalReach,
+            prevVideoCount,
         };
 
         // Demographics
@@ -318,6 +379,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             companyName: companyName,
             dateRange: { from: dateFrom, to: dateTo },
+            previousMonth: prevMonth,
             daily: {
                 chartLabels: dailyChartLabels,
                 likesData,
