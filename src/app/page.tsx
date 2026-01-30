@@ -552,7 +552,7 @@ export default function Home() {
           </section>
 
           {/* Top 3 Videos */}
-          <section className="mb-8">
+          <section className="mb-8 px-8 lg:px-16">
             <h2 className="mb-4 text-xl font-bold">🏆 Top 3 videó</h2>
             <div className="grid gap-4">
               {report.video.top3.length > 0 ? (
@@ -564,7 +564,7 @@ export default function Home() {
           </section>
 
           {/* All Videos */}
-          <section className="mb-8">
+          <section className="mb-8 px-8 lg:px-16">
             <h2 className="mb-4 text-xl font-bold">📋 Összes videó ({report.video.videos.length} db)</h2>
             <div className="grid gap-3">
               {report.video.videos.length > 0 ? (
@@ -675,9 +675,9 @@ export default function Home() {
                   );
                 })}
               </div>
-              <div className="mt-2 flex justify-between text-xs text-gray-500">
-                {report.daily.chartLabels.filter((_, i) => i % 5 === 0).map((label) => (
-                  <span key={label}>{label}</span>
+              <div className="mt-2 flex justify-between overflow-x-auto text-xs text-gray-500">
+                {report.daily.chartLabels.map((label, i) => (
+                  <span key={i} className="min-w-0 flex-shrink-0">{label}</span>
                 ))}
               </div>
             </div>
