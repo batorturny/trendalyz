@@ -149,45 +149,67 @@ function VideoCard({ video, rank }: { video: VideoData; rank?: number }) {
       href={video.embedUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="glass-card block p-4 transition-all hover:scale-[1.02] hover:border-[#00f2ff] cursor-pointer"
+      className="glass-card group block p-5 transition-all hover:border-[#00f2ff]/50 cursor-pointer"
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-5">
+        {/* Rank badge */}
         {rank && (
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#00f2ff] to-[#bc6aff] font-black text-[#020617]">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#00f2ff] to-[#bc6aff] text-2xl font-black text-[#020617] shadow-lg shadow-[#00f2ff]/20">
             #{rank}
           </div>
         )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <span>📅 {dateStr}</span>
+
+        {/* Date */}
+        <div className="shrink-0 rounded-xl bg-[#00f2ff]/10 px-4 py-2 text-center">
+          <div className="text-lg font-bold text-[#00f2ff]">{dateStr}</div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[#00f2ff]/60">Feltöltve</div>
+        </div>
+
+        {/* Stats grid - labeled */}
+        <div className="flex flex-1 items-center justify-between gap-3">
+          <div className="text-center">
+            <div className="text-xl font-black">{formatNumber(video.views)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Megtekintés</div>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <div>
-              <span className="text-gray-400">👁️</span> <span className="font-bold">{formatNumber(video.views)}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">📢</span> <span className="font-bold">{formatNumber(video.reach)}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">❤️</span> <span className="font-bold">{formatNumber(video.likes)}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">💬</span> <span className="font-bold">{formatNumber(video.comments)}</span>
-            </div>
+          <div className="text-center">
+            <div className="text-xl font-black text-[#bc6aff]">{formatNumber(video.reach)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Elérés</div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-400">
-            <span>🔁 {formatNumber(video.shares)}</span>
-            <span>👥 +{formatNumber(video.newFollowers)}</span>
-            <span>📈 {formatPercent(video.engagementRate)} ER</span>
-            <span>⏱️ {video.watchTimeFormatted}</span>
-            <span>📺 {formatPercent(video.fullWatchRate)} végignézés</span>
+          <div className="text-center">
+            <div className="text-xl font-black text-red-400">{formatNumber(video.likes)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Like</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-black text-blue-400">{formatNumber(video.comments)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Komment</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-black text-green-400">{formatNumber(video.shares)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Megosztás</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-black text-yellow-400">+{formatNumber(video.newFollowers)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Új követő</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-black text-[#00f2ff]">{formatPercent(video.engagementRate)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Eng. Rate</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-black text-orange-400">{formatPercent(video.fullWatchRate)}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Végignézés</div>
           </div>
         </div>
-        <div className="text-2xl">▶️</div>
+
+        {/* Play button */}
+        <div className="shrink-0 rounded-full bg-gradient-to-br from-[#00f2ff] to-[#bc6aff] p-3 text-xl opacity-70 shadow-lg transition-all group-hover:opacity-100 group-hover:scale-110">
+          ▶️
+        </div>
       </div>
     </a>
   );
 }
+
 
 // Company Management Modal
 function CompanyModal({
