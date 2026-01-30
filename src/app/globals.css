@@ -267,37 +267,9 @@ body {
   }
 
   /* Hide interactive elements */
-  .print\\:hidden,
   button,
   select {
     display: none !important;
-  }
-
-  /* Keep visible in header */
-  header select,
-  header button {
-    display: none !important;
-  }
-
-  /* Force colors */
-  .text-gray-400,
-  .text-gray-500 {
-    color: #64748b !important;
-  }
-
-  .text-\\[\\#00f2ff\\] {
-    color: #0ea5e9 !important;
-  }
-
-  .text-\\[\\#bc6aff\\] {
-    color: #8b5cf6 !important;
-  }
-
-  .bg-\\[\\#00f2ff\\],
-  .bg-gradient-to-r,
-  .bg-gradient-to-t,
-  .bg-gradient-to-br {
-    background: linear-gradient(135deg, #0ea5e9, #8b5cf6) !important;
   }
 
   /* Stat cards */
