@@ -642,28 +642,43 @@ export default function Home() {
           {/* Activity Chart */}
           <section className="mb-8">
             <h2 className="mb-4 text-xl font-bold">⏰ Aktivitás napszak szerint</h2>
-            <div className="chart-container">
-              <div className="flex h-40 items-end justify-between gap-1">
-                {report.demographics.activity.map((value, i) => {
-                  const maxVal = Math.max(...report.demographics.activity, 1);
-                  return (
-                    <div
-                      key={i}
-                      className="flex-1 rounded-t bg-gradient-to-t from-[#00f2ff] to-[#bc6aff] transition-all hover:opacity-80"
-                      style={{ height: `${(value / maxVal) * 100}%` }}
-                      title={`${report.demographics.activityLabels[i]}: ${value}`}
-                    />
-                  );
-                })}
-              </div>
-              <div className="mt-2 flex justify-between text-xs text-gray-500">
-                <span>00:00</span>
-                <span>06:00</span>
-                <span>12:00</span>
-                <span>18:00</span>
-                <span>23:00</span>
-              </div>
-            </div>
+            {(() => {
+              const maxVal = Math.max(...report.demographics.activity, 1);
+              const peakHour = report.demographics.activity.indexOf(maxVal);
+              return (
+                <div className="chart-container">
+                  <div className="flex h-40 items-end justify-between gap-[2px]">
+                    {report.demographics.activity.map((value, i) => {
+                      const isPeak = i === peakHour && value > 0;
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 rounded-t transition-all hover:opacity-80 ${isPeak
+                              ? "bg-gradient-to-t from-[#ff4df8] to-[#ffce44] ring-2 ring-[#ffce44]"
+                              : "bg-gradient-to-t from-[#00f2ff] to-[#bc6aff]"
+                            }`}
+                          style={{ height: `${(value / maxVal) * 100}%`, minHeight: value > 0 ? "4px" : "0" }}
+                          title={`${report.demographics.activityLabels[i]}: ${value}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex justify-between overflow-x-auto text-[10px] text-gray-500">
+                    {report.demographics.activityLabels.map((label, i) => (
+                      <span key={i} className="flex-shrink-0 text-center" style={{ minWidth: "18px" }}>
+                        {label.replace(":00", "")}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#ffce44]/10 p-3 text-sm">
+                    <span className="text-xl">🏆</span>
+                    <span className="font-bold text-[#ffce44]">
+                      Legnépszerűbb időpont: {report.demographics.activityLabels[peakHour]}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </section>
 
           {/* Daily Likes Chart */}
