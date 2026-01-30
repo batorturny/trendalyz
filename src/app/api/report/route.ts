@@ -160,17 +160,30 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
 
+    // Support dynamic companies via query params
+    const accountIdParam = searchParams.get("accountId");
+    const companyNameParam = searchParams.get("companyName");
+
     if (!companyId || !dateFrom || !dateTo) {
         return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    const company = companies.find((c) => c.id === companyId);
-    if (!company) {
-        return NextResponse.json({ error: "Company not found" }, { status: 404 });
+    // Use query params if provided, otherwise look up from default companies
+    let tiktokAccountId = accountIdParam;
+    let companyName = companyNameParam;
+
+    if (!tiktokAccountId || !companyName) {
+        const company = companies.find((c) => c.id === companyId);
+        if (!company) {
+            return NextResponse.json({ error: "Company not found" }, { status: 404 });
+        }
+        tiktokAccountId = company.tiktokAccountId;
+        companyName = company.name;
     }
 
     try {
-        const urls = buildWindsorUrls(company.tiktokAccountId, dateFrom, dateTo);
+        const urls = buildWindsorUrls(tiktokAccountId, dateFrom, dateTo);
+
 
         // Fetch all data in parallel
         const [dailyRes, videoRes, activityRes, ageRes, genderRes] = await Promise.all([
@@ -303,7 +316,7 @@ export async function GET(request: NextRequest) {
         );
 
         return NextResponse.json({
-            companyName: company.name,
+            companyName: companyName,
             dateRange: { from: dateFrom, to: dateTo },
             daily: {
                 chartLabels: dailyChartLabels,

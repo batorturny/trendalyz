@@ -1,19 +1,23 @@
-// Company data from the user's list
-export const companies = [
-    { id: "dr-besth", name: "Dr. B-Esth Esztétikai Klinika", tiktokAccountId: "_000qZAcx0RdCb5A2qNQ-WmgbjYxbQq-dIPL" },
+// Company data from user's JSON - exact account IDs
+export const defaultCompanies = [
+    { id: "dr-besth", name: "Dr. B-Esth Esztétikai Klinika", tiktokAccountId: "_000qZAcx0RdCb5A2qNQ-WmgbjYxbQq-dlPL" },
     { id: "topark", name: "Tópark Étterem Dunaharaszti", tiktokAccountId: "_000YVfMNF1pI7HB_hFvXurmjIHS79otUSjz" },
-    { id: "nint", name: "Nint", tiktokAccountId: "_00072RTMsPFhEL10pmqxrP8iXYJexyvIAyO" },
-    { id: "drultz", name: "DrulTZ", tiktokAccountId: "_0003zN8N5BV50TkS3DvTpFvJh7m5cM5Wr0I" },
-    { id: "losmonos", name: "Losmonos Mexican", tiktokAccountId: "_000Y5wLJHEGpyqzM-XcbtIQ5tk6WyqQ5SZ3" },
-    { id: "smokey", name: "Smokey Monkies BBQ", tiktokAccountId: "_000g67wQQwIxH9259tRnAAcrxOAq_xueSOP" },
+    { id: "drultz", name: "DruITZ", tiktokAccountId: "_0003zN8N5BV50TkS3DvTpFvJh7m5cM5Wr0I" },
+    { id: "nint", name: "Nint", tiktokAccountId: "_00072RTMsPFhEL10pmqxrP8iXYJexyvlAyO" },
+    { id: "losmonos", name: "Losmonos Mexican", tiktokAccountId: "_000Y5wLJHEGpyqzM-XcbtlQ5tk6WyqQ5SZ3" },
+    { id: "smokey", name: "Smokey Monkies BBQ", tiktokAccountId: "_000g67wQQwlxH9259tRnAAcrxOAq_xueSOP" },
     { id: "drinkstation", name: "Drink Station", tiktokAccountId: "_000LrXYRnU_QVr9NL3SYDWjts-MEPsikmUs" },
-    { id: "trofea", name: "Trófea Grill Étterem", tiktokAccountId: "_000baZoN0pwFvd9TbI0eO6PCuocEsMx1l4I" },
+    { id: "trofea", name: "Trófea Grill Étterem", tiktokAccountId: "_000baZoN0pwFvd9Tbl0eO6PCuocEsMx1l4I" },
     { id: "cap", name: "CAP Marketing", tiktokAccountId: "_000AsjG8AtBUD-14DwxeUet7n3HjUg1RiOJ" },
-    { id: "todo", name: "TODO", tiktokAccountId: "_000XWJRA8c2xG8sY3h33TSWCL203M1TIr_D" },
+    { id: "todo", name: "TODO", tiktokAccountId: "_000XWJRA8c2xG8sY3h33TSWCL203M1Tlr_D" },
     { id: "trofea-obuda", name: "Trófea Grill Étterem Óbuda", tiktokAccountId: "_000qh_-mCgU6cj5BpStqN15LWPU6udScBpj" },
-] as const;
+];
 
-export type Company = typeof companies[number];
+export interface CompanyData {
+    id: string;
+    name: string;
+    tiktokAccountId: string;
+}
 
 export const WINDSOR_API_KEY = "b61021f891826f56f62c84529e8d5f2e0c31";
 export const WINDSOR_BASE_URL = "https://connectors.windsor.ai/tiktok_organic";
@@ -49,3 +53,6 @@ export function buildWindsorUrls(tiktokAccountId: string, dateFrom: string, date
         gender: `${WINDSOR_BASE_URL}?api_key=${WINDSOR_API_KEY}&${dateParams}&fields=date,video_audience_genders_gender,video_audience_genders_percentage&select_accounts=${tiktokAccountId}`,
     };
 }
+
+// For backwards compatibility
+export const companies = defaultCompanies;
