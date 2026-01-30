@@ -5,9 +5,10 @@ interface ChartProps {
     label: string;
     color?: string;
     height?: number;
+    title?: string;
 }
 
-export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300 }: ChartProps) {
+export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title }: ChartProps) {
     const chart = {
         type,
         data: {
@@ -37,8 +38,8 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
 
     return (
         <div className="bg-slate-900 border border-white/15 rounded-2xl p-4">
-            <div className="text-cyan-400 text-xs font-bold uppercase mb-3">{label}</div>
-            <img src={chartUrl} alt={label} className="w-full h-auto" />
+            <div className="text-cyan-400 text-xs font-bold uppercase mb-3">{title || label}</div>
+            <img src={chartUrl} alt={title || label} className="w-full h-auto" />
         </div>
     );
 }

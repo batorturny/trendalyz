@@ -23,4 +23,17 @@ function getAllCompanies() {
   return companies.map(({ id, name }) => ({ id, name }));
 }
 
-module.exports = { companies, getCompanyById, getAllCompanies };
+function addCompany({ id, name, tiktokAccountId }) {
+  const newCompany = { id, name, tiktokAccountId };
+  companies.push(newCompany);
+  return { id, name };
+}
+
+function removeCompany(id) {
+  const index = companies.findIndex(c => c.id === id);
+  if (index === -1) return false;
+  companies.splice(index, 1);
+  return true;
+}
+
+module.exports = { companies, getCompanyById, getAllCompanies, addCompany, removeCompany };

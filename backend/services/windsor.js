@@ -85,6 +85,22 @@ class WindsorService {
 
         return { daily, video, activity, age, gender };
     }
+
+    // Fetch all data needed for charts in one comprehensive request
+    async fetchAllChartData(tiktokAccountId, dateFrom, dateTo) {
+        const fields = [
+            // Daily data
+            'date', 'followers_count', 'profile_views', 'likes', 'comments', 'shares',
+            // Video data
+            'video_id', 'video_caption', 'video_create_datetime', 'video_embed_url',
+            'video_views_count', 'video_reach', 'video_likes', 'video_comments',
+            'video_shares', 'video_new_followers', 'video_full_watched_rate',
+            // Activity data
+            'audience_activity_hour', 'audience_activity_count'
+        ].join(',');
+
+        return this.fetchData(tiktokAccountId, dateFrom, dateTo, fields);
+    }
 }
 
 module.exports = WindsorService;

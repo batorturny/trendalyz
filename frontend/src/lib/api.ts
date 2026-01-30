@@ -96,15 +96,87 @@ export async function getCompanies(): Promise<Company[]> {
     return res.json();
 }
 
-export async function generateReport(request: ReportRequest): Promise<ReportResponse> {
-    const res = await fetch(`${API_URL}/api/report`, {
+export async function generateReport(params: { companyId: string; month: string }): Promise<ReportResponse> {
+    const response = await fetch(`${API_URL}/api/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: JSON.stringify(params),
     });
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.details || 'Failed to generate report');
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate report');
     }
-    return res.json();
+
+    return response.json();
+}
+
+// ============================================
+// CHART API
+// ============================================
+
+export interface ChartDefinition {
+    key: string;
+    title: string;
+    description: string;
+    type: 'line' | 'bar';
+    category: string;
+    color: string;
+}
+
+export interface ChartCatalogResponse {
+    total: number;
+    categories: string[];
+    charts: ChartDefinition[];
+    byCategory: Record<string, ChartDefinition[]>;
+}
+
+export interface ChartData {
+    key: string;
+    title: string;
+    description: string;
+    type: string;
+    color: string;
+    data: {
+        labels: string[];
+        series: { name: string; data: number[] }[];
+    };
+    source: string;
+    generatedAt: string;
+    empty: boolean;
+    error?: string;
+}
+
+export interface ChartsResponse {
+    account: { id: string; name: string };
+    dateRange: { from: string; to: string };
+    chartsRequested: number;
+    chartsGenerated: number;
+    charts: ChartData[];
+}
+
+export async function getChartCatalog(): Promise<ChartCatalogResponse> {
+    const response = await fetch(`${API_URL}/api/charts/catalog`);
+    if (!response.ok) throw new Error('Failed to fetch chart catalog');
+    return response.json();
+}
+
+export async function generateCharts(params: {
+    accountId: string;
+    startDate: string;
+    endDate: string;
+    charts: { key: string; params?: Record<string, unknown> }[];
+}): Promise<ChartsResponse> {
+    const response = await fetch(`${API_URL}/api/charts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate charts');
+    }
+
+    return response.json();
 }
