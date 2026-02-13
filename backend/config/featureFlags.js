@@ -7,5 +7,8 @@ module.exports = {
     ENABLE_CHART_API: process.env.ENABLE_CHART_API !== 'false',
 
     // Enable account management endpoints
-    ENABLE_ACCOUNT_MANAGEMENT: process.env.ENABLE_ACCOUNT_MANAGEMENT !== 'false'
+    ENABLE_ACCOUNT_MANAGEMENT: process.env.ENABLE_ACCOUNT_MANAGEMENT !== 'false',
+
+    // Enable Windsor automation (future: auto-connect TikTok via Windsor API)
+    ENABLE_WINDSOR_AUTOMATION: process.env.ENABLE_WINDSOR_AUTOMATION === 'true',
 };

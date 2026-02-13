@@ -1,11 +1,34 @@
 import { Video } from '@/lib/api';
 
 interface VideoTableProps {
-    videos: Video[];
+    videos?: Video[];
+    // Chart mode props (used when displaying chart-generated table data)
+    data?: number[];
+    title?: string;
+    color?: string;
 }
 
-export function VideoTable({ videos }: VideoTableProps) {
-    if (videos.length === 0) {
+export function VideoTable({ videos, data, title, color }: VideoTableProps) {
+    // Chart table mode - simple data display
+    if (data !== undefined) {
+        return (
+            <div className="bg-slate-900 border border-white/15 rounded-2xl p-4">
+                {title && (
+                    <div className="text-cyan-400 text-xs font-bold uppercase mb-3">{title}</div>
+                )}
+                <div className="text-slate-300 text-sm">
+                    {data.length > 0 ? (
+                        <pre className="whitespace-pre-wrap">{JSON.stringify(data, null, 2)}</pre>
+                    ) : (
+                        <p className="text-slate-400">Nincs adat</p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Standard video table mode
+    if (!videos || videos.length === 0) {
         return (
             <div className="bg-slate-900 border border-white/15 rounded-2xl p-6 text-center text-slate-400">
                 Nincs videó ebben a hónapban

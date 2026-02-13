@@ -1,5 +1,5 @@
 // API client for backend communication
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+// All calls go through Next.js API proxy routes (same origin)
 
 export interface Company {
     id: string;
@@ -91,15 +91,16 @@ export interface ReportResponse {
 }
 
 export async function getCompanies(): Promise<Company[]> {
-    const res = await fetch(`${API_URL}/api/companies`);
+    const res = await fetch('/api/companies', { credentials: 'include' });
     if (!res.ok) throw new Error('Failed to fetch companies');
     return res.json();
 }
 
 export async function generateReport(params: { companyId: string; month: string }): Promise<ReportResponse> {
-    const response = await fetch(`${API_URL}/api/report`, {
+    const response = await fetch('/api/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(params),
     });
 
@@ -156,7 +157,7 @@ export interface ChartsResponse {
 }
 
 export async function getChartCatalog(): Promise<ChartCatalogResponse> {
-    const response = await fetch(`${API_URL}/api/charts/catalog`);
+    const response = await fetch('/api/charts/catalog', { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch chart catalog');
     return response.json();
 }
@@ -167,9 +168,10 @@ export async function generateCharts(params: {
     endDate: string;
     charts: { key: string; params?: Record<string, unknown> }[];
 }): Promise<ChartsResponse> {
-    const response = await fetch(`${API_URL}/api/charts`, {
+    const response = await fetch('/api/charts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(params),
     });
 

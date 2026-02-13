@@ -11,6 +11,7 @@ const { processReport } = require('./services/report');
 const { getAllCompanies, getCompanyById, addCompany, removeCompany } = require('./config/companies');
 const { chartCatalog, validateChartKeys, getCatalogByCategory } = require('./config/chartCatalog');
 const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT } = require('./config/featureFlags');
+const { parseUserContext, requireAdmin, requireCompanyAccess } = require('./middleware/authContext');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -23,21 +24,50 @@ app.use(express.json());
 const windsor = new WindsorService(process.env.WINDSOR_API_KEY);
 
 // ============================================
+// INTERNAL AUTH MIDDLEWARE
+// ============================================
+
+function requireInternalAuth(req, res, next) {
+    const apiKey = process.env.INTERNAL_API_KEY;
+
+    // If no INTERNAL_API_KEY is configured, skip auth (dev mode)
+    if (!apiKey) {
+        return next();
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${apiKey}`) {
+        return res.status(401).json({ error: 'Unauthorized - Invalid or missing API key' });
+    }
+    next();
+}
+
+// ============================================
 // ROUTES
 // ============================================
 
-// Health check
+// Health check - always public
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Apply internal auth and user context parsing to all other routes
+app.use('/api', requireInternalAuth);
+app.use('/api', parseUserContext);
+
 // Get all companies
-app.get('/api/companies', (req, res) => {
-    res.json(getAllCompanies());
+app.get('/api/companies', async (req, res) => {
+    try {
+        const companies = await getAllCompanies();
+        res.json(companies);
+    } catch (error) {
+        console.error('Error fetching companies:', error);
+        res.status(500).json({ error: 'Failed to fetch companies' });
+    }
 });
 
 // Generate report
-app.post('/api/report', async (req, res) => {
+app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (req, res) => {
     try {
         const { companyId, month } = req.body;
 
@@ -45,7 +75,7 @@ app.post('/api/report', async (req, res) => {
             return res.status(400).json({ error: 'companyId and month are required' });
         }
 
-        const company = getCompanyById(companyId);
+        const company = await getCompanyById(companyId);
         if (!company) {
             return res.status(404).json({ error: 'Company not found' });
         }
@@ -111,7 +141,7 @@ if (ENABLE_CHART_API) {
     });
 
     // Generate charts
-    app.post('/api/charts', async (req, res) => {
+    app.post('/api/charts', requireCompanyAccess(req => req.body.accountId), async (req, res) => {
         try {
             const { accountId, startDate, endDate, charts } = req.body;
 
@@ -134,15 +164,17 @@ if (ENABLE_CHART_API) {
             }
 
             // Get company
-            const company = getCompanyById(accountId);
+            const company = await getCompanyById(accountId);
             if (!company) {
                 return res.status(404).json({ error: 'Account not found' });
             }
 
-            console.log(`📊 Generating ${charts.length} charts for ${company.name} (${startDate} - ${endDate})`);
+            console.log(`Generating ${charts.length} charts for ${company.name} (${startDate} - ${endDate})`);
 
             // Fetch Windsor data
             const windsorData = await windsor.fetchAllChartData(company.tiktokAccountId, startDate, endDate);
+
+            console.log(`Received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows from Windsor`);
 
             // Generate charts
             const generator = new ChartGenerator(windsorData);
@@ -172,7 +204,7 @@ if (ENABLE_CHART_API) {
         }
     });
 
-    console.log('📈 Chart API enabled');
+    console.log('Chart API enabled');
 }
 
 // ============================================
@@ -181,22 +213,17 @@ if (ENABLE_CHART_API) {
 
 if (ENABLE_ACCOUNT_MANAGEMENT) {
     // Add new account
-    app.post('/api/accounts', (req, res) => {
+    app.post('/api/accounts', async (req, res) => {
         try {
-            const { id, name, tiktokAccountId } = req.body;
+            const { name, tiktokAccountId } = req.body;
 
-            if (!id || !name || !tiktokAccountId) {
+            if (!name || !tiktokAccountId) {
                 return res.status(400).json({
-                    error: 'id, name, and tiktokAccountId are required'
+                    error: 'name and tiktokAccountId are required'
                 });
             }
 
-            // Check if exists
-            if (getCompanyById(id)) {
-                return res.status(409).json({ error: 'Account with this ID already exists' });
-            }
-
-            const newAccount = addCompany({ id, name, tiktokAccountId });
+            const newAccount = await addCompany({ name, tiktokAccountId });
             res.status(201).json({ success: true, account: newAccount });
 
         } catch (error) {
@@ -205,10 +232,10 @@ if (ENABLE_ACCOUNT_MANAGEMENT) {
     });
 
     // Delete account
-    app.delete('/api/accounts/:id', (req, res) => {
+    app.delete('/api/accounts/:id', async (req, res) => {
         try {
             const { id } = req.params;
-            const removed = removeCompany(id);
+            const removed = await removeCompany(id);
 
             if (!removed) {
                 return res.status(404).json({ error: 'Account not found' });
@@ -221,14 +248,20 @@ if (ENABLE_ACCOUNT_MANAGEMENT) {
         }
     });
 
-    console.log('👤 Account Management enabled');
+    console.log('Account Management enabled');
 }
 
 // ============================================
 // START SERVER
 // ============================================
 
-app.listen(PORT, () => {
-    console.log(`🚀 TikTok Report API running on http://localhost:${PORT}`);
-    console.log(`📊 Companies loaded: ${getAllCompanies().length}`);
+app.listen(PORT, async () => {
+    try {
+        const companies = await getAllCompanies();
+        console.log(`TikTok Report API running on http://localhost:${PORT}`);
+        console.log(`Companies loaded: ${companies.length}`);
+    } catch (error) {
+        console.log(`TikTok Report API running on http://localhost:${PORT}`);
+        console.error('Warning: Could not load companies from database:', error.message);
+    }
 });
