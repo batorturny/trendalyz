@@ -1,0 +1,215 @@
+// ============================================
+// WINDSOR MULTI-PLATFORM SERVICE
+// Platform-agnostic Windsor AI data fetching
+// ============================================
+
+const axios = require('axios');
+
+const WINDSOR_BASE = 'https://connectors.windsor.ai';
+
+const PLATFORM_CONFIG = {
+  TIKTOK_ORGANIC: {
+    endpoint: 'tiktok_organic',
+    dailyFields: ['date', 'likes', 'comments', 'shares', 'followers_count', 'profile_views', 'total_followers_count'],
+    contentFields: ['date', 'video_id', 'video_caption', 'video_create_datetime', 'video_views_count', 'video_likes', 'video_comments', 'video_shares', 'video_reach', 'video_embed_url', 'video_new_followers', 'video_full_watched_rate'],
+    audienceFields: ['date', 'audience_activity_count', 'audience_activity_hour'],
+    demographicFields: {
+      age: ['audience_ages_age', 'audience_ages_percentage', 'date'],
+      gender: ['video_audience_genders_gender', 'video_audience_genders_percentage', 'date'],
+    },
+    allChartFields: [
+      'date', 'followers_count', 'profile_views', 'likes', 'comments', 'shares',
+      'video_id', 'video_caption', 'video_create_datetime', 'video_embed_url',
+      'video_views_count', 'video_reach', 'video_likes', 'video_comments',
+      'video_shares', 'video_new_followers', 'video_full_watched_rate',
+      'audience_activity_hour', 'audience_activity_count',
+    ],
+  },
+  FACEBOOK_ORGANIC: {
+    endpoint: 'facebook_organic',
+    dailyFields: ['date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total', 'reactions', 'comments', 'shares'],
+    contentFields: ['date', 'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink'],
+    audienceFields: ['date', 'page_fans_city', 'page_fans_country', 'page_fans_gender_age'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total',
+      'reactions', 'comments', 'shares',
+      'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach',
+      'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink',
+    ],
+  },
+  INSTAGRAM_ORGANIC: {
+    endpoint: 'instagram_organic',
+    dailyFields: ['date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks'],
+    contentFields: ['date', 'media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved', 'media_url', 'permalink'],
+    audienceFields: ['date', 'audience_city', 'audience_country', 'audience_gender_age'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
+      'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
+      'media_url', 'permalink',
+    ],
+  },
+};
+
+class WindsorMultiPlatform {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+  }
+
+  getConfig(provider) {
+    const config = PLATFORM_CONFIG[provider];
+    if (!config) {
+      throw new Error(`Unknown provider: ${provider}`);
+    }
+    return config;
+  }
+
+  async fetchData(provider, accountId, dateFrom, dateTo, fields) {
+    const config = this.getConfig(provider);
+    const fieldStr = Array.isArray(fields) ? fields.join(',') : fields;
+    const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fieldStr}&select_accounts=${accountId}`;
+
+    try {
+      const response = await axios.get(url, { timeout: 30000 });
+      const data = response.data;
+
+      if (Array.isArray(data)) {
+        return data[0]?.data || [];
+      }
+      return data?.data || [];
+    } catch (error) {
+      console.error(`Windsor API error (${provider}):`, error.message);
+      throw error;
+    }
+  }
+
+  async fetchDailyMetrics(provider, accountId, dateFrom, dateTo) {
+    const config = this.getConfig(provider);
+    return this.fetchData(provider, accountId, dateFrom, dateTo, config.dailyFields);
+  }
+
+  async fetchContent(provider, accountId, dateFrom, dateTo) {
+    const config = this.getConfig(provider);
+    return this.fetchData(provider, accountId, dateFrom, dateTo, config.contentFields);
+  }
+
+  async fetchAudience(provider, accountId, dateFrom, dateTo) {
+    const config = this.getConfig(provider);
+    return this.fetchData(provider, accountId, dateFrom, dateTo, config.audienceFields);
+  }
+
+  async fetchDemographics(provider, accountId, dateFrom, dateTo, type) {
+    const config = this.getConfig(provider);
+    if (!config.demographicFields || !config.demographicFields[type]) {
+      return [];
+    }
+    return this.fetchData(provider, accountId, dateFrom, dateTo, config.demographicFields[type]);
+  }
+
+  async fetchAllData(provider, accountId, dateFrom, dateTo) {
+    const config = this.getConfig(provider);
+
+    const promises = [
+      this.fetchDailyMetrics(provider, accountId, dateFrom, dateTo),
+      this.fetchContent(provider, accountId, dateFrom, dateTo),
+      this.fetchAudience(provider, accountId, dateFrom, dateTo),
+    ];
+
+    if (config.demographicFields) {
+      promises.push(this.fetchDemographics(provider, accountId, dateFrom, dateTo, 'age'));
+      promises.push(this.fetchDemographics(provider, accountId, dateFrom, dateTo, 'gender'));
+    }
+
+    const results = await Promise.all(promises);
+
+    const data = {
+      daily: results[0],
+      content: results[1],
+      audience: results[2],
+    };
+
+    if (config.demographicFields) {
+      data.age = results[3];
+      data.gender = results[4];
+    }
+
+    return data;
+  }
+
+  async fetchAllChartData(provider, accountId, dateFrom, dateTo) {
+    const config = this.getConfig(provider);
+    return this.fetchData(provider, accountId, dateFrom, dateTo, config.allChartFields);
+  }
+
+  /**
+   * Discover all connected accounts for a provider by querying Windsor without select_accounts.
+   * Returns unique account identifiers found in the response data.
+   */
+  async discoverAccounts(provider) {
+    const config = this.getConfig(provider);
+
+    const now = new Date();
+    const dateTo = now.toISOString().split('T')[0];
+    const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Request account_name + a couple of daily fields, WITHOUT select_accounts
+    const fields = ['account_name', ...config.dailyFields.slice(0, 3)];
+    const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields.join(',')}`;
+
+    try {
+      const response = await axios.get(url, { timeout: 30000 });
+      const rawData = response.data;
+      const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+
+      // Extract unique accounts from the data
+      const accountMap = new Map();
+      for (const row of rows) {
+        const accountName = row.account_name;
+        if (!accountName) continue;
+        if (!accountMap.has(accountName)) {
+          accountMap.set(accountName, { rowCount: 0 });
+        }
+        accountMap.get(accountName).rowCount++;
+      }
+
+      return Array.from(accountMap.entries()).map(([name, info]) => ({
+        accountId: name,
+        accountName: name,
+        provider,
+        hasData: info.rowCount > 0,
+      }));
+    } catch (error) {
+      console.error(`Windsor discover error (${provider}):`, error.message);
+      throw error;
+    }
+  }
+
+  async testConnection(provider, accountId) {
+    try {
+      const now = new Date();
+      const dateTo = now.toISOString().split('T')[0];
+      const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const config = this.getConfig(provider);
+      const testFields = config.dailyFields.slice(0, 3);
+      const data = await this.fetchData(provider, accountId, dateFrom, dateTo, testFields);
+
+      return {
+        success: Array.isArray(data) && data.length > 0,
+        rowCount: Array.isArray(data) ? data.length : 0,
+        message: Array.isArray(data) && data.length > 0
+          ? `Sikeres kapcsolat - ${data.length} sor adat az elmúlt 30 napban`
+          : 'Nincs elérhető adat az elmúlt 30 napban',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        rowCount: 0,
+        message: `Kapcsolódási hiba: ${error.message}`,
+      };
+    }
+  }
+}
+
+module.exports = { WindsorMultiPlatform, PLATFORM_CONFIG };

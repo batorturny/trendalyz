@@ -10,8 +10,10 @@ const ChartGenerator = require('./services/chartGenerator');
 const { processReport } = require('./services/report');
 const { getAllCompanies, getCompanyById, addCompany, removeCompany } = require('./config/companies');
 const { chartCatalog, validateChartKeys, getCatalogByCategory } = require('./config/chartCatalog');
-const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT } = require('./config/featureFlags');
+const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT, ENABLE_MULTI_PLATFORM } = require('./config/featureFlags');
 const { parseUserContext, requireAdmin, requireCompanyAccess } = require('./middleware/authContext');
+const { WindsorMultiPlatform } = require('./services/windsorMultiPlatform');
+const connectionService = require('./services/connectionService');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -20,8 +22,9 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Windsor Service instance
+// Windsor Service instances
 const windsor = new WindsorService(process.env.WINDSOR_API_KEY);
+const windsorMulti = new WindsorMultiPlatform(process.env.WINDSOR_API_KEY);
 
 // ============================================
 // INTERNAL AUTH MIDDLEWARE
@@ -118,6 +121,113 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
 });
 
 // ============================================
+// MULTI-PLATFORM CONNECTIONS (Feature Flag Protected)
+// ============================================
+
+if (ENABLE_MULTI_PLATFORM) {
+    // Get connections for a company
+    app.get('/api/connections/:companyId', requireCompanyAccess(req => req.params.companyId), async (req, res) => {
+        try {
+            const connections = await connectionService.getConnectionsByCompany(req.params.companyId);
+            res.json(connections);
+        } catch (error) {
+            console.error('Error fetching connections:', error);
+            res.status(500).json({ error: 'Failed to fetch connections' });
+        }
+    });
+
+    // Create a new connection (admin only)
+    app.post('/api/connections', requireAdmin, async (req, res) => {
+        try {
+            const { companyId, provider, externalAccountId, externalAccountName } = req.body;
+
+            if (!companyId || !provider || !externalAccountId) {
+                return res.status(400).json({ error: 'companyId, provider, and externalAccountId are required' });
+            }
+
+            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'];
+            if (!validProviders.includes(provider)) {
+                return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
+            }
+
+            const connection = await connectionService.createConnection({
+                companyId,
+                provider,
+                externalAccountId,
+                externalAccountName,
+            });
+
+            res.status(201).json(connection);
+        } catch (error) {
+            if (error.code === 'P2002') {
+                return res.status(409).json({ error: 'Ez az integráció már létezik ehhez a céghez' });
+            }
+            console.error('Error creating connection:', error);
+            res.status(500).json({ error: 'Failed to create connection' });
+        }
+    });
+
+    // Test a connection via Windsor API
+    app.post('/api/connections/:id/test', requireAdmin, async (req, res) => {
+        try {
+            const connection = await connectionService.getConnectionById(req.params.id);
+            if (!connection) {
+                return res.status(404).json({ error: 'Connection not found' });
+            }
+
+            const result = await windsorMulti.testConnection(connection.provider, connection.externalAccountId);
+
+            // Update connection status based on test result
+            await connectionService.updateConnectionStatus(
+                connection.id,
+                result.success ? 'CONNECTED' : 'ERROR',
+                result.success ? null : result.message
+            );
+
+            res.json(result);
+        } catch (error) {
+            console.error('Error testing connection:', error);
+            res.status(500).json({ error: 'Failed to test connection' });
+        }
+    });
+
+    // Delete a connection (admin only)
+    app.delete('/api/connections/:id', requireAdmin, async (req, res) => {
+        try {
+            await connectionService.deleteConnection(req.params.id);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Error deleting connection:', error);
+            res.status(500).json({ error: 'Failed to delete connection' });
+        }
+    });
+
+    // Discover Windsor accounts for a provider (admin only)
+    app.get('/api/windsor/discover-accounts', requireAdmin, async (req, res) => {
+        try {
+            const { provider } = req.query;
+
+            if (!provider) {
+                return res.status(400).json({ error: 'provider query parameter is required' });
+            }
+
+            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'];
+            if (!validProviders.includes(provider)) {
+                return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
+            }
+
+            const accounts = await windsorMulti.discoverAccounts(provider);
+            res.json({ provider, accounts });
+        } catch (error) {
+            console.error('Windsor discover error:', error);
+            res.status(500).json({ error: 'Failed to discover accounts', details: error.message });
+        }
+    });
+
+    console.log('Multi-platform connections enabled');
+}
+
+// ============================================
 // CHART API (Feature Flag Protected)
 // ============================================
 
@@ -134,7 +244,8 @@ if (ENABLE_CHART_API) {
                 description: c.description,
                 type: c.type,
                 category: c.category,
-                color: c.color
+                color: c.color,
+                platform: c.platform || 'TIKTOK_ORGANIC'
             })),
             byCategory
         });
