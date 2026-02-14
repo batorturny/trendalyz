@@ -153,8 +153,8 @@ class WindsorMultiPlatform {
     const dateTo = now.toISOString().split('T')[0];
     const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // Request account_name + a couple of daily fields, WITHOUT select_accounts
-    const fields = ['account_name', ...config.dailyFields.slice(0, 3)];
+    // Request account_id + account_name + a couple of daily fields, WITHOUT select_accounts
+    const fields = ['account_id', 'account_name', ...config.dailyFields.slice(0, 3)];
     const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields.join(',')}`;
 
     try {
@@ -162,20 +162,21 @@ class WindsorMultiPlatform {
       const rawData = response.data;
       const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
 
-      // Extract unique accounts from the data
+      // Extract unique accounts from the data, keyed by account_id
       const accountMap = new Map();
       for (const row of rows) {
-        const accountName = row.account_name;
-        if (!accountName) continue;
-        if (!accountMap.has(accountName)) {
-          accountMap.set(accountName, { rowCount: 0 });
+        const id = row.account_id;
+        const name = row.account_name;
+        if (!id) continue;
+        if (!accountMap.has(id)) {
+          accountMap.set(id, { accountName: name || id, rowCount: 0 });
         }
-        accountMap.get(accountName).rowCount++;
+        accountMap.get(id).rowCount++;
       }
 
-      return Array.from(accountMap.entries()).map(([name, info]) => ({
-        accountId: name,
-        accountName: name,
+      return Array.from(accountMap.entries()).map(([id, info]) => ({
+        accountId: id,
+        accountName: info.accountName,
         provider,
         hasData: info.rowCount > 0,
       }));
