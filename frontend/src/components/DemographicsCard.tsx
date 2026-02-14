@@ -70,7 +70,13 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {Object.entries(demographics.age).map(([bucket, value]) => (
+                        {Object.entries(demographics.age)
+                            .sort(([a], [b]) => {
+                                const numA = parseInt(a.replace('+', '')) || 0;
+                                const numB = parseInt(b.replace('+', '')) || 0;
+                                return numA - numB;
+                            })
+                            .map(([bucket, value]) => (
                             <tr key={bucket} className="border-t border-white/5">
                                 <td className="px-3 py-2 text-slate-300 font-semibold">{bucket}</td>
                                 <td className="px-3 py-2 text-right font-bold text-white">{value.toFixed(2)}%</td>
