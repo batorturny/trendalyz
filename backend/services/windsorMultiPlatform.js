@@ -39,7 +39,7 @@ const PLATFORM_CONFIG = {
     ],
   },
   INSTAGRAM_ORGANIC: {
-    endpoint: 'instagram_organic',
+    endpoint: 'instagram',
     dailyFields: ['date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks'],
     contentFields: ['date', 'media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved', 'media_url', 'permalink'],
     audienceFields: ['date', 'audience_city', 'audience_country', 'audience_gender_age'],
@@ -48,6 +48,43 @@ const PLATFORM_CONFIG = {
       'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
       'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
       'media_url', 'permalink',
+    ],
+  },
+  INSTAGRAM: {
+    endpoint: 'instagram',
+    dailyFields: ['date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks'],
+    contentFields: ['date', 'media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved', 'media_url', 'permalink'],
+    audienceFields: ['date', 'audience_city', 'audience_country', 'audience_gender_age'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
+      'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
+      'media_url', 'permalink',
+    ],
+  },
+  FACEBOOK: {
+    endpoint: 'facebook',
+    dailyFields: ['date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total', 'reactions', 'comments', 'shares'],
+    contentFields: ['date', 'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink'],
+    audienceFields: ['date', 'page_fans_city', 'page_fans_country', 'page_fans_gender_age'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total',
+      'reactions', 'comments', 'shares',
+      'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach',
+      'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink',
+    ],
+  },
+  YOUTUBE: {
+    endpoint: 'youtube',
+    dailyFields: ['date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost', 'estimated_minutes_watched'],
+    contentFields: ['date', 'video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration', 'estimated_minutes_watched'],
+    audienceFields: ['date', 'viewer_percentage', 'country'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
+      'estimated_minutes_watched', 'video_id', 'video_title', 'video_published_at',
+      'average_view_duration',
     ],
   },
 };
@@ -186,13 +223,42 @@ class WindsorMultiPlatform {
     }
   }
 
+  /**
+   * List all datasources configured in Windsor.
+   * Uses the Windsor datasources API to get connected accounts directly.
+   */
+  async listDataSources() {
+    const url = `${WINDSOR_BASE}/api/v1/datasources?api_key=${this.apiKey}`;
+
+    try {
+      const response = await axios.get(url, { timeout: 15000 });
+      const sources = response.data;
+
+      if (Array.isArray(sources)) {
+        return sources.map(s => ({
+          id: s.id || s.datasource_id,
+          name: s.name || s.datasource_name || s.id,
+          type: s.type || s.datasource_type || 'unknown',
+        }));
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Windsor datasources error:', error.message);
+      // Return empty array instead of throwing — this is a best-effort fallback
+      return [];
+    }
+  }
+
   async testConnection(provider, accountId) {
+    const config = this.getConfig(provider);
+    const onboardUrl = `https://onboard.windsor.ai?datasource=${config.endpoint}`;
+
     try {
       const now = new Date();
       const dateTo = now.toISOString().split('T')[0];
       const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const config = this.getConfig(provider);
       const testFields = config.dailyFields.slice(0, 3);
       const data = await this.fetchData(provider, accountId, dateFrom, dateTo, testFields);
 
@@ -204,10 +270,25 @@ class WindsorMultiPlatform {
           : 'Nincs elérhető adat az elmúlt 30 napban',
       };
     } catch (error) {
+      const status = error.response?.status;
+      const windsorError = error.response?.data?.error || error.message;
+
+      // Windsor returns specific error when datasource is not connected
+      if (windsorError?.includes('No ') && windsorError?.includes('account')) {
+        return {
+          success: false,
+          rowCount: 0,
+          message: `Windsor-ban nincs ${config.endpoint} datasource konfigurálva. Egyszeri beállítás szükséges.`,
+          windsorOnboardUrl: onboardUrl,
+          needsWindsorSetup: true,
+        };
+      }
+
       return {
         success: false,
         rowCount: 0,
-        message: `Kapcsolódási hiba: ${error.message}`,
+        message: `Windsor API hiba${status ? ` (${status})` : ''}: ${windsorError}`,
+        windsorOnboardUrl: onboardUrl,
       };
     }
   }

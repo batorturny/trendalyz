@@ -319,17 +319,15 @@ if (ENABLE_MULTI_PLATFORM) {
             // Exchange code for tokens
             const tokens = await oauthService.exchangeCode(provider, code, redirectUri);
 
-            // Create Windsor connector
             const config = oauthService.getConfig(provider);
-            let windsorResult = null;
+
+            // Check if Windsor already has this datasource configured
+            let windsorReady = false;
             try {
-                windsorResult = await windsorConnector.createConnector(
-                    config.windsorConnectorType,
-                    tokens.access_token,
-                    tokens.refresh_token
-                );
-            } catch (windsorErr) {
-                console.error('Windsor connector creation failed (non-fatal):', windsorErr.message);
+                const testResult = await windsorMulti.testConnection(provider, 'any');
+                windsorReady = !testResult.needsWindsorSetup;
+            } catch {
+                windsorReady = false;
             }
 
             // Platform-specific account discovery using the fresh access token
@@ -368,9 +366,6 @@ if (ENABLE_MULTI_PLATFORM) {
             if (tokens.expires_in) {
                 metadata.tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
             }
-            if (windsorResult?.connectorId) {
-                metadata.windsorConnectorId = windsorResult.connectorId;
-            }
 
             // Build externalAccountId with unique fallback
             const externalAccountId = platformAccounts[0]?.accountId
@@ -387,12 +382,17 @@ if (ENABLE_MULTI_PLATFORM) {
                 metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
             });
 
+            const windsorOnboardUrl = !windsorReady
+                ? `https://onboard.windsor.ai?datasource=${config.windsorConnectorType}`
+                : null;
+
             res.json({
                 success: true,
                 companyId,
                 connection,
                 discoveredAccounts: platformAccounts.length,
-                windsorConnector: !!windsorResult,
+                windsorReady,
+                windsorOnboardUrl,
             });
         } catch (error) {
             console.error('OAuth complete error:', error);

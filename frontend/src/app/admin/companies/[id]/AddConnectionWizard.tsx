@@ -127,6 +127,36 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               <span className="font-semibold text-white">{selectedMeta.label}</span>
             </div>
 
+            {/* OAuth Connect Button - primary option */}
+            {selectedMeta.supportsOAuth && (
+              <a
+                href={`/api/oauth/authorize?provider=${selectedProvider}&companyId=${companyId}`}
+                className="flex items-center gap-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500/30 transition-colors">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-white">Kapcsolodas {selectedMeta.label}-kal</div>
+                  <div className="text-xs text-slate-400">OAuth bejelentkezes - automatikus beallitas</div>
+                </div>
+                <svg className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
+
+            {/* Divider between OAuth and manual options */}
+            {selectedMeta.supportsOAuth && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-xs text-slate-500">vagy manualis modon</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
+            )}
+
             {/* Windsor Account Picker */}
             <WindsorAccountPicker
               provider={selectedProvider!}
@@ -186,7 +216,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               <div className="space-y-4 pl-4 border-l-2 border-white/10">
                 <div className="bg-slate-800/50 border border-white/10 rounded-xl p-3">
                   <p className="text-xs text-slate-300">
-                    A <a href="https://app.windsor.ai" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Windsor AI dashboardon</a> connecteld a(z) {selectedMeta.label} fiokot, majd add meg itt az account ID-t.
+                    A <a href="https://onboard.windsor.ai" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Windsor AI dashboardon</a> connecteld a(z) {selectedMeta.label} fiokot, majd add meg itt az account ID-t.
                   </p>
                 </div>
 
