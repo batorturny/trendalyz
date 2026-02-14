@@ -19,7 +19,7 @@ export default async function CompanyDetailPage({
   const company = await prisma.company.findUnique({
     where: { id },
     include: {
-      users: { select: { id: true, email: true, name: true, role: true, createdAt: true } },
+      users: { select: { id: true, email: true, name: true, role: true, createdAt: true, passwordHash: true } },
       integrations: true,
       connections: { orderBy: [{ provider: 'asc' }, { createdAt: 'asc' }] },
     },
@@ -31,10 +31,10 @@ export default async function CompanyDetailPage({
     <div className="p-8">
       <header className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <a href="/admin/companies" className="text-slate-400 hover:text-white text-sm">&larr; Vissza</a>
+          <a href="/admin/companies" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">&larr; Vissza</a>
         </div>
-        <h1 className="text-3xl font-black">{company.name}</h1>
-        <p className="text-slate-400 mt-1">Cég részletei és szerkesztés</p>
+        <h1 className="text-3xl font-bold">{company.name}</h1>
+        <p className="text-[var(--text-secondary)] mt-1">Cég részletei és szerkesztés</p>
       </header>
 
       {/* OAuth feedback toast */}
@@ -73,10 +73,12 @@ export default async function CompanyDetailPage({
         {/* Users */}
         <CompanyUsers
           companyId={company.id}
-          users={company.users.map((u: { id: string; email: string; name: string | null; createdAt: Date }) => ({
+          users={company.users.map((u: { id: string; email: string; name: string | null; role: string; createdAt: Date; passwordHash: string | null }) => ({
             id: u.id,
             email: u.email,
             name: u.name,
+            role: u.role,
+            hasPassword: !!u.passwordHash,
             createdAt: u.createdAt.toISOString(),
           }))}
         />

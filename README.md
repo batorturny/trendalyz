@@ -92,6 +92,9 @@ curl -X POST http://localhost:4000/api/charts \
 | `engagement_rate` | Engagement rate trend | line |
 | `engagement_by_day` | Engagement napok szerint | bar |
 | `engagement_by_hour` | Engagement órák szerint | bar |
+| `all_videos` | Összes videó | table |
+| `top_3_videos` | Top 3 videó | table |
+| `worst_3_videos` | Legrosszabb 3 videó | table |
 
 ## Vercel Deployment
 

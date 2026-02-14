@@ -47,10 +47,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   if (loading) {
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-slate-400 uppercase">Windsor-ben talalt fiokok</div>
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-800/50 border border-white/10">
-          <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-slate-300">Fiokok betoltese...</span>
+        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
+          <div className="w-4 h-4 border-2 border-[var(--text-secondary)] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-[var(--text-secondary)]">Fiokok betoltese...</span>
         </div>
       </div>
     );
@@ -59,10 +59,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   if (error) {
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-slate-400 uppercase">Windsor-ben talalt fiokok</div>
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
-          <p className="text-sm text-red-300">Nem sikerult betolteni a fiokokat: {error}</p>
-          <p className="text-xs text-slate-400 mt-1">Hasznald a manualis megadast lentebb.</p>
+        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
+          <p className="text-sm text-red-700 dark:text-red-300">Nem sikerult betolteni a fiokokat: {error}</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Hasznald a manualis megadast lentebb.</p>
         </div>
       </div>
     );
@@ -71,10 +71,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   if (accounts.length === 0) {
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-slate-400 uppercase">Windsor-ben talalt fiokok</div>
-        <div className="p-3 rounded-xl bg-slate-800/50 border border-white/10">
-          <p className="text-sm text-slate-400">Nem talalhato kapcsolt fiok a Windsor-ben ehhez a platformhoz.</p>
-          <p className="text-xs text-slate-500 mt-1">Hasznald a manualis megadast lentebb.</p>
+        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+        <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
+          <p className="text-sm text-[var(--text-secondary)]">Nem talalhato kapcsolt fiok a Windsor-ben ehhez a platformhoz.</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1 opacity-70">Hasznald a manualis megadast lentebb.</p>
         </div>
       </div>
     );
@@ -82,7 +82,7 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
 
   return (
     <div className="space-y-3">
-      <div className="text-xs font-bold text-slate-400 uppercase">Windsor-ben talalt fiokok</div>
+      <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
       <div className="space-y-2">
         {accounts.map((account) => {
           const alreadyAdded = existingAccountIds.includes(account.accountId);
@@ -96,26 +96,26 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
               disabled={alreadyAdded}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                 alreadyAdded
-                  ? 'border-white/5 opacity-40 cursor-not-allowed'
+                  ? 'border-[var(--border)] opacity-40 cursor-not-allowed'
                   : isSelected
-                    ? 'border-cyan-500 bg-cyan-500/10'
-                    : 'border-white/10 hover:border-white/25 hover:bg-white/5'
+                    ? 'border-[var(--accent)] bg-[var(--accent-subtle)]'
+                    : 'border-[var(--border)] hover:bg-[var(--accent-subtle)]'
               }`}
             >
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                isSelected ? 'border-cyan-400' : 'border-slate-500'
+                isSelected ? 'border-[var(--accent)]' : 'border-[var(--text-secondary)]'
               }`}>
-                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />}
+                {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">{account.accountName}</div>
-                <div className="text-xs text-slate-500 font-mono truncate">{account.accountId}</div>
+                <div className="text-sm font-medium text-[var(--text-primary)] truncate">{account.accountName}</div>
+                <div className="text-xs text-[var(--text-secondary)] font-mono truncate">{account.accountId}</div>
               </div>
               {alreadyAdded && (
-                <span className="text-xs text-cyan-400 flex-shrink-0">Mar hozzaadva</span>
+                <span className="text-xs text-[var(--success)] flex-shrink-0">Mar hozzaadva</span>
               )}
               {!alreadyAdded && account.hasData && (
-                <span className="text-xs text-green-400 flex-shrink-0">Aktiv</span>
+                <span className="text-xs text-[var(--success)] flex-shrink-0">Aktiv</span>
               )}
             </button>
           );

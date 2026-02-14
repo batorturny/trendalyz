@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { DeleteCompanyButton } from './DeleteCompanyButton';
+import { WindsorSyncButton } from './WindsorSyncButton';
 
 export default async function CompaniesPage() {
   const companies = await prisma.company.findMany({
@@ -12,23 +13,25 @@ export default async function CompaniesPage() {
     <div className="p-8">
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black">Cégek</h1>
-          <p className="text-slate-400 mt-1">{companies.length} cég</p>
+          <h1 className="text-3xl font-bold">Cégek</h1>
+          <p className="text-[var(--text-secondary)] mt-1">{companies.length} cég</p>
         </div>
-        <Link
-          href="/admin/companies/new"
-          className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white text-sm font-bold rounded-xl hover:from-cyan-400 hover:to-purple-400 transition-all"
-        >
-          + Új cég
-        </Link>
+        <div className="flex items-center gap-3">
+          <WindsorSyncButton />
+          <Link
+            href="/admin/companies/new"
+            className="px-4 py-2 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
+          >
+            + Uj ceg
+          </Link>
+        </div>
       </header>
 
-      <div className="bg-white/5 border border-white/15 rounded-2xl overflow-hidden">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-[var(--shadow-card)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs font-bold text-slate-400 uppercase bg-white/5">
+            <tr className="text-left text-xs font-bold text-[var(--text-secondary)] uppercase bg-[var(--surface-raised)]">
               <th className="px-6 py-4">Cégnév</th>
-              <th className="px-6 py-4">TikTok ID</th>
               <th className="px-6 py-4">Státusz</th>
               <th className="px-6 py-4">Felhasználók</th>
               <th className="px-6 py-4">Műveletek</th>
@@ -36,30 +39,27 @@ export default async function CompaniesPage() {
           </thead>
           <tbody>
             {companies.map((company: any) => (
-              <tr key={company.id} className="border-t border-white/5 hover:bg-white/5">
-                <td className="px-6 py-4 font-semibold text-white">
-                  <Link href={`/admin/companies/${company.id}`} className="hover:text-cyan-400">
+              <tr key={company.id} className="border-t border-[var(--border)] hover:bg-[var(--accent-subtle)]">
+                <td className="px-6 py-4 font-semibold text-[var(--text-primary)]">
+                  <Link href={`/admin/companies/${company.id}`} className="hover:opacity-70">
                     {company.name}
                   </Link>
                 </td>
-                <td className="px-6 py-4 text-slate-400 font-mono text-xs">
-                  {company.tiktokAccountId ? company.tiktokAccountId.slice(0, 20) + '...' : '-'}
-                </td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                    company.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' :
-                    company.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-red-500/20 text-red-400'
+                    company.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                    company.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400' :
+                    'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
                   }`}>
                     {company.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-slate-400">{company._count.users}</td>
+                <td className="px-6 py-4 text-[var(--text-secondary)]">{company._count.users}</td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <Link
                       href={`/admin/companies/${company.id}`}
-                      className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/20"
+                      className="btn-press px-3 py-1 bg-[var(--accent-subtle)] text-[var(--text-secondary)] text-xs font-semibold rounded-lg hover:bg-[var(--border)] hover:text-[var(--text-primary)]"
                     >
                       Szerkesztés
                     </Link>

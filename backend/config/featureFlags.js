@@ -11,4 +11,7 @@ module.exports = {
 
     // Enable Windsor automation (future: auto-connect TikTok via Windsor API)
     ENABLE_WINDSOR_AUTOMATION: process.env.ENABLE_WINDSOR_AUTOMATION === 'true',
+
+    // Enable multi-platform integration (Facebook, Instagram alongside TikTok)
+    ENABLE_MULTI_PLATFORM: process.env.ENABLE_MULTI_PLATFORM !== 'false',
 };

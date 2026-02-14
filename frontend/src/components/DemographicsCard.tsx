@@ -1,10 +1,19 @@
+'use client';
+
 import { Demographics } from '@/lib/api';
+import { useTheme } from './ThemeProvider';
 
 interface DemographicsCardProps {
     demographics: Demographics;
 }
 
 export function DemographicsCard({ demographics }: DemographicsCardProps) {
+    const { theme } = useTheme();
+
+    const textColor = theme === 'dark' ? '#fff' : '#374151';
+    const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+    const bkg = theme === 'dark' ? 'transparent' : '#ffffff';
+
     // Activity chart
     const activityChart = {
         type: 'line',
@@ -13,7 +22,7 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
             datasets: [{
                 label: 'Aktivitás',
                 data: demographics.activity,
-                borderColor: '#00f2ff',
+                borderColor: '#6366f1',
                 fill: false,
                 borderWidth: 2,
                 tension: 0.3
@@ -21,49 +30,49 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
         },
         options: {
             responsive: true,
-            plugins: { legend: { labels: { color: '#fff' } }, datalabels: { display: false } },
+            plugins: { legend: { labels: { color: textColor } }, datalabels: { display: false } },
             scales: {
-                x: { ticks: { color: '#fff', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
+                x: { ticks: { color: textColor, font: { size: 9 } }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
             }
         }
     };
-    const activityUrl = `https://quickchart.io/chart?w=800&h=280&bkg=transparent&c=${encodeURIComponent(JSON.stringify(activityChart))}`;
+    const activityUrl = `https://quickchart.io/chart?w=800&h=280&bkg=${encodeURIComponent(bkg)}&c=${encodeURIComponent(JSON.stringify(activityChart))}`;
 
     return (
         <div className="space-y-4">
             {/* Gender */}
-            <div className="bg-slate-900 border border-white/15 rounded-2xl p-4">
-                <div className="text-cyan-400 text-xs font-bold uppercase mb-3">Nemek szerinti megoszlás</div>
+            <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-card)]">
+                <div className="text-[var(--text-secondary)] text-xs font-bold uppercase mb-3">Nemek szerinti megoszlás</div>
                 <table className="w-full text-sm">
-                    <thead className="text-left text-xs font-bold text-cyan-400 uppercase bg-cyan-500/10">
+                    <thead className="text-left text-xs font-bold text-[var(--text-secondary)] uppercase bg-[var(--surface-raised)]">
                         <tr>
                             <th className="px-3 py-2">Nem</th>
                             <th className="px-3 py-2 text-right">Havi átlag</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr className="border-t border-white/5">
-                            <td className="px-3 py-2 text-slate-300"><span className="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-2"></span>Nő</td>
-                            <td className="px-3 py-2 text-right font-bold text-white">{demographics.gender.female.toFixed(2)}%</td>
+                        <tr className="border-t border-[var(--border)]">
+                            <td className="px-3 py-2 text-[var(--text-secondary)]"><span className="inline-block w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>Nő</td>
+                            <td className="px-3 py-2 text-right font-bold text-[var(--text-primary)]">{demographics.gender.female.toFixed(2)}%</td>
                         </tr>
-                        <tr className="border-t border-white/5">
-                            <td className="px-3 py-2 text-slate-300"><span className="inline-block w-2 h-2 rounded-full bg-pink-400 mr-2"></span>Férfi</td>
-                            <td className="px-3 py-2 text-right font-bold text-white">{demographics.gender.male.toFixed(2)}%</td>
+                        <tr className="border-t border-[var(--border)]">
+                            <td className="px-3 py-2 text-[var(--text-secondary)]"><span className="inline-block w-2 h-2 rounded-full bg-pink-500 mr-2"></span>Férfi</td>
+                            <td className="px-3 py-2 text-right font-bold text-[var(--text-primary)]">{demographics.gender.male.toFixed(2)}%</td>
                         </tr>
-                        <tr className="border-t border-white/5">
-                            <td className="px-3 py-2 text-slate-300"><span className="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-2"></span>Egyéb</td>
-                            <td className="px-3 py-2 text-right font-bold text-white">{demographics.gender.other.toFixed(2)}%</td>
+                        <tr className="border-t border-[var(--border)]">
+                            <td className="px-3 py-2 text-[var(--text-secondary)]"><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>Egyéb</td>
+                            <td className="px-3 py-2 text-right font-bold text-[var(--text-primary)]">{demographics.gender.other.toFixed(2)}%</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             {/* Age */}
-            <div className="bg-slate-900 border border-white/15 rounded-2xl p-4">
-                <div className="text-cyan-400 text-xs font-bold uppercase mb-3">Korosztályos megoszlás</div>
+            <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-card)]">
+                <div className="text-[var(--text-secondary)] text-xs font-bold uppercase mb-3">Korosztályos megoszlás</div>
                 <table className="w-full text-sm">
-                    <thead className="text-left text-xs font-bold text-cyan-400 uppercase bg-cyan-500/10">
+                    <thead className="text-left text-xs font-bold text-[var(--text-secondary)] uppercase bg-[var(--surface-raised)]">
                         <tr>
                             <th className="px-3 py-2">Korosztály</th>
                             <th className="px-3 py-2 text-right">Havi átlag</th>
@@ -77,9 +86,9 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
                                 return numA - numB;
                             })
                             .map(([bucket, value]) => (
-                            <tr key={bucket} className="border-t border-white/5">
-                                <td className="px-3 py-2 text-slate-300 font-semibold">{bucket}</td>
-                                <td className="px-3 py-2 text-right font-bold text-white">{value.toFixed(2)}%</td>
+                            <tr key={bucket} className="border-t border-[var(--border)]">
+                                <td className="px-3 py-2 text-[var(--text-secondary)] font-semibold">{bucket}</td>
+                                <td className="px-3 py-2 text-right font-bold text-[var(--text-primary)]">{value.toFixed(2)}%</td>
                             </tr>
                         ))}
                     </tbody>
@@ -87,8 +96,8 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
             </div>
 
             {/* Activity */}
-            <div className="bg-slate-900 border border-white/15 rounded-2xl p-4">
-                <div className="text-cyan-400 text-xs font-bold uppercase mb-3">Aktivitás napszak szerint</div>
+            <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-card)]">
+                <div className="text-[var(--text-secondary)] text-xs font-bold uppercase mb-3">Aktivitás napszak szerint</div>
                 <img src={activityUrl} alt="Activity chart" className="w-full h-auto" />
             </div>
         </div>

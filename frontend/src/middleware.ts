@@ -1,15 +1,20 @@
-import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isLoggedIn = !!req.auth;
-  const role = req.auth?.user?.role;
 
   // Public routes
   const isPublic =
     pathname === '/login' ||
-    pathname.startsWith('/api/auth');
+    pathname === '/set-password' ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/oauth/callback');
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const isLoggedIn = !!token;
+  const role = token?.role as string | undefined;
 
   if (isPublic) {
     // Redirect logged-in users away from login
@@ -40,7 +45,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],

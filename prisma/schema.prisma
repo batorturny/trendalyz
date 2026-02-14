@@ -7,6 +7,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator backendClient {
+  provider = "prisma-client-js"
+  output   = "../backend/node_modules/.prisma/client"
+}
+
 generator frontendClient {
   provider = "prisma-client-js"
   output   = "../frontend/node_modules/.prisma/client"
@@ -29,6 +34,22 @@ enum IntegrationProvider {
 }
 
 enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING
+}
+
+enum ConnectionProvider {
+  TIKTOK_ORGANIC
+  FACEBOOK_ORGANIC
+  INSTAGRAM_ORGANIC
+  INSTAGRAM
+  YOUTUBE
+  FACEBOOK
+}
+
+enum ConnectionStatus {
   CONNECTED
   DISCONNECTED
   ERROR
@@ -65,6 +86,7 @@ model Company {
 
   users        User[]
   integrations Integration[]
+  connections  IntegrationConnection[]
 }
 
 model Integration {
@@ -119,4 +141,22 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model IntegrationConnection {
+  id                  String             @id @default(cuid())
+  companyId           String
+  company             Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider            ConnectionProvider
+  status              ConnectionStatus   @default(CONNECTED)
+  externalAccountId   String
+  externalAccountName String?
+  lastSyncAt          DateTime?
+  errorMessage        String?
+  metadata            Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@unique([companyId, provider, externalAccountId])
+  @@index([companyId])
 }

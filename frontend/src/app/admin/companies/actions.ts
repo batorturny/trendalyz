@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
+import crypto from 'crypto';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -54,9 +55,17 @@ export async function createCompany(formData: FormData) {
       });
     }
 
-    // Send invite email
+    // Generate invite token and send set-password email
+    const inviteToken = crypto.randomUUID();
+    const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await prisma.verificationToken.create({
+      data: { identifier: clientEmail, token: inviteToken, expires: inviteExpires },
+    });
+
+    const setPasswordUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/set-password?token=${inviteToken}`;
+
     if (resend) {
-      const loginUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login`;
       await resend.emails.send({
         from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
         to: clientEmail,
@@ -64,19 +73,20 @@ export async function createCompany(formData: FormData) {
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #0891b2;">TikTok Report Generator</h2>
-            <p>Meghívást kaptál a <strong>${name}</strong> cég TikTok riportjainak megtekintéséhez.</p>
-            <p>A bejelentkezéshez használd az email címedet:</p>
-            <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-              Bejelentkezés
+            <p>Meghívást kaptál a <strong>${name}</strong> cég riportjainak megtekintéséhez.</p>
+            <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
+            <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              Jelszó beállítása
             </a>
             <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
-              Az "Ügyfél" módot válaszd és add meg az email címedet. Egy bejelentkezési linket fogsz kapni.
+              Ez a link 24 órán belül lejár. Ha nem te kaptad ezt az emailt, figyelmen kívül hagyhatod.
             </p>
           </div>
         `,
       });
     } else {
-      console.log(`[DEV] Invite email would be sent to ${clientEmail} for ${name}`);
+      console.log(`\n📧 [DEV] Meghívó email → ${clientEmail} (${name})`);
+      console.log(`🔗 ${setPasswordUrl}\n`);
     }
   }
 
@@ -145,9 +155,17 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
     });
   }
 
-  // Send invite email
+  // Generate invite token and send set-password email
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await prisma.verificationToken.create({
+    data: { identifier: email, token, expires },
+  });
+
+  const setPasswordUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/set-password?token=${token}`;
+
   if (resend) {
-    const loginUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login`;
     await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
       to: email,
@@ -155,13 +173,70 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #0891b2;">TikTok Report Generator</h2>
-          <p>Meghívást kaptál a <strong>${company.name}</strong> cég TikTok riportjainak megtekintéséhez.</p>
-          <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-            Bejelentkezés
+          <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
+          <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
+          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            Jelszó beállítása
           </a>
+          <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
+            Ez a link 24 órán belül lejár. Ha nem te kaptad ezt az emailt, figyelmen kívül hagyhatod.
+          </p>
         </div>
       `,
     });
+  } else {
+    console.log(`\n📧 [DEV] Meghívó email → ${email} (${company.name})`);
+    console.log(`🔗 ${setPasswordUrl}\n`);
+  }
+
+  revalidatePath(`/admin/companies/${companyId}`);
+}
+
+export async function resendInvite(userId: string, companyId: string) {
+  await requireAdmin();
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error('Felhasználó nem található');
+  if (user.companyId !== companyId) throw new Error('A felhasználó nem ehhez a céghez tartozik');
+
+  const company = await prisma.company.findUnique({ where: { id: companyId } });
+  if (!company) throw new Error('Cég nem található');
+
+  // Delete old tokens for this user
+  await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });
+
+  // Generate new invite token
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await prisma.verificationToken.create({
+    data: { identifier: user.email, token, expires },
+  });
+
+  const setPasswordUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/set-password?token=${token}`;
+
+  if (resend) {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
+      to: user.email,
+      subject: `Meghívó újraküldve - ${company.name} TikTok Riport`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #0891b2;">TikTok Report Generator</h2>
+          <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
+          <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
+          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            Jelszó beállítása
+          </a>
+          <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
+            Ez a link 24 órán belül lejár. Ha nem te kaptad ezt az emailt, figyelmen kívül hagyhatod.
+          </p>
+        </div>
+      `,
+    });
+  } else {
+    console.log(`\n📧 [DEV] Meghívó újraküldve → ${user.email} (${company.name})`);
+    console.log(`🔗 ${setPasswordUrl}\n`);
   }
 
   revalidatePath(`/admin/companies/${companyId}`);
@@ -381,18 +456,18 @@ export async function testConnection(connectionId: string): Promise<{ success: b
     await prisma.integrationConnection.update({
       where: { id: connectionId },
       data: {
-        status: success ? 'CONNECTED' : 'ERROR',
-        errorMessage: success ? null : 'Nincs elérhető adat az elmúlt 30 napban',
-        ...(success ? { lastSyncAt: new Date() } : {}),
+        status: 'CONNECTED',
+        errorMessage: null,
+        lastSyncAt: new Date(),
       },
     });
 
     revalidatePath(`/admin/companies/${connection.companyId}`);
     return {
-      success,
+      success: true,
       message: success
         ? `Sikeres kapcsolat - ${rows.length} sor adat az elmúlt 30 napban`
-        : 'Nincs elérhető adat az elmúlt 30 napban',
+        : 'Sikeres kapcsolat - nincs adat az elmúlt 30 napban',
     };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Ismeretlen hiba';

@@ -120,9 +120,10 @@ export interface ChartDefinition {
     key: string;
     title: string;
     description: string;
-    type: 'line' | 'bar';
+    type: 'line' | 'bar' | 'table';
     category: string;
     color: string;
+    platform?: string;
 }
 
 export interface ChartCatalogResponse {
@@ -140,7 +141,7 @@ export interface ChartData {
     color: string;
     data: {
         labels: string[];
-        series: { name: string; data: number[] }[];
+        series: { name: string; data: unknown[] }[];
     };
     source: string;
     generatedAt: string;

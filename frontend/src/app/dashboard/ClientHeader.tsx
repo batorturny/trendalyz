@@ -3,52 +3,83 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { PlatformIcon } from '@/components/PlatformIcon';
 
-export function ClientHeader({ companyName, userEmail }: { companyName: string; userEmail: string }) {
+const platformTabs = [
+  { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
+  { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'] },
+  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'] },
+  { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'] },
+];
+
+interface Props {
+  companyName: string;
+  userEmail: string;
+  connectedProviders: string[];
+}
+
+export function ClientHeader({ companyName, userEmail, connectedProviders }: Props) {
   const pathname = usePathname();
 
   return (
-    <header className="bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-6 py-6">
+    <header className="bg-[var(--surface)] border-b border-[var(--border)]">
+      <div className="max-w-7xl mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-white">TikTok Report</h1>
-            {companyName && <p className="text-cyan-400 font-semibold text-sm mt-1">{companyName}</p>}
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">TikTok Report</h1>
+            {companyName && <p className="text-[var(--text-secondary)] font-semibold text-sm mt-1">{companyName}</p>}
           </div>
 
           <div className="flex items-center gap-6">
-            {/* Navigation */}
+            {/* Platform Navigation */}
             <nav className="flex gap-1">
-              <Link
-                href="/dashboard"
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  pathname === '/dashboard'
-                    ? 'bg-white/10 text-white'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Riport
-              </Link>
-              <Link
-                href="/dashboard/charts"
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  pathname === '/dashboard/charts'
-                    ? 'bg-white/10 text-white'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Chartok
-              </Link>
+              {platformTabs.map(tab => {
+                const isActive = tab.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : pathname.startsWith(tab.href);
+                const isEnabled = tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p));
+
+                if (!isEnabled) {
+                  return (
+                    <span
+                      key={tab.href}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
+                      title="Nem konfigurált"
+                    >
+                      <PlatformIcon platform={tab.platform} className="w-4 h-4" />
+                      {tab.label}
+                    </span>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                    }`}
+                    style={isActive ? { backgroundColor: tab.color } : undefined}
+                  >
+                    <PlatformIcon platform={tab.platform} className="w-4 h-4" />
+                    {tab.label}
+                  </Link>
+                );
+              })}
             </nav>
 
-            {/* User info */}
+            {/* Theme toggle + User info */}
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400">{userEmail}</span>
+              <ThemeToggle />
+              <span className="text-xs text-[var(--text-secondary)]">{userEmail}</span>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="text-xs text-red-400 hover:text-red-300 font-semibold"
+                className="text-xs text-[var(--error)] hover:opacity-80 font-semibold"
               >
-                Kijelentkezés
+                Kijelentkezes
               </button>
             </div>
           </div>

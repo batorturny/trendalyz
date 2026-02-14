@@ -11,40 +11,33 @@ interface Props {
   };
 }
 
+const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
+
 export function CompanyEditForm({ company }: Props) {
   const handleSubmit = async (formData: FormData) => {
     await updateCompany(company.id, formData);
   };
 
   return (
-    <form action={handleSubmit} className="bg-white/5 border border-white/15 rounded-2xl p-6 space-y-4">
+    <form action={handleSubmit} className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 space-y-4 shadow-[var(--shadow-card)]">
       <h2 className="text-lg font-bold mb-2">Cég adatok</h2>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Cégnév</label>
+        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cégnév</label>
         <input
           name="name"
           defaultValue={company.name}
           required
-          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-3 text-white font-semibold focus:border-cyan-500 focus:outline-none"
+          className={inputClass}
         />
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">TikTok Account ID</label>
-        <input
-          name="tiktokAccountId"
-          defaultValue={company.tiktokAccountId || ''}
-          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-3 text-white font-semibold focus:border-cyan-500 focus:outline-none font-mono text-sm"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Státusz</label>
+        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Státusz</label>
         <select
           name="status"
           defaultValue={company.status}
-          className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-3 text-white font-semibold focus:border-cyan-500 focus:outline-none"
+          className={inputClass}
         >
           <option value="ACTIVE">Aktív</option>
           <option value="INACTIVE">Inaktív</option>
@@ -54,7 +47,7 @@ export function CompanyEditForm({ company }: Props) {
 
       <button
         type="submit"
-        className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold rounded-xl hover:from-cyan-400 hover:to-purple-400 transition-all"
+        className="px-6 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
       >
         Mentés
       </button>

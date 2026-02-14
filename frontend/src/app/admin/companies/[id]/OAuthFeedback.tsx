@@ -42,10 +42,10 @@ export function OAuthFeedback({ status, provider, message, windsorSetupUrl }: Pr
     <div
       className={`mb-6 p-4 rounded-xl border transition-all ${
         needsWindsor
-          ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+          ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300'
           : isSuccess
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-            : 'bg-red-500/10 border-red-500/30 text-red-300'
+            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+            : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300'
       }`}
     >
       <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export function OAuthFeedback({ status, provider, message, windsorSetupUrl }: Pr
             href={windsorSetupUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg text-amber-300 font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 border border-amber-200 dark:border-amber-500/30 rounded-lg font-semibold text-sm transition-colors"
           >
             Windsor beallitas megnyitasa &rarr;
           </a>
@@ -95,7 +95,7 @@ export function OAuthFeedback({ status, provider, message, windsorSetupUrl }: Pr
               url.searchParams.delete('windsorSetup');
               router.replace(url.pathname);
             }}
-            className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             Kesobb
           </button>

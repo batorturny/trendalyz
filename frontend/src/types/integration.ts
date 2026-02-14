@@ -1,4 +1,4 @@
-export type ConnectionProvider = 'TIKTOK_ORGANIC' | 'FACEBOOK_ORGANIC' | 'INSTAGRAM_ORGANIC';
+export type ConnectionProvider = 'TIKTOK_ORGANIC' | 'FACEBOOK_ORGANIC' | 'INSTAGRAM_ORGANIC' | 'INSTAGRAM' | 'YOUTUBE' | 'FACEBOOK';
 export type ConnectionStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR' | 'PENDING';
 
 export interface IntegrationConnection {
@@ -18,26 +18,34 @@ export const PROVIDERS = [
   {
     key: 'TIKTOK_ORGANIC' as const,
     label: 'TikTok',
-    icon: '🎵',
     color: 'from-pink-500 to-red-500',
     windsorEndpoint: 'tiktok_organic',
-    description: 'TikTok organikus tartalom és követők',
+    description: 'TikTok organikus tartalom es kovetok',
+    supportsOAuth: true,
+  },
+  {
+    key: 'INSTAGRAM' as const,
+    label: 'Instagram',
+    color: 'from-purple-500 to-pink-500',
+    windsorEndpoint: 'instagram',
+    description: 'Instagram uzleti fiok es tartalom',
+    supportsOAuth: true,
   },
   {
     key: 'FACEBOOK_ORGANIC' as const,
-    label: 'Facebook',
-    icon: '📘',
+    label: 'Facebook Pages',
     color: 'from-blue-600 to-blue-400',
     windsorEndpoint: 'facebook_organic',
-    description: 'Facebook oldal és posztok',
+    description: 'Facebook oldal organikus tartalom',
+    supportsOAuth: true,
   },
   {
-    key: 'INSTAGRAM_ORGANIC' as const,
-    label: 'Instagram',
-    icon: '📸',
-    color: 'from-purple-500 to-pink-500',
-    windsorEndpoint: 'instagram_organic',
-    description: 'Instagram üzleti fiók és tartalom',
+    key: 'YOUTUBE' as const,
+    label: 'YouTube',
+    color: 'from-red-600 to-red-400',
+    windsorEndpoint: 'youtube',
+    description: 'YouTube csatorna es videok',
+    supportsOAuth: true,
   },
 ] as const;
 

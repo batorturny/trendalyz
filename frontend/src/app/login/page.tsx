@@ -1,17 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<'admin' | 'client'>('admin');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [hasGoogle, setHasGoogle] = useState(false);
 
-  async function handleAdminLogin(e: React.FormEvent) {
+  useEffect(() => {
+    fetch('/api/auth/providers')
+      .then(res => res.json())
+      .then(providers => {
+        setHasGoogle(!!providers?.google);
+      })
+      .catch(() => {});
+  }, []);
+
+  function switchMode(newMode: 'login' | 'register') {
+    setMode(newMode);
+    setError(null);
+    setSuccess(null);
+  }
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -26,144 +43,208 @@ export default function LoginPage() {
       setError('Hibás email vagy jelszó');
       setLoading(false);
     } else {
-      window.location.href = '/admin';
+      const session = await fetch('/api/auth/session').then(r => r.json());
+      window.location.href = session?.user?.role === 'CLIENT' ? '/dashboard' : '/admin';
     }
   }
 
-  async function handleMagicLink(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
-    const result = await signIn('email', {
-      email,
-      redirect: false,
-    });
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
 
-    if (result?.error) {
-      setError('Hiba történt a link küldésekor. Ellenőrizd az email címed.');
-      setLoading(false);
-    } else {
-      setMagicLinkSent(true);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Hiba történt');
+        setLoading(false);
+        return;
+      }
+
+      // Auto-login after successful registration
+      const loginResult = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (loginResult?.error) {
+        setSuccess('Sikeres regisztráció! Most már bejelentkezhetsz.');
+        setMode('login');
+        setLoading(false);
+      } else {
+        window.location.href = '/admin';
+      }
+    } catch {
+      setError('Hálózati hiba');
       setLoading(false);
     }
   }
 
+  async function handleGoogleLogin() {
+    setLoading(true);
+    setError(null);
+    await signIn('google', { callbackUrl: '/admin' });
+  }
+
+  const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
+
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[var(--surface-raised)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white">TikTok Report</h1>
-          <p className="text-cyan-400 font-semibold mt-2">Bejelentkezés</p>
-        </div>
-
-        {/* Mode Selector */}
-        <div className="flex mb-6 bg-white/5 rounded-2xl p-1">
-          <button
-            onClick={() => { setMode('admin'); setError(null); setMagicLinkSent(false); }}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
-              mode === 'admin'
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Admin
-          </button>
-          <button
-            onClick={() => { setMode('client'); setError(null); setMagicLinkSent(false); }}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
-              mode === 'client'
-                ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Ügyfél
-          </button>
+          <h1 className="text-4xl font-bold text-[var(--text-primary)]">TikTok Report</h1>
+          <p className="text-[var(--text-secondary)] font-semibold mt-2">
+            {mode === 'login' ? 'Bejelentkezés' : 'Regisztráció'}
+          </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white/5 border border-white/15 rounded-3xl p-8">
-          {magicLinkSent ? (
-            <div className="text-center">
-              <div className="text-5xl mb-4">✉️</div>
-              <h2 className="text-xl font-bold text-white mb-2">Email elküldve!</h2>
-              <p className="text-slate-400">
-                Ellenőrizd a postaládádat és kattints a bejelentkezési linkre.
-              </p>
-              <button
-                onClick={() => { setMagicLinkSent(false); setEmail(''); }}
-                className="mt-6 text-cyan-400 hover:text-cyan-300 text-sm font-semibold"
-              >
-                Újra próbálom
-              </button>
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-8 shadow-[var(--shadow-lg)]">
+          {/* Mode Toggle */}
+          <div className="flex bg-[var(--surface-raised)] rounded-xl p-1 mb-6">
+            <button
+              onClick={() => switchMode('login')}
+              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                mode === 'login'
+                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Bejelentkezés
+            </button>
+            <button
+              onClick={() => switchMode('register')}
+              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                mode === 'register'
+                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Regisztráció
+            </button>
+          </div>
+
+          {success && (
+            <div className="mb-4 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/50 rounded-xl p-4 text-emerald-700 dark:text-emerald-300 text-sm">
+              {success}
             </div>
-          ) : mode === 'admin' ? (
-            <form onSubmit={handleAdminLogin} className="space-y-4">
+          )}
+
+          {mode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                  Email
-                </label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-3 text-white font-semibold focus:border-cyan-500 focus:outline-none"
-                  placeholder="admin@example.com"
+                  className={inputClass}
+                  placeholder="email@example.com"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                  Jelszó
-                </label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Jelszó</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-3 text-white font-semibold focus:border-cyan-500 focus:outline-none"
+                  className={inputClass}
                   placeholder="••••••••"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold py-3 px-6 rounded-xl hover:from-cyan-400 hover:to-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
                 {loading ? 'Bejelentkezés...' : 'Bejelentkezés'}
               </button>
             </form>
           ) : (
-            <form onSubmit={handleMagicLink} className="space-y-4">
+            <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                  Email cím
-                </label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Név</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={inputClass}
+                  placeholder="Teljes neved"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-3 text-white font-semibold focus:border-cyan-500 focus:outline-none"
-                  placeholder="ugyfel@ceg.hu"
+                  className={inputClass}
+                  placeholder="email@example.com"
                 />
               </div>
-              <p className="text-xs text-slate-400">
-                Egy bejelentkezési linket küldünk az email címedre.
-              </p>
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Jelszó</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className={inputClass}
+                  placeholder="Min. 6 karakter"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold py-3 px-6 rounded-xl hover:from-cyan-400 hover:to-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
-                {loading ? 'Küldés...' : 'Link küldése'}
+                {loading ? 'Regisztráció...' : 'Fiók létrehozása'}
               </button>
             </form>
           )}
 
+          {hasGoogle && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[var(--border)]"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-[var(--surface)] px-3 text-[var(--text-secondary)] font-semibold">vagy</span>
+                </div>
+              </div>
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] font-bold py-3 px-6 rounded-xl hover:bg-[var(--accent-subtle)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                {mode === 'login' ? 'Bejelentkezés Google fiókkal' : 'Regisztráció Google fiókkal'}
+              </button>
+            </>
+          )}
+
           {error && (
-            <div className="mt-4 bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm">
+            <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
               {error}
             </div>
           )}
