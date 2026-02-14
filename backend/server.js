@@ -18,6 +18,8 @@ const oauthService = require('./services/oauthService');
 const { WindsorConnectorService } = require('./services/windsorConnectorService');
 const { encrypt } = require('./utils/encryption');
 const crypto = require('crypto');
+const metaGraphService = require('./services/metaGraphService');
+const youtubeDataService = require('./services/youtubeDataService');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -330,12 +332,31 @@ if (ENABLE_MULTI_PLATFORM) {
                 console.error('Windsor connector creation failed (non-fatal):', windsorErr.message);
             }
 
-            // Try to discover accounts
-            let discoveredAccounts = [];
+            // Platform-specific account discovery using the fresh access token
+            let platformAccounts = [];
             try {
-                discoveredAccounts = await windsorMulti.discoverAccounts(provider);
-            } catch (discoverErr) {
-                console.error('Account discovery failed (non-fatal):', discoverErr.message);
+                if (provider === 'FACEBOOK_ORGANIC') {
+                    platformAccounts = await metaGraphService.discoverFacebookPages(tokens.access_token);
+                    console.log(`Discovered ${platformAccounts.length} Facebook pages`);
+                } else if (provider === 'INSTAGRAM_ORGANIC') {
+                    platformAccounts = await metaGraphService.discoverInstagramAccounts(tokens.access_token);
+                    console.log(`Discovered ${platformAccounts.length} Instagram business accounts`);
+                } else if (provider === 'YOUTUBE') {
+                    platformAccounts = await youtubeDataService.discoverChannels(tokens.access_token);
+                    console.log(`Discovered ${platformAccounts.length} YouTube channels`);
+                }
+            } catch (platformErr) {
+                console.error(`Platform account discovery failed for ${provider} (non-fatal):`, platformErr.message);
+            }
+
+            // Fall back to Windsor discovery if platform API returned nothing
+            if (platformAccounts.length === 0) {
+                try {
+                    const windsorAccounts = await windsorMulti.discoverAccounts(provider);
+                    platformAccounts = windsorAccounts;
+                } catch (discoverErr) {
+                    console.error('Windsor account discovery failed (non-fatal):', discoverErr.message);
+                }
             }
 
             // Build encrypted metadata — encryption failure is FATAL
@@ -352,10 +373,10 @@ if (ENABLE_MULTI_PLATFORM) {
             }
 
             // Build externalAccountId with unique fallback
-            const externalAccountId = discoveredAccounts[0]?.accountId
+            const externalAccountId = platformAccounts[0]?.accountId
                 || tokens.open_id
                 || `oauth-${crypto.randomUUID().slice(0, 8)}`;
-            const externalAccountName = discoveredAccounts[0]?.accountName || null;
+            const externalAccountName = platformAccounts[0]?.accountName || null;
 
             // Upsert IntegrationConnection (handles duplicate clicks gracefully)
             const connection = await connectionService.upsertConnection({
@@ -370,7 +391,7 @@ if (ENABLE_MULTI_PLATFORM) {
                 success: true,
                 companyId,
                 connection,
-                discoveredAccounts: discoveredAccounts.length,
+                discoveredAccounts: platformAccounts.length,
                 windsorConnector: !!windsorResult,
             });
         } catch (error) {

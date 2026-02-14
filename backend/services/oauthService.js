@@ -27,7 +27,7 @@ const OAUTH_CONFIGS = {
     tokenUrl: 'https://graph.facebook.com/v19.0/oauth/access_token',
     clientId: () => process.env.META_APP_ID,
     clientSecret: () => process.env.META_APP_SECRET,
-    scopes: ['pages_show_list', 'pages_read_engagement', 'read_insights'],
+    scopes: ['pages_show_list', 'pages_read_engagement', 'pages_read_posts', 'read_insights'],
     windsorConnectorType: 'facebook_organic',
   },
   INSTAGRAM_ORGANIC: {
