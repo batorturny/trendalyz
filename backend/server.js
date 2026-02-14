@@ -14,6 +14,10 @@ const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT, ENABLE_MULTI_PLATFORM } = r
 const { parseUserContext, requireAdmin, requireCompanyAccess } = require('./middleware/authContext');
 const { WindsorMultiPlatform } = require('./services/windsorMultiPlatform');
 const connectionService = require('./services/connectionService');
+const oauthService = require('./services/oauthService');
+const { WindsorConnectorService } = require('./services/windsorConnectorService');
+const { encrypt } = require('./utils/encryption');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -25,6 +29,7 @@ app.use(express.json());
 // Windsor Service instances
 const windsor = new WindsorService(process.env.WINDSOR_API_KEY);
 const windsorMulti = new WindsorMultiPlatform(process.env.WINDSOR_API_KEY);
+const windsorConnector = new WindsorConnectorService(process.env.WINDSOR_API_KEY);
 
 // ============================================
 // INTERNAL AUTH MIDDLEWARE
@@ -145,7 +150,7 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(400).json({ error: 'companyId, provider, and externalAccountId are required' });
             }
 
-            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'];
+            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
             if (!validProviders.includes(provider)) {
                 return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
             }
@@ -211,7 +216,7 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(400).json({ error: 'provider query parameter is required' });
             }
 
-            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'];
+            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
             if (!validProviders.includes(provider)) {
                 return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
             }
@@ -221,6 +226,159 @@ if (ENABLE_MULTI_PLATFORM) {
         } catch (error) {
             console.error('Windsor discover error:', error);
             res.status(500).json({ error: 'Failed to discover accounts', details: error.message });
+        }
+    });
+
+    // List all Windsor datasources (admin only)
+    app.get('/api/windsor/datasources', requireAdmin, async (req, res) => {
+        try {
+            const datasources = await windsorMulti.listDataSources();
+            res.json({ datasources });
+        } catch (error) {
+            console.error('Windsor datasources error:', error);
+            res.status(500).json({ error: 'Failed to list datasources', details: error.message });
+        }
+    });
+
+    // ============================================
+    // OAUTH FLOW
+    // ============================================
+
+    // Get available OAuth providers (which have env vars configured)
+    app.get('/api/oauth/providers', requireAdmin, (req, res) => {
+        res.json({ providers: oauthService.getAvailableProviders() });
+    });
+
+    // Start OAuth: returns authorization URL
+    app.get('/api/oauth/authorize', requireAdmin, (req, res) => {
+        try {
+            const { provider, companyId, redirectUri } = req.query;
+
+            if (!provider || !companyId) {
+                return res.status(400).json({ error: 'provider and companyId are required' });
+            }
+
+            if (!redirectUri) {
+                return res.status(400).json({ error: 'redirectUri is required' });
+            }
+
+            // Validate provider exists in OAUTH_CONFIGS
+            if (!oauthService.OAUTH_CONFIGS[provider]) {
+                return res.status(400).json({ error: `Ismeretlen provider: ${provider}` });
+            }
+
+            // Check if provider has credentials configured
+            const availableProviders = oauthService.getAvailableProviders();
+            if (!availableProviders.includes(provider)) {
+                return res.status(400).json({ error: `${provider} OAuth nincs konfigurálva (hiányzó client ID vagy secret)` });
+            }
+
+            const userId = req.userContext?.userId || null;
+            const state = oauthService.createState(companyId, provider, userId);
+
+            const authorizationUrl = oauthService.buildAuthUrl(provider, redirectUri, state);
+            res.json({ authorizationUrl });
+        } catch (error) {
+            console.error('OAuth authorize error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Complete OAuth: exchange code, create Windsor connector, create connection
+    // No requireAdmin - the state JWT (signed with NEXTAUTH_SECRET) authenticates this request
+    app.post('/api/oauth/complete', async (req, res) => {
+        let stateCompanyId = null;
+        try {
+            const { provider, code, state, redirectUri } = req.body;
+
+            if (!provider || !code || !state || !redirectUri) {
+                return res.status(400).json({ error: 'provider, code, state, and redirectUri are required' });
+            }
+
+            // Verify state JWT
+            const { companyId, provider: stateProvider, userId: stateUserId } = oauthService.verifyState(state);
+            stateCompanyId = companyId;
+
+            if (stateProvider !== provider) {
+                return res.status(400).json({ error: 'Provider mismatch in state token', companyId });
+            }
+
+            // Audit log: which user initiated the OAuth flow
+            if (stateUserId) {
+                console.log(`OAuth complete: userId=${stateUserId}, companyId=${companyId}, provider=${provider}`);
+            }
+
+            // Verify company exists
+            const company = await getCompanyById(companyId);
+            if (!company) {
+                return res.status(400).json({ error: 'Cég nem található', companyId });
+            }
+
+            // Exchange code for tokens
+            const tokens = await oauthService.exchangeCode(provider, code, redirectUri);
+
+            // Create Windsor connector
+            const config = oauthService.getConfig(provider);
+            let windsorResult = null;
+            try {
+                windsorResult = await windsorConnector.createConnector(
+                    config.windsorConnectorType,
+                    tokens.access_token,
+                    tokens.refresh_token
+                );
+            } catch (windsorErr) {
+                console.error('Windsor connector creation failed (non-fatal):', windsorErr.message);
+            }
+
+            // Try to discover accounts
+            let discoveredAccounts = [];
+            try {
+                discoveredAccounts = await windsorMulti.discoverAccounts(provider);
+            } catch (discoverErr) {
+                console.error('Account discovery failed (non-fatal):', discoverErr.message);
+            }
+
+            // Build encrypted metadata — encryption failure is FATAL
+            const metadata = {};
+            metadata.encryptedAccessToken = encrypt(tokens.access_token);
+            if (tokens.refresh_token) {
+                metadata.encryptedRefreshToken = encrypt(tokens.refresh_token);
+            }
+            if (tokens.expires_in) {
+                metadata.tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+            }
+            if (windsorResult?.connectorId) {
+                metadata.windsorConnectorId = windsorResult.connectorId;
+            }
+
+            // Build externalAccountId with unique fallback
+            const externalAccountId = discoveredAccounts[0]?.accountId
+                || tokens.open_id
+                || `oauth-${crypto.randomUUID().slice(0, 8)}`;
+            const externalAccountName = discoveredAccounts[0]?.accountName || null;
+
+            // Upsert IntegrationConnection (handles duplicate clicks gracefully)
+            const connection = await connectionService.upsertConnection({
+                companyId,
+                provider,
+                externalAccountId,
+                externalAccountName,
+                metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+            });
+
+            res.json({
+                success: true,
+                companyId,
+                connection,
+                discoveredAccounts: discoveredAccounts.length,
+                windsorConnector: !!windsorResult,
+            });
+        } catch (error) {
+            console.error('OAuth complete error:', error);
+            res.status(500).json({
+                error: error.message,
+                companyId: stateCompanyId,
+            });
         }
     });
 
