@@ -177,3 +177,225 @@ export async function removeUserFromCompany(userId: string, companyId: string) {
 
   revalidatePath(`/admin/companies/${companyId}`);
 }
+
+// ============================================
+// WINDSOR SYNC
+// ============================================
+
+export async function syncWindsorAccounts(): Promise<{
+  discovered: number;
+  created: number;
+  skipped: number;
+  details: string[];
+}> {
+  await requireAdmin();
+
+  const windsorApiKey = process.env.WINDSOR_API_KEY;
+  if (!windsorApiKey) {
+    throw new Error('Windsor API kulcs nincs konfigurálva');
+  }
+
+  // Fetch discovered accounts directly from Windsor API
+  const now = new Date();
+  const dateTo = now.toISOString().split('T')[0];
+  const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const fields = 'account_id,account_name,date';
+  const url = `https://connectors.windsor.ai/tiktok_organic?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
+
+  const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  if (!res.ok) {
+    throw new Error('Nem sikerült lekérdezni a Windsor fiókokat');
+  }
+
+  const rawData = await res.json();
+  const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+
+  // Extract unique accounts
+  const accountMap = new Map<string, string>();
+  for (const row of rows) {
+    if (row.account_id && !accountMap.has(row.account_id)) {
+      accountMap.set(row.account_id, row.account_name || row.account_id);
+    }
+  }
+  const accounts = Array.from(accountMap.entries()).map(([accountId, accountName]) => ({ accountId, accountName }));
+
+  const details: string[] = [];
+  let created = 0;
+  let skipped = 0;
+
+  for (const account of accounts) {
+    // Check if company already exists with this tiktokAccountId
+    const existing = await prisma.company.findFirst({
+      where: { tiktokAccountId: account.accountId },
+      include: { connections: true },
+    });
+
+    if (existing) {
+      // Ensure IntegrationConnection exists
+      const hasConnection = existing.connections.some(
+        (c) => c.provider === 'TIKTOK_ORGANIC' && c.externalAccountId === account.accountId
+      );
+      if (!hasConnection) {
+        await prisma.integrationConnection.create({
+          data: {
+            companyId: existing.id,
+            provider: 'TIKTOK_ORGANIC',
+            externalAccountId: account.accountId,
+            externalAccountName: account.accountName,
+            status: 'CONNECTED',
+          },
+        });
+        details.push(`${account.accountName}: kapcsolat hozzaadva`);
+      } else {
+        details.push(`${account.accountName}: mar letezik`);
+      }
+      skipped++;
+      continue;
+    }
+
+    // Create new company + connection
+    const company = await prisma.company.create({
+      data: {
+        name: account.accountName,
+        tiktokAccountId: account.accountId,
+        status: 'ACTIVE',
+      },
+    });
+
+    await prisma.integrationConnection.create({
+      data: {
+        companyId: company.id,
+        provider: 'TIKTOK_ORGANIC',
+        externalAccountId: account.accountId,
+        externalAccountName: account.accountName,
+        status: 'CONNECTED',
+      },
+    });
+
+    details.push(`${account.accountName}: letrehozva`);
+    created++;
+  }
+
+  revalidatePath('/admin/companies');
+  return { discovered: accounts.length, created, skipped, details };
+}
+
+// ============================================
+// CONNECTION ACTIONS
+// ============================================
+
+export async function addConnection(
+  companyId: string,
+  provider: string,
+  externalAccountId: string,
+  externalAccountName: string | null
+) {
+  await requireAdmin();
+
+  const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
+  if (!validProviders.includes(provider)) {
+    throw new Error('Érvénytelen platform');
+  }
+
+  try {
+    await prisma.integrationConnection.create({
+      data: {
+        companyId,
+        provider: provider as 'TIKTOK_ORGANIC' | 'FACEBOOK_ORGANIC' | 'INSTAGRAM_ORGANIC',
+        externalAccountId,
+        externalAccountName,
+        status: 'CONNECTED',
+      },
+    });
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      throw new Error('Ez az integráció már létezik ehhez a céghez');
+    }
+    throw error;
+  }
+
+  revalidatePath(`/admin/companies/${companyId}`);
+}
+
+export async function deleteConnection(connectionId: string, companyId: string) {
+  await requireAdmin();
+
+  await prisma.integrationConnection.delete({
+    where: { id: connectionId },
+  });
+
+  revalidatePath(`/admin/companies/${companyId}`);
+}
+
+export async function testConnection(connectionId: string): Promise<{ success: boolean; message: string }> {
+  await requireAdmin();
+
+  const connection = await prisma.integrationConnection.findUnique({
+    where: { id: connectionId },
+  });
+
+  if (!connection) {
+    return { success: false, message: 'Integráció nem található' };
+  }
+
+  const windsorApiKey = process.env.WINDSOR_API_KEY;
+  if (!windsorApiKey) {
+    return { success: false, message: 'Windsor API kulcs nincs konfigurálva' };
+  }
+
+  const WINDSOR_BASE = 'https://connectors.windsor.ai';
+  const PROVIDER_ENDPOINTS: Record<string, string> = {
+    TIKTOK_ORGANIC: 'tiktok_organic',
+    FACEBOOK_ORGANIC: 'facebook_organic',
+    INSTAGRAM_ORGANIC: 'instagram',
+    INSTAGRAM: 'instagram',
+    FACEBOOK: 'facebook',
+    YOUTUBE: 'youtube',
+  };
+
+  const endpoint = PROVIDER_ENDPOINTS[connection.provider];
+  if (!endpoint) {
+    return { success: false, message: `Ismeretlen platform: ${connection.provider}` };
+  }
+
+  try {
+    const now = new Date();
+    const dateTo = now.toISOString().split('T')[0];
+    const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const url = `${WINDSOR_BASE}/${endpoint}?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=date&select_accounts=${connection.externalAccountId}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+
+    if (!res.ok) {
+      await prisma.integrationConnection.update({
+        where: { id: connectionId },
+        data: { status: 'ERROR', errorMessage: `Windsor API hiba: ${res.status}` },
+      });
+      return { success: false, message: `Windsor API hiba: ${res.status}` };
+    }
+
+    const rawData = await res.json();
+    const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+    const success = Array.isArray(rows) && rows.length > 0;
+
+    await prisma.integrationConnection.update({
+      where: { id: connectionId },
+      data: {
+        status: success ? 'CONNECTED' : 'ERROR',
+        errorMessage: success ? null : 'Nincs elérhető adat az elmúlt 30 napban',
+        ...(success ? { lastSyncAt: new Date() } : {}),
+      },
+    });
+
+    revalidatePath(`/admin/companies/${connection.companyId}`);
+    return {
+      success,
+      message: success
+        ? `Sikeres kapcsolat - ${rows.length} sor adat az elmúlt 30 napban`
+        : 'Nincs elérhető adat az elmúlt 30 napban',
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Ismeretlen hiba';
+    return { success: false, message: `Windsor API hiba: ${msg}` };
+  }
+}
