@@ -9,8 +9,10 @@ import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 
 const platformTabs = [
   { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
+  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'] },
   { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'] },
   { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'] },
+  { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'] },
   { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'] },
 ];
 

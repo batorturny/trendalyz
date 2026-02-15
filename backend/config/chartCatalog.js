@@ -9,7 +9,8 @@ const CHART_CATEGORIES = {
     VIDEO: 'video',
     POST: 'post',
     MEDIA: 'media',
-    AUDIENCE: 'audience'
+    AUDIENCE: 'audience',
+    ADS: 'ads'
 };
 
 // Core charts - only line/bar that are proven to work
@@ -357,6 +358,330 @@ const chartCatalog = [
         color: '#ffce44',
         platform: 'YOUTUBE',
         windsorFields: ['viewer_percentage', 'country']
+    },
+
+    // ========== TIKTOK ORGANIC (NEW) ==========
+    {
+        key: 'tt_bio_link_clicks',
+        title: 'Bio link kattintások',
+        description: 'Bio link kattintások trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['bio_link_clicks', 'date']
+    },
+    {
+        key: 'tt_video_watch_time',
+        title: 'Átlagos nézési idő',
+        description: 'Átlagos nézési idő videónként',
+        category: CHART_CATEGORIES.VIDEO,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['video_average_time_watched', 'video_caption', 'date']
+    },
+    {
+        key: 'tt_video_retention',
+        title: 'Teljes megnézési arány',
+        description: 'Teljes megnézési arány trend',
+        category: CHART_CATEGORIES.VIDEO,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['video_full_watched_rate', 'date']
+    },
+    {
+        key: 'tt_traffic_sources',
+        title: 'Forgalmi források',
+        description: 'Forgalmi források (For You, Following, stb.)',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#9d4edd',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['video_impression_sources_impression_source', 'video_impression_sources_percentage']
+    },
+    {
+        key: 'tt_audience_demographics',
+        title: 'Közönség demográfia',
+        description: 'Közönség demográfia (kor/nem)',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['audience_ages_age', 'audience_ages_percentage']
+    },
+
+    // ========== TIKTOK ADS ==========
+    {
+        key: 'ttads_spend_trend',
+        title: 'Napi költés',
+        description: 'Napi hirdetési költés trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['spend', 'date']
+    },
+    {
+        key: 'ttads_impressions_clicks',
+        title: 'Impressziók és kattintások',
+        description: 'Napi impressziók és kattintások',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#4d96ff',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['impressions', 'clicks', 'date']
+    },
+    {
+        key: 'ttads_ctr_trend',
+        title: 'CTR trend',
+        description: 'Átkattintási arány trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00ff95',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['ctr', 'date']
+    },
+    {
+        key: 'ttads_cpc_cpm',
+        title: 'CPC és CPM',
+        description: 'Kattintásonkénti és ezres megjelenésenkénti költség',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#bc6aff',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['cpc', 'cpm', 'date']
+    },
+    {
+        key: 'ttads_conversions',
+        title: 'Konverziók',
+        description: 'Napi konverziók száma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#00d4aa',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['conversions', 'date']
+    },
+    {
+        key: 'ttads_cost_per_conversion',
+        title: 'Költség/konverzió',
+        description: 'Konverziónkénti költség trend',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#ffce44',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['cost_per_conversion', 'date']
+    },
+    {
+        key: 'ttads_campaign_perf',
+        title: 'Kampány teljesítmény',
+        description: 'Kampányok részletes teljesítménye',
+        category: CHART_CATEGORIES.ADS,
+        type: 'table',
+        color: '#00d4ff',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['campaign_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions']
+    },
+    {
+        key: 'ttads_video_engagement',
+        title: 'Videó lejátszások',
+        description: 'Videó lejátszások hirdetésekben',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#ff6b6b',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['video_play_actions', 'video_watched_2s', 'video_watched_6s', 'date']
+    },
+
+    // ========== FACEBOOK (NEW) ==========
+    {
+        key: 'fb_video_views',
+        title: 'Oldal videó megtekintések',
+        description: 'Oldal videó megtekintések trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#4d96ff',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_video_views', 'date']
+    },
+    {
+        key: 'fb_follows_trend',
+        title: 'Követő változás',
+        description: 'Követő/követéstörlés napi trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00ff95',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_daily_follows', 'page_daily_unfollows', 'date']
+    },
+    {
+        key: 'fb_reaction_breakdown',
+        title: 'Reakció típusok',
+        description: 'Reakció típus eloszlás (like/love/wow/haha)',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#bc6aff',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['post_reactions_like_total', 'post_reactions_love_total', 'post_reactions_wow_total', 'post_reactions_haha_total', 'date']
+    },
+    {
+        key: 'fb_page_video_time',
+        title: 'Videó nézési idő',
+        description: 'Oldal videó nézési idő trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ffce44',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_video_view_time', 'date']
+    },
+    {
+        key: 'fb_reel_performance',
+        title: 'Reel teljesítmény',
+        description: 'Facebook Reel tartalmak teljesítménye',
+        category: CHART_CATEGORIES.POST,
+        type: 'table',
+        color: '#00d4ff',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_video_views', 'post_reactions', 'post_comments', 'post_shares', 'post_permalink']
+    },
+
+    // ========== INSTAGRAM BUSINESS (NEW) ==========
+    {
+        key: 'ig_media_type_breakdown',
+        title: 'Tartalom típus mix',
+        description: 'Tartalom típus eloszlás (IMAGE/VIDEO/REEL/CAROUSEL)',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'bar',
+        color: '#e040fb',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments']
+    },
+    {
+        key: 'ig_reel_performance',
+        title: 'Reel megtekintések',
+        description: 'Reel megtekintések és interakciók',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'bar',
+        color: '#bc6aff',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['media_reel_video_views', 'media_reel_avg_watch_time', 'date']
+    },
+    {
+        key: 'ig_story_overview',
+        title: 'Story áttekintés',
+        description: 'Story elérés, megtekintések, kilépések',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'bar',
+        color: '#ff6b9d',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['story_reach', 'story_views', 'story_exits', 'date']
+    },
+    {
+        key: 'ig_save_rate',
+        title: 'Mentési arány',
+        description: 'Mentési arány trend',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['media_saved', 'media_reach', 'date'],
+        calculated: true
+    },
+    {
+        key: 'ig_daily_followers',
+        title: 'Napi új követők',
+        description: 'Napi követőszám változás',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#4d96ff',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['follower_count_1d', 'date']
+    },
+
+    // ========== INSTAGRAM PUBLIC ==========
+    {
+        key: 'igpub_engagement_overview',
+        title: 'Engagement áttekintés',
+        description: 'Like-ok és kommentek összesítve',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#e040fb',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['media_like_count', 'media_comments_count', 'date']
+    },
+    {
+        key: 'igpub_avg_engagement',
+        title: 'Átlag engagement/poszt',
+        description: 'Átlagos like és komment posztonként',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#bc6aff',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['likes_per_post', 'comments_per_post', 'date'],
+        calculated: true
+    },
+    {
+        key: 'igpub_all_media',
+        title: 'Összes tartalom',
+        description: 'Teljes tartalom lista',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'table',
+        color: '#00d4ff',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
+    },
+    {
+        key: 'igpub_top_3_media',
+        title: 'Top 3 tartalom',
+        description: 'Legtöbb like-ot kapott tartalmak',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'table',
+        color: '#00ff95',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
+    },
+
+    // ========== YOUTUBE (NEW) ==========
+    {
+        key: 'yt_avg_view_pct',
+        title: 'Átlagos nézési %',
+        description: 'Átlagos nézési százalék videónként',
+        category: CHART_CATEGORIES.VIDEO,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'YOUTUBE',
+        windsorFields: ['average_view_percentage', 'video_title', 'video_id']
+    },
+    {
+        key: 'yt_playlist_adds',
+        title: 'Playlisthez adás',
+        description: 'Playlisthez adás trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'YOUTUBE',
+        windsorFields: ['videos_added_to_playlists', 'date']
+    },
+    {
+        key: 'yt_premium_views',
+        title: 'YouTube Premium nézések',
+        description: 'YouTube Premium megtekintések',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff0000',
+        platform: 'YOUTUBE',
+        windsorFields: ['red_views', 'date']
+    },
+    {
+        key: 'yt_likes_dislikes',
+        title: 'Like/Dislike arány',
+        description: 'Like és dislike arány trend',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#4d96ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['likes', 'dislikes', 'date']
     },
 ];
 

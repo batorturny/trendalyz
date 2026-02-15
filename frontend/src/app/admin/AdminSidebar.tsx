@@ -16,9 +16,11 @@ const navItems = [
 ];
 
 const platformItems = [
-  { href: '/admin/reports/tiktok', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
+  { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
+  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
   { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)' },
   { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
+  { href: '/admin/reports/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
   { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)' },
 ];
 

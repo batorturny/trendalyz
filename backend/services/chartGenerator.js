@@ -567,6 +567,505 @@ class ChartGenerator {
         };
     }
 
+    // ===== TIKTOK ORGANIC (NEW) =====
+
+    generate_tt_bio_link_clicks() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'bio_link_clicks'));
+
+        return {
+            labels,
+            series: [{ name: 'Bio link kattintások', data }]
+        };
+    }
+
+    generate_tt_video_watch_time() {
+        const videos = this.video.filter(v => v.video_average_time_watched);
+        const labels = videos.map(v => (v.video_caption || '').substring(0, 30) || v.video_id || '-');
+        const data = videos.map(v => parseFloat(v.video_average_time_watched) || 0);
+
+        return {
+            labels,
+            series: [{ name: 'Átl. nézési idő (mp)', data }]
+        };
+    }
+
+    generate_tt_video_retention() {
+        const grouped = this.groupByDate(this.data, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date].filter(i => i.video_full_watched_rate);
+            if (items.length === 0) return 0;
+            const avg = items.reduce((s, i) => s + (parseFloat(i.video_full_watched_rate) || 0), 0) / items.length;
+            return parseFloat(avg.toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [{ name: 'Végignézési arány %', data }]
+        };
+    }
+
+    generate_tt_traffic_sources() {
+        const sourceMap = {};
+        this.data.forEach(item => {
+            const source = item.video_impression_sources_impression_source;
+            if (!source) return;
+            const pct = parseFloat(item.video_impression_sources_percentage) || 0;
+            if (!sourceMap[source]) sourceMap[source] = 0;
+            sourceMap[source] += pct;
+        });
+
+        const sorted = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
+        return {
+            labels: sorted.map(([source]) => source),
+            series: [{ name: 'Arány %', data: sorted.map(([, pct]) => parseFloat(pct.toFixed(2))) }]
+        };
+    }
+
+    generate_tt_audience_demographics() {
+        const ageMap = {};
+        this.data.forEach(item => {
+            const age = item.audience_ages_age;
+            if (!age) return;
+            const pct = parseFloat(item.audience_ages_percentage) || 0;
+            if (!ageMap[age]) ageMap[age] = 0;
+            ageMap[age] += pct;
+        });
+
+        const sorted = Object.entries(ageMap).sort((a, b) => a[0].localeCompare(b[0]));
+        return {
+            labels: sorted.map(([age]) => age),
+            series: [{ name: 'Arány %', data: sorted.map(([, pct]) => parseFloat(pct.toFixed(2))) }]
+        };
+    }
+
+    // ===== TIKTOK ADS =====
+
+    generate_ttads_spend_trend() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            return grouped[date].reduce((s, i) => s + (parseFloat(i.spend) || 0), 0);
+        });
+
+        return {
+            labels,
+            series: [{ name: 'Költés', data: data.map(v => parseFloat(v.toFixed(2))) }]
+        };
+    }
+
+    generate_ttads_impressions_clicks() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const impressions = labels.map(date => this.sumField(grouped[date], 'impressions'));
+        const clicks = labels.map(date => this.sumField(grouped[date], 'clicks'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Impressziók', data: impressions },
+                { name: 'Kattintások', data: clicks }
+            ]
+        };
+    }
+
+    generate_ttads_ctr_trend() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            const avgCtr = items.reduce((s, i) => s + (parseFloat(i.ctr) || 0), 0) / (items.length || 1);
+            return parseFloat(avgCtr.toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [{ name: 'CTR %', data }]
+        };
+    }
+
+    generate_ttads_cpc_cpm() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const cpc = labels.map(date => {
+            const items = grouped[date];
+            const avg = items.reduce((s, i) => s + (parseFloat(i.cpc) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
+        });
+        const cpm = labels.map(date => {
+            const items = grouped[date];
+            const avg = items.reduce((s, i) => s + (parseFloat(i.cpm) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [
+                { name: 'CPC', data: cpc },
+                { name: 'CPM', data: cpm }
+            ]
+        };
+    }
+
+    generate_ttads_conversions() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'conversions'));
+
+        return {
+            labels,
+            series: [{ name: 'Konverziók', data }]
+        };
+    }
+
+    generate_ttads_cost_per_conversion() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            const avg = items.reduce((s, i) => s + (parseFloat(i.cost_per_conversion) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [{ name: 'Költség/konverzió', data }]
+        };
+    }
+
+    generate_ttads_campaign_perf() {
+        const campaignMap = {};
+        this.data.forEach(item => {
+            const name = item.campaign_name;
+            if (!name) return;
+            if (!campaignMap[name]) {
+                campaignMap[name] = { impressions: 0, clicks: 0, spend: 0, conversions: 0 };
+            }
+            campaignMap[name].impressions += parseInt(item.impressions) || 0;
+            campaignMap[name].clicks += parseInt(item.clicks) || 0;
+            campaignMap[name].spend += parseFloat(item.spend) || 0;
+            campaignMap[name].conversions += parseInt(item.conversions) || 0;
+        });
+
+        const tableData = Object.entries(campaignMap).map(([name, stats]) => ({
+            campaign: name,
+            impressions: stats.impressions,
+            clicks: stats.clicks,
+            spend: parseFloat(stats.spend.toFixed(2)),
+            cpc: stats.clicks > 0 ? parseFloat((stats.spend / stats.clicks).toFixed(2)) : 0,
+            ctr: stats.impressions > 0 ? parseFloat(((stats.clicks / stats.impressions) * 100).toFixed(2)) : 0,
+            conversions: stats.conversions,
+        }));
+
+        return {
+            labels: ['Kampány', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Konverziók'],
+            series: [{ name: 'Campaigns', data: tableData }]
+        };
+    }
+
+    generate_ttads_video_engagement() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const plays = labels.map(date => this.sumField(grouped[date], 'video_play_actions'));
+        const watched2s = labels.map(date => this.sumField(grouped[date], 'video_watched_2s'));
+        const watched6s = labels.map(date => this.sumField(grouped[date], 'video_watched_6s'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Lejátszások', data: plays },
+                { name: '2s nézés', data: watched2s },
+                { name: '6s nézés', data: watched6s }
+            ]
+        };
+    }
+
+    // ===== FACEBOOK (NEW) =====
+
+    generate_fb_video_views() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'page_video_views'));
+
+        return {
+            labels,
+            series: [{ name: 'Videó megtekintések', data }]
+        };
+    }
+
+    generate_fb_follows_trend() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const follows = labels.map(date => this.sumField(grouped[date], 'page_daily_follows'));
+        const unfollows = labels.map(date => this.sumField(grouped[date], 'page_daily_unfollows'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Új követők', data: follows },
+                { name: 'Követéstörlés', data: unfollows }
+            ]
+        };
+    }
+
+    generate_fb_reaction_breakdown() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const like = labels.map(date => this.sumField(grouped[date], 'post_reactions_like_total'));
+        const love = labels.map(date => this.sumField(grouped[date], 'post_reactions_love_total'));
+        const wow = labels.map(date => this.sumField(grouped[date], 'post_reactions_wow_total'));
+        const haha = labels.map(date => this.sumField(grouped[date], 'post_reactions_haha_total'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Like', data: like },
+                { name: 'Love', data: love },
+                { name: 'Wow', data: wow },
+                { name: 'Haha', data: haha }
+            ]
+        };
+    }
+
+    generate_fb_page_video_time() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'page_video_view_time'));
+
+        return {
+            labels,
+            series: [{ name: 'Nézési idő', data }]
+        };
+    }
+
+    generate_fb_reel_performance() {
+        const posts = this.video.filter(p => parseInt(p.post_video_views) > 0);
+        const sorted = [...posts].sort((a, b) => (parseInt(b.post_video_views) || 0) - (parseInt(a.post_video_views) || 0));
+
+        const tableData = sorted.map(p => ({
+            id: p.post_id,
+            caption: p.post_message || '-',
+            date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
+            videoViews: parseInt(p.post_video_views) || 0,
+            reactions: parseInt(p.post_reactions) || 0,
+            comments: parseInt(p.post_comments) || 0,
+            shares: parseInt(p.post_shares) || 0,
+            link: p.post_permalink || '#'
+        }));
+
+        return {
+            labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'],
+            series: [{ name: 'Reels', data: tableData }]
+        };
+    }
+
+    // ===== INSTAGRAM BUSINESS (NEW) =====
+
+    generate_ig_media_type_breakdown() {
+        // Group media by type from content data
+        const typeMap = {};
+        this.video.forEach(m => {
+            const type = m.media_type || 'OTHER';
+            if (!typeMap[type]) typeMap[type] = { count: 0, likes: 0, comments: 0 };
+            typeMap[type].count++;
+            typeMap[type].likes += parseInt(m.likes) || 0;
+            typeMap[type].comments += parseInt(m.comments) || 0;
+        });
+
+        const labels = Object.keys(typeMap);
+        return {
+            labels,
+            series: [
+                { name: 'Tartalmak', data: labels.map(t => typeMap[t].count) },
+                { name: 'Like-ok', data: labels.map(t => typeMap[t].likes) },
+                { name: 'Kommentek', data: labels.map(t => typeMap[t].comments) }
+            ]
+        };
+    }
+
+    generate_ig_reel_performance() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const views = labels.map(date => this.sumField(grouped[date], 'media_reel_video_views'));
+        const watchTime = labels.map(date => {
+            const items = grouped[date];
+            const avg = items.reduce((s, i) => s + (parseFloat(i.media_reel_avg_watch_time) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [
+                { name: 'Reel nézések', data: views },
+                { name: 'Átl. nézési idő', data: watchTime }
+            ]
+        };
+    }
+
+    generate_ig_story_overview() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const reach = labels.map(date => this.sumField(grouped[date], 'story_reach'));
+        const views = labels.map(date => this.sumField(grouped[date], 'story_views'));
+        const exits = labels.map(date => this.sumField(grouped[date], 'story_exits'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Elérés', data: reach },
+                { name: 'Megtekintések', data: views },
+                { name: 'Kilépések', data: exits }
+            ]
+        };
+    }
+
+    generate_ig_save_rate() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            const saved = this.sumField(items, 'media_saved');
+            const reach = this.sumField(items, 'media_reach') || 1;
+            return parseFloat(((saved / reach) * 100).toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [{ name: 'Mentési arány %', data }]
+        };
+    }
+
+    generate_ig_daily_followers() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'follower_count_1d'));
+
+        return {
+            labels,
+            series: [{ name: 'Napi új követők', data }]
+        };
+    }
+
+    // ===== INSTAGRAM PUBLIC =====
+
+    generate_igpub_engagement_overview() {
+        const grouped = this.groupByDate(this.data, 'date');
+        const labels = Object.keys(grouped).sort();
+        const likes = labels.map(date => this.sumField(grouped[date], 'media_like_count'));
+        const comments = labels.map(date => this.sumField(grouped[date], 'media_comments_count'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Like-ok', data: likes },
+                { name: 'Kommentek', data: comments }
+            ]
+        };
+    }
+
+    generate_igpub_avg_engagement() {
+        const grouped = this.groupByDate(this.data, 'date');
+        const labels = Object.keys(grouped).sort();
+        const likesPerPost = labels.map(date => {
+            const items = grouped[date];
+            const avg = items.reduce((s, i) => s + (parseFloat(i.likes_per_post) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
+        });
+        const commentsPerPost = labels.map(date => {
+            const items = grouped[date];
+            const avg = items.reduce((s, i) => s + (parseFloat(i.comments_per_post) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
+        });
+
+        return {
+            labels,
+            series: [
+                { name: 'Átl. like/poszt', data: likesPerPost },
+                { name: 'Átl. komment/poszt', data: commentsPerPost }
+            ]
+        };
+    }
+
+    generate_igpub_all_media() {
+        return this.generateIGPublicMediaTable(this.video);
+    }
+
+    generate_igpub_top_3_media() {
+        const sorted = [...this.video].sort((a, b) =>
+            (parseInt(b.media_like_count) || 0) - (parseInt(a.media_like_count) || 0)
+        );
+        return this.generateIGPublicMediaTable(sorted.slice(0, 3));
+    }
+
+    generateIGPublicMediaTable(media) {
+        const tableData = media.map(m => ({
+            id: m.media_id,
+            caption: m.media_caption || '-',
+            date: m.media_timestamp ? m.media_timestamp.substring(0, 10) : '-',
+            likes: parseInt(m.media_like_count) || 0,
+            comments: parseInt(m.media_comments_count) || 0,
+            type: m.media_type || '-',
+            link: m.media_permalink || '#'
+        }));
+
+        return {
+            labels: ['Dátum', 'Caption', 'Like-ok', 'Kommentek', 'Típus', 'Link'],
+            series: [{ name: 'Media', data: tableData }]
+        };
+    }
+
+    // ===== YOUTUBE (NEW) =====
+
+    generate_yt_avg_view_pct() {
+        const videos = this.video.filter(v => v.average_view_percentage);
+        const labels = videos.map(v => (v.video_title || '').substring(0, 30) || v.video_id || '-');
+        const data = videos.map(v => parseFloat(v.average_view_percentage) || 0);
+
+        return {
+            labels,
+            series: [{ name: 'Nézési %', data: data.map(v => parseFloat(v.toFixed(2))) }]
+        };
+    }
+
+    generate_yt_playlist_adds() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'videos_added_to_playlists'));
+
+        return {
+            labels,
+            series: [{ name: 'Playlisthez adva', data }]
+        };
+    }
+
+    generate_yt_premium_views() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'red_views'));
+
+        return {
+            labels,
+            series: [{ name: 'Premium nézések', data }]
+        };
+    }
+
+    generate_yt_likes_dislikes() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const likes = labels.map(date => this.sumField(grouped[date], 'likes'));
+        const dislikes = labels.map(date => this.sumField(grouped[date], 'dislikes'));
+
+        return {
+            labels,
+            series: [
+                { name: 'Like-ok', data: likes },
+                { name: 'Dislike-ok', data: dislikes }
+            ]
+        };
+    }
+
     // ===== UTILITY METHODS =====
 
     groupByDate(items, dateField) {

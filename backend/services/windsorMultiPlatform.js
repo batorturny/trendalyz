@@ -23,6 +23,21 @@ const PLATFORM_CONFIG = {
       'video_views_count', 'video_reach', 'video_likes', 'video_comments',
       'video_shares', 'video_new_followers', 'video_full_watched_rate',
       'audience_activity_hour', 'audience_activity_count',
+      'bio_link_clicks', 'email_clicks', 'engaged_audience',
+      'video_average_time_watched', 'video_total_time_watched', 'video_duration',
+      'video_impression_sources_impression_source', 'video_impression_sources_percentage',
+    ],
+  },
+  TIKTOK_ADS: {
+    endpoint: 'tiktok',
+    dailyFields: ['date', 'impressions', 'clicks', 'spend', 'cpc', 'cpm', 'ctr', 'conversions', 'cost_per_conversion'],
+    contentFields: ['date', 'campaign_name', 'adgroup_name', 'ad_name', 'impressions', 'clicks', 'spend', 'cpc', 'cpm', 'ctr', 'conversions', 'video_play_actions', 'video_watched_2s', 'video_watched_6s'],
+    audienceFields: ['date'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'impressions', 'clicks', 'spend', 'cpc', 'cpm', 'ctr',
+      'conversions', 'cost_per_conversion', 'campaign_name', 'adgroup_name', 'ad_name',
+      'video_play_actions', 'video_watched_2s', 'video_watched_6s',
     ],
   },
   FACEBOOK_ORGANIC: {
@@ -36,6 +51,10 @@ const PLATFORM_CONFIG = {
       'reactions', 'comments', 'shares',
       'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach',
       'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink',
+      'page_follows', 'page_daily_follows', 'page_daily_unfollows',
+      'page_video_views', 'page_video_view_time',
+      'post_video_views', 'post_reactions_like_total', 'post_reactions_love_total',
+      'post_reactions_wow_total', 'post_reactions_haha_total',
     ],
   },
   INSTAGRAM_ORGANIC: {
@@ -48,6 +67,9 @@ const PLATFORM_CONFIG = {
       'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
       'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
       'media_url', 'permalink',
+      'follower_count_1d', 'media_engagement', 'media_reach', 'media_saved', 'media_shares',
+      'media_reel_video_views', 'media_reel_avg_watch_time',
+      'story_reach', 'story_views', 'story_exits',
     ],
   },
   INSTAGRAM: {
@@ -60,6 +82,19 @@ const PLATFORM_CONFIG = {
       'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
       'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
       'media_url', 'permalink',
+    ],
+  },
+  INSTAGRAM_PUBLIC: {
+    endpoint: 'instagram_public',
+    dailyFields: ['date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username'],
+    contentFields: ['date', 'media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp', 'likes_per_post', 'comments_per_post'],
+    audienceFields: ['date'],
+    demographicFields: null,
+    allChartFields: [
+      'date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username',
+      'media_id', 'media_caption', 'media_like_count', 'media_comments_count',
+      'media_type', 'media_permalink', 'media_timestamp',
+      'likes_per_post', 'comments_per_post',
     ],
   },
   FACEBOOK: {
@@ -85,6 +120,7 @@ const PLATFORM_CONFIG = {
       'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
       'estimated_minutes_watched', 'video_id', 'video_title', 'video_published_at',
       'average_view_duration',
+      'average_view_percentage', 'videos_added_to_playlists', 'red_views', 'dislikes',
     ],
   },
 };
