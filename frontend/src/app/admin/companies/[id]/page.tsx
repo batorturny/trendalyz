@@ -5,7 +5,7 @@ import { CompanyUsers } from './CompanyUsers';
 import { IntegrationConnections } from './IntegrationConnections';
 import { OAuthFeedback } from './OAuthFeedback';
 import { StatusToggle } from './StatusToggle';
-import type { IntegrationConnection } from '@/types/integration';
+import type { IntegrationConnection, ConnectionProvider, ConnectionStatus } from '@/types/integration';
 
 export default async function CompanyDetailPage({
   params,
@@ -56,8 +56,8 @@ export default async function CompanyDetailPage({
           connections={company.connections.map((c): IntegrationConnection => ({
             id: c.id,
             companyId: c.companyId,
-            provider: c.provider,
-            status: c.status,
+            provider: c.provider as ConnectionProvider,
+            status: c.status as ConnectionStatus,
             externalAccountId: c.externalAccountId,
             externalAccountName: c.externalAccountName,
             lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
