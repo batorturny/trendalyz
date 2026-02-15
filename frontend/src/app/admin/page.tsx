@@ -1,12 +1,19 @@
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { Building2, Users, Plug } from 'lucide-react';
 
 export default async function AdminDashboard() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== 'ADMIN') redirect('/login');
+
+  const adminId = session.user.id;
+
   const [companyCount, userCount, activeIntegrations] = await Promise.all([
-    prisma.company.count({ where: { status: 'ACTIVE' } }),
-    prisma.user.count({ where: { role: 'CLIENT' } }),
-    prisma.integration.count({ where: { status: 'CONNECTED' } }),
+    prisma.company.count({ where: { status: 'ACTIVE', adminId } }),
+    prisma.user.count({ where: { role: 'CLIENT', company: { adminId } } }),
+    prisma.integrationConnection.count({ where: { status: 'CONNECTED', company: { adminId } } }),
   ]);
 
   const stats = [

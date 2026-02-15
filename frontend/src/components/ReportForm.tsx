@@ -2,6 +2,7 @@
 
 import { Company } from '@/lib/api';
 import { MonthPicker } from './MonthPicker';
+import { CompanyPicker } from './CompanyPicker';
 
 interface Props {
   companies?: Company[];
@@ -41,16 +42,11 @@ export function ReportForm({
               {companyName}
             </div>
           ) : (
-            <select
+            <CompanyPicker
+              companies={companies || []}
               value={selectedCompany}
-              onChange={(e) => onCompanyChange?.(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Válassz céget...</option>
-              {companies?.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={(id) => onCompanyChange?.(id)}
+            />
           )}
         </div>
 

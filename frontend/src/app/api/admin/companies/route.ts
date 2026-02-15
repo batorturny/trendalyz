@@ -9,6 +9,7 @@ export async function GET() {
   }
 
   const companies = await prisma.company.findMany({
+    where: { adminId: session.user.id },
     include: { _count: { select: { users: true, integrations: true } } },
     orderBy: { name: 'asc' },
   });
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   }
 
   const company = await prisma.company.create({
-    data: { name, tiktokAccountId: tiktokAccountId || null, status: 'ACTIVE' },
+    data: { name, tiktokAccountId: tiktokAccountId || null, adminId: session.user.id, status: 'ACTIVE' },
   });
 
   return NextResponse.json(company, { status: 201 });

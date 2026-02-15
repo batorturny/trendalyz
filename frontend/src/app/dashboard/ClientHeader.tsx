@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 
 const platformTabs = [
   { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
@@ -27,8 +28,8 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
       <div className="max-w-7xl mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)]">TikTok Report</h1>
-            {companyName && <p className="text-[var(--text-secondary)] font-semibold text-sm mt-1">{companyName}</p>}
+            <TrendalyzLogo size="sm" />
+            {companyName && <p className="text-[var(--text-secondary)] font-semibold text-xs mt-1">{companyName}</p>}
           </div>
 
           <div className="flex items-center gap-6">
@@ -79,7 +80,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="text-xs text-[var(--error)] hover:opacity-80 font-semibold"
               >
-                Kijelentkezes
+                Kijelentkezés
               </button>
             </div>
           </div>

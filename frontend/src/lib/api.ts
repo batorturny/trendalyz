@@ -106,7 +106,7 @@ export async function generateReport(params: { companyId: string; month: string 
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to generate report');
+        throw new Error(error.details || error.error || 'Failed to generate report');
     }
 
     return response.json();
@@ -178,7 +178,7 @@ export async function generateCharts(params: {
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to generate charts');
+        throw new Error(error.details || error.error || 'Failed to generate charts');
     }
 
     return response.json();

@@ -47,10 +47,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   if (loading) {
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talált fiókok</div>
         <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
           <div className="w-4 h-4 border-2 border-[var(--text-secondary)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[var(--text-secondary)]">Fiokok betoltese...</span>
+          <span className="text-sm text-[var(--text-secondary)]">Fiókok betöltése...</span>
         </div>
       </div>
     );
@@ -59,10 +59,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   if (error) {
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talált fiókok</div>
         <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
-          <p className="text-sm text-red-700 dark:text-red-300">Nem sikerult betolteni a fiokokat: {error}</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">Hasznald a manualis megadast lentebb.</p>
+          <p className="text-sm text-red-700 dark:text-red-300">Nem sikerült betölteni a fiókokat: {error}</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Használd a manuális megadást lentebb.</p>
         </div>
       </div>
     );
@@ -71,10 +71,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   if (accounts.length === 0) {
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talált fiókok</div>
         <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
-          <p className="text-sm text-[var(--text-secondary)]">Nem talalhato kapcsolt fiok a Windsor-ben ehhez a platformhoz.</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1 opacity-70">Hasznald a manualis megadast lentebb.</p>
+          <p className="text-sm text-[var(--text-secondary)]">Nem található kapcsolt fiók a Windsor-ben ehhez a platformhoz.</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1 opacity-70">Használd a manuális megadást lentebb.</p>
         </div>
       </div>
     );
@@ -82,7 +82,7 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
 
   return (
     <div className="space-y-3">
-      <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talalt fiokok</div>
+      <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talált fiókok</div>
       <div className="space-y-2">
         {accounts.map((account) => {
           const alreadyAdded = existingAccountIds.includes(account.accountId);
@@ -112,10 +112,10 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
                 <div className="text-xs text-[var(--text-secondary)] font-mono truncate">{account.accountId}</div>
               </div>
               {alreadyAdded && (
-                <span className="text-xs text-[var(--success)] flex-shrink-0">Mar hozzaadva</span>
+                <span className="text-xs text-[var(--success)] flex-shrink-0">Már hozzáadva</span>
               )}
               {!alreadyAdded && account.hasData && (
-                <span className="text-xs text-[var(--success)] flex-shrink-0">Aktiv</span>
+                <span className="text-xs text-[var(--success)] flex-shrink-0">Aktív</span>
               )}
             </button>
           );

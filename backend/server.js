@@ -20,18 +20,57 @@ const { encrypt } = require('./utils/encryption');
 const crypto = require('crypto');
 const metaGraphService = require('./services/metaGraphService');
 const youtubeDataService = require('./services/youtubeDataService');
+const { getWindsorApiKey, getWindsorApiKeyForCompany } = require('./services/adminKeyService');
+const prisma = require('./lib/prisma');
 
 const app = express();
+
+/**
+ * Resolve TikTok account ID for a company.
+ * First checks legacy tiktokAccountId field, then falls back to IntegrationConnection.
+ */
+async function resolveTiktokAccountId(company) {
+  if (company.tiktokAccountId) return company.tiktokAccountId;
+
+  const connection = await prisma.integrationConnection.findFirst({
+    where: { companyId: company.id, provider: 'TIKTOK_ORGANIC' },
+    select: { externalAccountId: true },
+  });
+
+  if (connection?.externalAccountId) return connection.externalAccountId;
+
+  return null;
+}
 const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Windsor Service instances
-const windsor = new WindsorService(process.env.WINDSOR_API_KEY);
-const windsorMulti = new WindsorMultiPlatform(process.env.WINDSOR_API_KEY);
-const windsorConnector = new WindsorConnectorService(process.env.WINDSOR_API_KEY);
+// Per-request Windsor service factory
+function createWindsorServices(apiKey) {
+  return {
+    windsor: new WindsorService(apiKey),
+    windsorMulti: new WindsorMultiPlatform(apiKey),
+    windsorConnector: new WindsorConnectorService(apiKey),
+  };
+}
+
+/**
+ * Resolve Windsor API key for the current request.
+ * For ADMIN users: use their personal key.
+ * For CLIENT users: resolve via their company's owning admin.
+ */
+async function resolveWindsorKey(req) {
+  const { userId, role, companyId } = req.userContext || {};
+  if (role === 'ADMIN') {
+    return getWindsorApiKey(userId);
+  }
+  if (companyId) {
+    return getWindsorApiKeyForCompany(companyId);
+  }
+  return getWindsorApiKey(null); // fallback to global
+}
 
 // ============================================
 // INTERNAL AUTH MIDDLEWARE
@@ -68,7 +107,8 @@ app.use('/api', parseUserContext);
 // Get all companies
 app.get('/api/companies', async (req, res) => {
     try {
-        const companies = await getAllCompanies();
+        const adminId = req.userContext?.role === 'ADMIN' ? req.userContext.userId : null;
+        const companies = await getAllCompanies(adminId);
         res.json(companies);
     } catch (error) {
         console.error('Error fetching companies:', error);
@@ -105,10 +145,17 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
 
         console.log(`Fetching data for ${company.name} (${dateFrom} to ${dateTo})`);
 
+        // Resolve TikTok account ID (legacy field or IntegrationConnection)
+        const tiktokAccountId = await resolveTiktokAccountId(company);
+
+        // Resolve Windsor API key for this request
+        const apiKey = await resolveWindsorKey(req);
+        const { windsor: windsorSvc } = createWindsorServices(apiKey);
+
         // Fetch current and previous month data
         const [currentData, prevData] = await Promise.all([
-            windsor.fetchAllData(company.tiktokAccountId, dateFrom, dateTo),
-            windsor.fetchAllData(company.tiktokAccountId, prevDateFrom, prevDateTo)
+            windsorSvc.fetchAllData(tiktokAccountId, dateFrom, dateTo),
+            windsorSvc.fetchAllData(tiktokAccountId, prevDateFrom, prevDateTo)
         ]);
 
         // Process report
@@ -182,7 +229,9 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(404).json({ error: 'Connection not found' });
             }
 
-            const result = await windsorMulti.testConnection(connection.provider, connection.externalAccountId);
+            const apiKey = await resolveWindsorKey(req);
+            const { windsorMulti: wm } = createWindsorServices(apiKey);
+            const result = await wm.testConnection(connection.provider, connection.externalAccountId);
 
             // Update connection status based on test result
             await connectionService.updateConnectionStatus(
@@ -223,7 +272,9 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
             }
 
-            const accounts = await windsorMulti.discoverAccounts(provider);
+            const apiKey = await resolveWindsorKey(req);
+            const { windsorMulti: wm } = createWindsorServices(apiKey);
+            const accounts = await wm.discoverAccounts(provider);
             res.json({ provider, accounts });
         } catch (error) {
             console.error('Windsor discover error:', error);
@@ -234,7 +285,9 @@ if (ENABLE_MULTI_PLATFORM) {
     // List all Windsor datasources (admin only)
     app.get('/api/windsor/datasources', requireAdmin, async (req, res) => {
         try {
-            const datasources = await windsorMulti.listDataSources();
+            const apiKey = await resolveWindsorKey(req);
+            const { windsorMulti: wm } = createWindsorServices(apiKey);
+            const datasources = await wm.listDataSources();
             res.json({ datasources });
         } catch (error) {
             console.error('Windsor datasources error:', error);
@@ -321,10 +374,14 @@ if (ENABLE_MULTI_PLATFORM) {
 
             const config = oauthService.getConfig(provider);
 
+            // Resolve Windsor key from the user who initiated the OAuth flow
+            const oauthApiKey = await getWindsorApiKey(stateUserId || null);
+            const { windsorMulti: wmOauth } = createWindsorServices(oauthApiKey);
+
             // Check if Windsor already has this datasource configured
             let windsorReady = false;
             try {
-                const testResult = await windsorMulti.testConnection(provider, 'any');
+                const testResult = await wmOauth.testConnection(provider, 'any');
                 windsorReady = !testResult.needsWindsorSetup;
             } catch {
                 windsorReady = false;
@@ -350,7 +407,7 @@ if (ENABLE_MULTI_PLATFORM) {
             // Fall back to Windsor discovery if platform API returned nothing
             if (platformAccounts.length === 0) {
                 try {
-                    const windsorAccounts = await windsorMulti.discoverAccounts(provider);
+                    const windsorAccounts = await wmOauth.discoverAccounts(provider);
                     platformAccounts = windsorAccounts;
                 } catch (discoverErr) {
                     console.error('Windsor account discovery failed (non-fatal):', discoverErr.message);
@@ -461,8 +518,13 @@ if (ENABLE_CHART_API) {
 
             console.log(`Generating ${charts.length} charts for ${company.name} (${startDate} - ${endDate})`);
 
+            // Resolve TikTok account ID (legacy field or IntegrationConnection)
+            const tiktokAccountId = await resolveTiktokAccountId(company);
+
             // Fetch Windsor data
-            const windsorData = await windsor.fetchAllChartData(company.tiktokAccountId, startDate, endDate);
+            const chartApiKey = await resolveWindsorKey(req);
+            const { windsor: windsorChart } = createWindsorServices(chartApiKey);
+            const windsorData = await windsorChart.fetchAllChartData(tiktokAccountId, startDate, endDate);
 
             console.log(`Received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows from Windsor`);
 

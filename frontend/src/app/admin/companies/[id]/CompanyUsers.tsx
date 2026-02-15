@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { addUserToCompany, removeUserFromCompany, resendInvite } from '../actions';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useToast } from '@/components/Toast';
 
 interface User {
   id: string;
@@ -19,13 +21,15 @@ interface Props {
 
 export function CompanyUsers({ companyId, users }: Props) {
   const [resending, setResending] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleAdd = async (formData: FormData) => {
     await addUserToCompany(companyId, formData);
   };
 
   const handleRemove = async (userId: string) => {
-    if (!confirm('Biztosan eltávolítod ezt a felhasználót?')) return;
+    setRemoveTarget(null);
     await removeUserFromCompany(userId, companyId);
   };
 
@@ -33,8 +37,9 @@ export function CompanyUsers({ companyId, users }: Props) {
     setResending(userId);
     try {
       await resendInvite(userId, companyId);
+      toast('Meghívó újraküldve', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Hiba történt');
+      toast(err instanceof Error ? err.message : 'Hiba történt', 'error');
     } finally {
       setResending(null);
     }
@@ -82,7 +87,7 @@ export function CompanyUsers({ companyId, users }: Props) {
                   </button>
                 )}
                 <button
-                  onClick={() => handleRemove(user.id)}
+                  onClick={() => setRemoveTarget(user.id)}
                   className="text-xs text-[var(--error)] hover:opacity-70 font-semibold"
                 >
                   Eltávolítás
@@ -111,6 +116,18 @@ export function CompanyUsers({ companyId, users }: Props) {
           Meghívás
         </button>
       </form>
+
+      {/* Confirm remove dialog */}
+      <ConfirmDialog
+        open={!!removeTarget}
+        title="Felhasználó eltávolítása"
+        message="Biztosan eltávolítod ezt a felhasználót?"
+        confirmLabel="Eltávolítás"
+        cancelLabel="Mégse"
+        variant="danger"
+        onConfirm={() => removeTarget && handleRemove(removeTarget)}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }

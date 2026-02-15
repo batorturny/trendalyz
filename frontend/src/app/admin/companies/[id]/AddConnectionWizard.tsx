@@ -53,7 +53,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
 
   const handleSave = async () => {
     if (!selectedProvider || !accountId.trim()) {
-      setError('Account ID megadasa kotelezo');
+      setError('Account ID megadása kötelező');
       return;
     }
 
@@ -64,7 +64,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
       await addConnection(companyId, selectedProvider, accountId.trim(), accountName.trim() || null);
       handleClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Hiba tortent';
+      const message = err instanceof Error ? err.message : 'Hiba történt';
       setError(message);
       setSaving(false);
     }
@@ -78,7 +78,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
         onClick={() => setIsOpen(true)}
         className="px-4 py-2 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
       >
-        + Uj integracio
+        + Új integráció
       </button>
     );
   }
@@ -88,7 +88,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
       <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)]">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-[var(--text-primary)]">
-            {step === 1 ? 'Platform kivalasztasa' : `${selectedMeta?.label} integracio`}
+            {step === 1 ? 'Platform kiválasztása' : `${selectedMeta?.label} integráció`}
           </h3>
           <button onClick={handleClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl">&times;</button>
         </div>
@@ -119,7 +119,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                     <div className="font-semibold text-[var(--text-primary)]">{provider.label}</div>
                     <div className="text-xs text-[var(--text-secondary)]">{provider.description}</div>
                     {alreadyExists && (
-                      <div className="text-xs text-[var(--success)] mt-1">Mar hozzaadva</div>
+                      <div className="text-xs text-[var(--success)] mt-1">Már hozzáadva</div>
                     )}
                   </div>
                 </button>
@@ -147,8 +147,8 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-[var(--text-primary)]">Kapcsolodas {selectedMeta.label}-kal</div>
-                  <div className="text-xs text-[var(--text-secondary)]">OAuth bejelentkezes - automatikus beallitas</div>
+                  <div className="font-semibold text-[var(--text-primary)]">Kapcsolódás {selectedMeta.label}-kal</div>
+                  <div className="text-xs text-[var(--text-secondary)]">OAuth bejelentkezés - automatikus beállítás</div>
                 </div>
                 <svg className="w-5 h-5 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -160,7 +160,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
             {selectedMeta.supportsOAuth && (
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-[var(--border)]" />
-                <span className="text-xs text-[var(--text-secondary)]">vagy manualis modon</span>
+                <span className="text-xs text-[var(--text-secondary)]">vagy manuális módon</span>
                 <div className="flex-1 h-px bg-[var(--border)]" />
               </div>
             )}
@@ -175,7 +175,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
             {/* Selected account display */}
             {accountId && !showManual && (
               <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
-                <div className="text-xs text-[var(--text-secondary)] mb-1">Kivalasztott fiok</div>
+                <div className="text-xs text-[var(--text-secondary)] mb-1">Kiválasztott fiók</div>
                 <div className="text-sm font-medium text-[var(--text-primary)]">{accountName || accountId}</div>
                 <div className="text-xs text-[var(--text-secondary)] font-mono">{accountId}</div>
               </div>
@@ -185,7 +185,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
             {accountId && !showManual && (
               <div>
                 <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
-                  Megjelenitesi nev (feluliras)
+                  Megjelenítési név (felülírás)
                 </label>
                 <input
                   value={accountName}
@@ -216,7 +216,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               <ChevronRight className={`w-4 h-4 transition-transform ${showManual ? 'rotate-90' : ''}`} />
-              Manualis megadas
+              Manuális megadás
             </button>
 
             {/* Manual entry fields */}
@@ -224,7 +224,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               <div className="space-y-4 pl-4 border-l-2 border-[var(--border)]">
                 <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-3">
                   <p className="text-xs text-[var(--text-secondary)]">
-                    A <a href="https://onboard.windsor.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">Windsor AI dashboardon</a> connecteld a(z) {selectedMeta.label} fiokot, majd add meg itt az account ID-t.
+                    A <a href="https://onboard.windsor.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">Windsor AI dashboardon</a> connecteld a(z) {selectedMeta.label} fiókot, majd add meg itt az account ID-t.
                   </p>
                 </div>
 
@@ -242,12 +242,12 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
-                    Megjelenitesi nev (opcionalis)
+                    Megjelenítési név (opcionális)
                   </label>
                   <input
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value)}
-                    placeholder={`pl. Ceg ${selectedMeta.label} fiok`}
+                    placeholder={`pl. Cég ${selectedMeta.label} fiók`}
                     className={inputClass}
                   />
                 </div>
@@ -272,7 +272,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                 disabled={saving || !accountId.trim()}
                 className="flex-1 px-4 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
-                {saving ? 'Mentes...' : 'Integracio hozzaadasa'}
+                {saving ? 'Mentés...' : 'Integráció hozzáadása'}
               </button>
             </div>
           </div>

@@ -34,6 +34,15 @@ const providers: any[] = [
       );
       if (!isValid) return null;
 
+      // Block CLIENT users whose company is INACTIVE
+      if (user.role === 'CLIENT' && user.companyId) {
+        const company = await prisma.company.findUnique({
+          where: { id: user.companyId },
+          select: { status: true },
+        });
+        if (company?.status === 'INACTIVE') return null;
+      }
+
       return {
         id: user.id,
         email: user.email,
@@ -76,10 +85,10 @@ if (process.env.RESEND_API_KEY) {
         await resend.emails.send({
           from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
           to: email,
-          subject: 'Bejelentkezés - TikTok Report',
+          subject: 'Bejelentkezés - Trendalyz',
           html: `
             <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #0891b2;">TikTok Report Generator</h2>
+              <h2 style="color: #0891b2;">Trendalyz</h2>
               <p>Kattints az alábbi linkre a bejelentkezéshez:</p>
               <a href="${url}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                 Bejelentkezés
@@ -107,17 +116,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === 'email') {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
+          include: { company: { select: { status: true } } },
         });
         if (!existingUser) return false;
+        // Block CLIENT users whose company is INACTIVE
+        if (existingUser.role === 'CLIENT' && existingUser.company?.status === 'INACTIVE') return false;
       }
       // Google OAuth: only allow existing users (admin must add them first)
       if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
+          include: { company: { select: { status: true } } },
         });
         if (!existingUser) {
           return false; // Reject - admin must invite the user first
-        } else {
+        }
+        // Block CLIENT users whose company is INACTIVE
+        if (existingUser.role === 'CLIENT' && existingUser.company?.status === 'INACTIVE') {
+          return false;
+        }
+        {
           // Link Google account to existing user if not already linked
           const existingAccount = await prisma.account.findFirst({
             where: {

@@ -53,17 +53,17 @@ export function OAuthFeedback({ status, provider, message, windsorSetupUrl }: Pr
         <div className="flex-1">
           <div className="font-semibold text-sm">
             {needsWindsor
-              ? `${providerMeta?.label || 'Platform'} OAuth sikeres! Windsor adatkapcsolat beallitasa szukseges.`
+              ? `${providerMeta?.label || 'Platform'} OAuth sikeres! Windsor adatkapcsolat beállítása szükséges.`
               : isSuccess
                 ? `${providerMeta?.label || 'Platform'} sikeresen csatlakoztatva!`
-                : 'OAuth kapcsolodas sikertelen'}
+                : 'OAuth kapcsolódás sikertelen'}
           </div>
           {message && !needsWindsor && (
             <div className="text-xs mt-0.5 opacity-80">{message}</div>
           )}
           {needsWindsor && (
             <div className="text-xs mt-1 opacity-80">
-              A fiokod osszekapcsolasa sikeres. Most a Windsor.ai-ban is be kell allitani az adatforras-kapcsolatot (egyszeri lepes).
+              A fiókod összekapcsolása sikeres. Most a Windsor.ai-ban is be kell állítani az adatforrás-kapcsolatot (egyszeri lépés).
               Mivel mar be vagy jelentkezve, csak kattints az &quot;Authorize&quot; gombra.
             </div>
           )}
@@ -83,7 +83,7 @@ export function OAuthFeedback({ status, provider, message, windsorSetupUrl }: Pr
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 border border-amber-200 dark:border-amber-500/30 rounded-lg font-semibold text-sm transition-colors"
           >
-            Windsor beallitas megnyitasa &rarr;
+            Windsor beállítás megnyitása &rarr;
           </a>
           <button
             onClick={() => {
@@ -97,7 +97,7 @@ export function OAuthFeedback({ status, provider, message, windsorSetupUrl }: Pr
             }}
             className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Kesobb
+            Később
           </button>
         </div>
       )}

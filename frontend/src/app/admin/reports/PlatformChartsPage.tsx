@@ -6,8 +6,10 @@ import { KPICard } from '@/components/KPICard';
 import { Chart } from '@/components/Chart';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
+import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { Loader2 } from 'lucide-react';
+import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 
 interface PlatformConfig {
   platformKey: string;
@@ -115,6 +117,32 @@ function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
   }
 }
 
+/** Merge KPI arrays: sum numeric values, average percentages */
+function mergeKPIs(allKpis: KPI[][]): KPI[] {
+  if (allKpis.length === 0) return [];
+  if (allKpis.length === 1) return allKpis[0];
+
+  const merged: KPI[] = allKpis[0].map(kpi => ({ ...kpi }));
+
+  for (let i = 1; i < allKpis.length; i++) {
+    const row = allKpis[i];
+    for (let j = 0; j < merged.length && j < row.length; j++) {
+      const mVal = merged[j].value;
+      const rVal = row[j].value;
+      if (typeof mVal === 'number' && typeof rVal === 'number') {
+        merged[j].value = mVal + rVal;
+      } else if (typeof mVal === 'string' && mVal.endsWith('%') && typeof rVal === 'string' && rVal.endsWith('%')) {
+        // Average percentages
+        const a = parseFloat(mVal);
+        const b = parseFloat(rVal);
+        merged[j].value = `${((a * i + b) / (i + 1)).toFixed(2)}%`;
+      }
+    }
+  }
+
+  return merged;
+}
+
 // ===== Section grouping =====
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -144,8 +172,6 @@ function groupByCategory(catalog: ChartDefinition[], results: ChartData[]) {
   return groups;
 }
 
-const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
-
 // ===== Component =====
 
 export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
@@ -154,8 +180,13 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [results, setResults] = useState<ChartData[]>([]);
+  const [aggregatedKPIs, setAggregatedKPIs] = useState<KPI[] | null>(null);
+  const [aggregatedCount, setAggregatedCount] = useState(0);
+  const [failedCompanies, setFailedCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
 
   const platformCatalog = useMemo(
     () => allCatalog.filter(c => c.platform === platform.platformKey),
@@ -164,9 +195,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
   const platformChartKeys = useMemo(() => platformCatalog.map(c => c.key), [platformCatalog]);
 
-  const kpis = useMemo(() => extractKPIs(platform.platformKey, results), [platform.platformKey, results]);
+  const kpis = useMemo(() => {
+    if (isAllCompanies) return aggregatedKPIs || [];
+    return extractKPIs(platform.platformKey, results);
+  }, [platform.platformKey, results, isAllCompanies, aggregatedKPIs]);
 
-  const sections = useMemo(() => groupByCategory(platformCatalog, results), [platformCatalog, results]);
+  const sections = useMemo(() => {
+    if (isAllCompanies) return []; // No charts for "all companies"
+    return groupByCategory(platformCatalog, results);
+  }, [platformCatalog, results, isAllCompanies]);
 
   useEffect(() => {
     const now = new Date();
@@ -194,6 +231,9 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     setLoading(true);
     setError(null);
     setResults([]);
+    setAggregatedKPIs(null);
+    setAggregatedCount(0);
+    setFailedCompanies([]);
 
     try {
       const [year, month] = selectedMonth.split('-').map(Number);
@@ -201,13 +241,70 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       const lastDay = new Date(year, month, 0).getDate();
       const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
 
-      const response = await generateCharts({
-        accountId: selectedCompany,
-        startDate,
-        endDate,
-        charts: platformChartKeys.map(key => ({ key })),
-      });
-      setResults(response.charts);
+      if (isAllCompanies) {
+        // Fetch in batches of 3 to avoid API rate limiting
+        const BATCH_SIZE = 3;
+        const allKpis: KPI[][] = [];
+        const failed: Company[] = [];
+
+        for (let i = 0; i < companies.length; i += BATCH_SIZE) {
+          const batch = companies.slice(i, i + BATCH_SIZE);
+          const batchResults = await Promise.allSettled(
+            batch.map(async (company) => {
+              try {
+                return await generateCharts({
+                  accountId: company.id,
+                  startDate,
+                  endDate,
+                  charts: platformChartKeys.map(key => ({ key })),
+                });
+              } catch {
+                // Retry once after 2s
+                await new Promise(r => setTimeout(r, 2000));
+                return generateCharts({
+                  accountId: company.id,
+                  startDate,
+                  endDate,
+                  charts: platformChartKeys.map(key => ({ key })),
+                });
+              }
+            })
+          );
+
+          batchResults.forEach((result, idx) => {
+            if (result.status === 'fulfilled' && result.value.charts.length > 0) {
+              const companyKpis = extractKPIs(platform.platformKey, result.value.charts);
+              if (companyKpis.some(k => typeof k.value === 'number' && k.value > 0)) {
+                allKpis.push(companyKpis);
+              }
+            } else {
+              failed.push(batch[idx]);
+            }
+          });
+        }
+
+        setFailedCompanies(failed);
+
+        if (allKpis.length === 0) {
+          setError('Egyik cégnek sincs adata ezen a platformon a kiválasztott hónapban');
+        } else {
+          setAggregatedKPIs(mergeKPIs(allKpis));
+          setAggregatedCount(allKpis.length);
+
+          if (failed.length > 0) {
+            setError(`${failed.length} cég adatait nem sikerült lekérni: ${failed.map(c => c.name).join(', ')}`);
+          }
+        }
+      } else {
+        // Single company
+        const response = await generateCharts({
+          accountId: selectedCompany,
+          startDate,
+          endDate,
+          charts: platformChartKeys.map(key => ({ key })),
+        });
+        setResults(response.charts);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Hiba történt');
     } finally {
@@ -215,7 +312,10 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     }
   }
 
+  const hasResults = isAllCompanies ? (aggregatedKPIs && aggregatedKPIs.length > 0) : results.length > 0;
+
   return (
+    <WindsorKeyGuard>
     <div className="p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -230,16 +330,12 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég kiválasztása</label>
-            <select
+            <CompanyPicker
+              companies={companies}
               value={selectedCompany}
-              onChange={(e) => setSelectedCompany(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Válassz céget...</option>
-              {companies.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={setSelectedCompany}
+              showAll
+            />
           </div>
 
           <div>
@@ -267,10 +363,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       </div>
 
       {/* Results */}
-      {results.length > 0 && (
+      {hasResults && (
         <div className="space-y-8">
           {/* KPI Header */}
           <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+            {isAllCompanies && (
+              <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
+                Összesített KPI-ok ({aggregatedCount} cég)
+              </p>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {kpis.map((kpi) => (
                 <KPICard
@@ -283,8 +384,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
             </div>
           </div>
 
-          {/* Chart Sections */}
-          {sections.map(({ category, label, charts }) => (
+          {/* Chart Sections - only for single company */}
+          {!isAllCompanies && sections.map(({ category, label, charts }) => (
             <section key={category}>
               <h3 className="text-xl font-bold mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                 {label}
@@ -322,7 +423,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       )}
 
       {/* Empty state */}
-      {!loading && results.length === 0 && (
+      {!loading && !hasResults && (
         <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
           <PlatformIcon platform={getPlatformFromProvider(platform.platformKey)} className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" />
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{platform.label} havi riport</h2>
@@ -334,10 +435,13 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       {loading && (
         <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
           <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-[var(--text-secondary)]" />
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Riport generálása...</h2>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+            {isAllCompanies ? `Összesítés... (${companies.length} cég)` : 'Riport generálása...'}
+          </h2>
           <p className="text-[var(--text-secondary)]">Adatok lekérése és feldolgozása folyamatban</p>
         </div>
       )}
     </div>
+    </WindsorKeyGuard>
   );
 }

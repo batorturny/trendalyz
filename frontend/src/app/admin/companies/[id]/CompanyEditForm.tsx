@@ -32,19 +32,6 @@ export function CompanyEditForm({ company }: Props) {
         />
       </div>
 
-      <div>
-        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Státusz</label>
-        <select
-          name="status"
-          defaultValue={company.status}
-          className={inputClass}
-        >
-          <option value="ACTIVE">Aktív</option>
-          <option value="INACTIVE">Inaktív</option>
-          <option value="PENDING">Függőben</option>
-        </select>
-      </div>
-
       <button
         type="submit"
         className="px-6 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"

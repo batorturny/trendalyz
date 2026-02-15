@@ -42,8 +42,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {companyStatus === 'INACTIVE' ? (
           <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
             <Lock className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Fiok inaktiv</h2>
-            <p className="text-[var(--text-secondary)]">A ceged fiokja jelenleg inaktiv. Kerd meg az adminisztratort az aktivalashoz.</p>
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Fiók inaktív</h2>
+            <p className="text-[var(--text-secondary)]">A céged fiókja jelenleg inaktív. Kérd meg az adminisztrátort az aktiváláshoz.</p>
           </div>
         ) : (
           children

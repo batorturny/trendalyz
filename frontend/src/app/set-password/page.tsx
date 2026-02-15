@@ -87,7 +87,7 @@ export default function SetPasswordPage() {
     <div className="min-h-screen bg-[var(--surface-raised)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[var(--text-primary)]">TikTok Report</h1>
+          <h1 className="text-4xl font-extrabold text-[var(--text-primary)]">Trend<span className="text-[var(--accent)]">alyz</span></h1>
           <p className="text-[var(--text-secondary)] font-semibold mt-2">Jelszó beállítása</p>
         </div>
 

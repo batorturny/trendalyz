@@ -1,9 +1,10 @@
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { notFound } from 'next/navigation';
-import { CompanyEditForm } from './CompanyEditForm';
+import { notFound, redirect } from 'next/navigation';
 import { CompanyUsers } from './CompanyUsers';
 import { IntegrationConnections } from './IntegrationConnections';
 import { OAuthFeedback } from './OAuthFeedback';
+import { StatusToggle } from './StatusToggle';
 import type { IntegrationConnection } from '@/types/integration';
 
 export default async function CompanyDetailPage({
@@ -13,6 +14,9 @@ export default async function CompanyDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ oauth?: string; provider?: string; message?: string; windsorSetup?: string }>;
 }) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== 'ADMIN') redirect('/login');
+
   const { id } = await params;
   const search = await searchParams;
 
@@ -25,7 +29,7 @@ export default async function CompanyDetailPage({
     },
   });
 
-  if (!company) notFound();
+  if (!company || company.adminId !== session.user.id) notFound();
 
   return (
     <div className="p-8">
@@ -33,8 +37,11 @@ export default async function CompanyDetailPage({
         <div className="flex items-center gap-3 mb-2">
           <a href="/admin/companies" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">&larr; Vissza</a>
         </div>
-        <h1 className="text-3xl font-bold">{company.name}</h1>
-        <p className="text-[var(--text-secondary)] mt-1">Cég részletei és szerkesztés</p>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold">{company.name}</h1>
+          <StatusToggle companyId={company.id} isActive={company.status === 'ACTIVE'} />
+        </div>
+        <p className="text-[var(--text-secondary)] mt-1">Cég részletei</p>
       </header>
 
       {/* OAuth feedback toast */}
@@ -61,15 +68,7 @@ export default async function CompanyDetailPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Edit form */}
-        <CompanyEditForm company={{
-          id: company.id,
-          name: company.name,
-          tiktokAccountId: company.tiktokAccountId,
-          status: company.status,
-        }} />
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Users */}
         <CompanyUsers
           companyId={company.id}

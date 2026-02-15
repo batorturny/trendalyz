@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { decrypt } from '@/lib/encryption';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
@@ -9,6 +10,17 @@ import { Resend } from 'resend';
 import crypto from 'crypto';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+async function getAdminWindsorApiKey(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { windsorApiKeyEnc: true },
+  });
+  if (user?.windsorApiKeyEnc) {
+    return decrypt(user.windsorApiKeyEnc);
+  }
+  throw new Error('Nincs Windsor API kulcs konfigurálva. Kérjük, add meg a Beállítások oldalon.');
+}
 
 async function requireAdmin() {
   const session = await auth();
@@ -19,7 +31,7 @@ async function requireAdmin() {
 }
 
 export async function createCompany(formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const name = formData.get('name') as string;
   const tiktokAccountId = formData.get('tiktokAccountId') as string;
@@ -31,6 +43,7 @@ export async function createCompany(formData: FormData) {
     data: {
       name,
       tiktokAccountId: tiktokAccountId || null,
+      adminId: session.user.id,
       status: 'ACTIVE',
     },
   });
@@ -69,10 +82,10 @@ export async function createCompany(formData: FormData) {
       await resend.emails.send({
         from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
         to: clientEmail,
-        subject: `Meghívó - ${name} TikTok Riport`,
+        subject: `Meghívó - ${name} Trendalyz`,
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #0891b2;">TikTok Report Generator</h2>
+            <h2 style="color: #0891b2;">Trendalyz</h2>
             <p>Meghívást kaptál a <strong>${name}</strong> cég riportjainak megtekintéséhez.</p>
             <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
             <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
@@ -108,6 +121,18 @@ export async function updateCompany(companyId: string, formData: FormData) {
       tiktokAccountId: tiktokAccountId || null,
       status: (status as 'ACTIVE' | 'INACTIVE' | 'PENDING') || undefined,
     },
+  });
+
+  revalidatePath('/admin/companies');
+  revalidatePath(`/admin/companies/${companyId}`);
+}
+
+export async function toggleCompanyStatus(companyId: string, status: 'ACTIVE' | 'INACTIVE') {
+  await requireAdmin();
+
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { status },
   });
 
   revalidatePath('/admin/companies');
@@ -169,10 +194,10 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
     await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
       to: email,
-      subject: `Meghívó - ${company.name} TikTok Riport`,
+      subject: `Meghívó - ${company.name} Trendalyz`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0891b2;">TikTok Report Generator</h2>
+          <h2 style="color: #0891b2;">Trendalyz</h2>
           <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
           <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
           <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
@@ -219,10 +244,10 @@ export async function resendInvite(userId: string, companyId: string) {
     await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@capmarketing.hu',
       to: user.email,
-      subject: `Meghívó újraküldve - ${company.name} TikTok Riport`,
+      subject: `Meghívó újraküldve - ${company.name} Trendalyz`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0891b2;">TikTok Report Generator</h2>
+          <h2 style="color: #0891b2;">Trendalyz</h2>
           <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
           <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
           <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
@@ -254,105 +279,208 @@ export async function removeUserFromCompany(userId: string, companyId: string) {
 }
 
 // ============================================
-// WINDSOR SYNC
+// WINDSOR SYNC — ALL PLATFORMS
 // ============================================
 
-export async function syncWindsorAccounts(): Promise<{
-  discovered: number;
+import type { DiscoveredAccount, ExistingCompany, AccountGroup } from '@/lib/accountGrouping';
+import { groupAccounts } from '@/lib/accountGrouping';
+import { PROVIDERS, type ConnectionProvider } from '@/types/integration';
+
+const WINDSOR_BASE = 'https://connectors.windsor.ai';
+
+interface PlatformDiscoveryResult {
+  provider: ConnectionProvider;
+  label: string;
+  accounts: DiscoveredAccount[];
+  error: string | null;
+}
+
+export interface SyncDiscoveryResult {
+  platforms: PlatformDiscoveryResult[];
+  groups: AccountGroup[];
+  existingCompanies: ExistingCompany[];
+}
+
+export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
+  const session = await requireAdmin();
+  const windsorApiKey = await getAdminWindsorApiKey(session.user.id);
+
+  const now = new Date();
+  const dateTo = now.toISOString().split('T')[0];
+  const dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // Fetch all platforms in parallel
+  const platformResults = await Promise.all(
+    PROVIDERS.map(async (p): Promise<PlatformDiscoveryResult> => {
+      try {
+        const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=account_id,account_name,date`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+
+        if (!res.ok) {
+          return { provider: p.key, label: p.label, accounts: [], error: `HTTP ${res.status}` };
+        }
+
+        const rawData = await res.json();
+        const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+
+        const accountMap = new Map<string, string>();
+        for (const row of rows) {
+          if (row.account_id && !accountMap.has(row.account_id)) {
+            accountMap.set(row.account_id, row.account_name || row.account_id);
+          }
+        }
+
+        const accounts: DiscoveredAccount[] = Array.from(accountMap.entries()).map(
+          ([accountId, accountName]) => ({ accountId, accountName, provider: p.key })
+        );
+
+        return { provider: p.key, label: p.label, accounts, error: null };
+      } catch (err) {
+        return {
+          provider: p.key,
+          label: p.label,
+          accounts: [],
+          error: err instanceof Error ? err.message : 'Ismeretlen hiba',
+        };
+      }
+    })
+  );
+
+  // Gather all discovered accounts
+  const allAccounts: DiscoveredAccount[] = platformResults.flatMap(r => r.accounts);
+
+  // Fetch existing companies with connections
+  const companies = await prisma.company.findMany({
+    where: { adminId: session.user.id },
+    include: {
+      connections: {
+        select: {
+          provider: true,
+          externalAccountId: true,
+          externalAccountName: true,
+        },
+      },
+    },
+  });
+
+  const existingCompanies: ExistingCompany[] = companies.map(c => ({
+    id: c.id,
+    name: c.name,
+    connections: c.connections.map(conn => ({
+      provider: conn.provider as ConnectionProvider,
+      externalAccountId: conn.externalAccountId,
+      externalAccountName: conn.externalAccountName,
+    })),
+  }));
+
+  // Group accounts
+  const groups = groupAccounts(allAccounts, existingCompanies);
+
+  return { platforms: platformResults, groups, existingCompanies };
+}
+
+// ============================================
+// EXECUTE SYNC PLAN
+// ============================================
+
+export interface SyncPlanGroup {
+  companyName: string;
+  existingCompanyId: string | null;
+  skip: boolean;
+  accounts: { provider: ConnectionProvider; accountId: string; accountName: string }[];
+}
+
+export async function executeSyncPlan(groups: SyncPlanGroup[]): Promise<{
   created: number;
+  updated: number;
   skipped: number;
   details: string[];
 }> {
-  await requireAdmin();
-
-  const windsorApiKey = process.env.WINDSOR_API_KEY;
-  if (!windsorApiKey) {
-    throw new Error('Windsor API kulcs nincs konfigurálva');
-  }
-
-  // Fetch discovered accounts directly from Windsor API
-  const now = new Date();
-  const dateTo = now.toISOString().split('T')[0];
-  const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const fields = 'account_id,account_name,date';
-  const url = `https://connectors.windsor.ai/tiktok_organic?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
-
-  const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
-  if (!res.ok) {
-    throw new Error('Nem sikerült lekérdezni a Windsor fiókokat');
-  }
-
-  const rawData = await res.json();
-  const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
-
-  // Extract unique accounts
-  const accountMap = new Map<string, string>();
-  for (const row of rows) {
-    if (row.account_id && !accountMap.has(row.account_id)) {
-      accountMap.set(row.account_id, row.account_name || row.account_id);
-    }
-  }
-  const accounts = Array.from(accountMap.entries()).map(([accountId, accountName]) => ({ accountId, accountName }));
-
-  const details: string[] = [];
+  const session = await requireAdmin();
   let created = 0;
+  let updated = 0;
   let skipped = 0;
+  const details: string[] = [];
 
-  for (const account of accounts) {
-    // Check if company already exists with this tiktokAccountId
-    const existing = await prisma.company.findFirst({
-      where: { tiktokAccountId: account.accountId },
-      include: { connections: true },
-    });
+  for (const group of groups) {
+    if (group.skip) {
+      skipped++;
+      details.push(`${group.companyName}: kihagyva`);
+      continue;
+    }
 
-    if (existing) {
-      // Ensure IntegrationConnection exists
-      const hasConnection = existing.connections.some(
-        (c) => c.provider === 'TIKTOK_ORGANIC' && c.externalAccountId === account.accountId
-      );
-      if (!hasConnection) {
+    let companyId: string;
+
+    if (group.existingCompanyId) {
+      // Verify the company belongs to this admin
+      const existing = await prisma.company.findFirst({
+        where: { id: group.existingCompanyId, adminId: session.user.id },
+      });
+      if (!existing) {
+        details.push(`${group.companyName}: cég nem található, kihagyva`);
+        skipped++;
+        continue;
+      }
+      companyId = existing.id;
+
+      // Update company name if changed
+      if (existing.name !== group.companyName) {
+        await prisma.company.update({
+          where: { id: companyId },
+          data: { name: group.companyName },
+        });
+      }
+
+      updated++;
+      details.push(`${group.companyName}: frissítve`);
+    } else {
+      // Create new company
+      const company = await prisma.company.create({
+        data: {
+          name: group.companyName,
+          adminId: session.user.id,
+          status: 'ACTIVE',
+        },
+      });
+      companyId = company.id;
+      created++;
+      details.push(`${group.companyName}: létrehozva`);
+    }
+
+    // Upsert IntegrationConnections for each account
+    for (const account of group.accounts) {
+      const existing = await prisma.integrationConnection.findFirst({
+        where: {
+          companyId,
+          provider: account.provider,
+          externalAccountId: account.accountId,
+        },
+      });
+
+      if (!existing) {
         await prisma.integrationConnection.create({
           data: {
-            companyId: existing.id,
-            provider: 'TIKTOK_ORGANIC',
+            companyId,
+            provider: account.provider,
             externalAccountId: account.accountId,
             externalAccountName: account.accountName,
             status: 'CONNECTED',
           },
         });
-        details.push(`${account.accountName}: kapcsolat hozzaadva`);
       } else {
-        details.push(`${account.accountName}: mar letezik`);
+        await prisma.integrationConnection.update({
+          where: { id: existing.id },
+          data: {
+            externalAccountName: account.accountName,
+            status: 'CONNECTED',
+          },
+        });
       }
-      skipped++;
-      continue;
     }
-
-    // Create new company + connection
-    const company = await prisma.company.create({
-      data: {
-        name: account.accountName,
-        tiktokAccountId: account.accountId,
-        status: 'ACTIVE',
-      },
-    });
-
-    await prisma.integrationConnection.create({
-      data: {
-        companyId: company.id,
-        provider: 'TIKTOK_ORGANIC',
-        externalAccountId: account.accountId,
-        externalAccountName: account.accountName,
-        status: 'CONNECTED',
-      },
-    });
-
-    details.push(`${account.accountName}: letrehozva`);
-    created++;
   }
 
   revalidatePath('/admin/companies');
-  return { discovered: accounts.length, created, skipped, details };
+  return { created, updated, skipped, details };
 }
 
 // ============================================
@@ -403,7 +531,7 @@ export async function deleteConnection(connectionId: string, companyId: string) 
 }
 
 export async function testConnection(connectionId: string): Promise<{ success: boolean; message: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const connection = await prisma.integrationConnection.findUnique({
     where: { id: connectionId },
@@ -413,8 +541,10 @@ export async function testConnection(connectionId: string): Promise<{ success: b
     return { success: false, message: 'Integráció nem található' };
   }
 
-  const windsorApiKey = process.env.WINDSOR_API_KEY;
-  if (!windsorApiKey) {
+  let windsorApiKey: string;
+  try {
+    windsorApiKey = await getAdminWindsorApiKey(session.user.id);
+  } catch {
     return { success: false, message: 'Windsor API kulcs nincs konfigurálva' };
   }
 

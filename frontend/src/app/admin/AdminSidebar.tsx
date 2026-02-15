@@ -5,12 +5,14 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { LayoutDashboard, Building2, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Settings } from 'lucide-react';
+import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/companies', label: 'Cegek', icon: Building2 },
+  { href: '/admin/companies', label: 'Cégek', icon: Building2 },
   { href: '/admin/charts', label: 'Chartok', icon: BarChart3 },
+  { href: '/admin/settings', label: 'Beállítások', icon: Settings },
 ];
 
 const platformItems = [
@@ -27,8 +29,8 @@ export function AdminSidebar({ userName }: { userName: string }) {
     <aside className="w-64 shrink-0 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-[var(--border)]">
-        <h2 className="text-lg font-bold text-[var(--text-primary)]">TikTok Report</h2>
-        <p className="text-xs text-[var(--text-secondary)] font-semibold mt-1">Admin Panel</p>
+        <TrendalyzLogo size="sm" />
+        <p className="text-[10px] text-[var(--text-secondary)] font-semibold mt-1.5 uppercase tracking-wider">Admin Panel</p>
       </div>
 
       {/* Navigation */}
@@ -91,7 +93,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[var(--error)] hover:bg-red-500/10 rounded-xl transition-all"
         >
-          Kijelentkezes
+          Kijelentkezés
         </button>
       </div>
     </aside>

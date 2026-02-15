@@ -4,6 +4,7 @@ import { type IntegrationConnection, getProviderMeta } from '@/types/integration
 import { deleteConnection, testConnection } from '../actions';
 import { useState } from 'react';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface Props {
   connection: IntegrationConnection;
@@ -19,12 +20,13 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 export function ConnectionCard({ connection }: Props) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; windsorOnboardUrl?: string; needsWindsorSetup?: boolean } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const provider = getProviderMeta(connection.provider);
   const status = STATUS_STYLES[connection.status] || STATUS_STYLES.PENDING;
 
   const handleDelete = async () => {
-    if (!confirm(`Biztosan törlöd a(z) ${provider.label} integrációt?`)) return;
+    setConfirmDelete(false);
     await deleteConnection(connection.id, connection.companyId);
   };
 
@@ -102,12 +104,23 @@ export function ConnectionCard({ connection }: Props) {
         </button>
         <span className="text-[var(--border)]">|</span>
         <button
-          onClick={handleDelete}
+          onClick={() => setConfirmDelete(true)}
           className="text-xs font-semibold text-[var(--error)] hover:opacity-70"
         >
           Törlés
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Integráció törlése"
+        message={`Biztosan törlöd a(z) ${provider.label} integrációt?`}
+        confirmLabel="Törlés"
+        cancelLabel="Mégse"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

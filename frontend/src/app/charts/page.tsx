@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { Chart } from '@/components/Chart';
 import { VideoTable } from '@/components/VideoTable';
+import { CompanyPicker } from '@/components/CompanyPicker';
 import { BarChart3, TrendingUp, Heart, Clock, Film, Loader2, Rocket } from 'lucide-react';
 
 export default function ChartsPage() {
@@ -122,15 +123,11 @@ export default function ChartsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div>
                             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég</label>
-                            <select
+                            <CompanyPicker
+                                companies={companies}
                                 value={selectedCompany}
-                                onChange={(e) => setSelectedCompany(e.target.value)}
-                                className={inputClass}
-                            >
-                                {companies.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
+                                onChange={setSelectedCompany}
+                            />
                         </div>
 
                         <div>

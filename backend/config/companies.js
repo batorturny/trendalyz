@@ -8,9 +8,11 @@ async function getCompanyById(id) {
   return prisma.company.findUnique({ where: { id } });
 }
 
-async function getAllCompanies() {
+async function getAllCompanies(adminId = null) {
+  const where = { status: 'ACTIVE' };
+  if (adminId) where.adminId = adminId;
   const companies = await prisma.company.findMany({
-    where: { status: 'ACTIVE' },
+    where,
     select: { id: true, name: true },
     orderBy: { name: 'asc' },
   });

@@ -20,7 +20,7 @@ export const PROVIDERS = [
     label: 'TikTok',
     color: 'from-pink-500 to-red-500',
     windsorEndpoint: 'tiktok_organic',
-    description: 'TikTok organikus tartalom es kovetok',
+    description: 'TikTok organikus tartalom és követők',
     supportsOAuth: true,
   },
   {
@@ -28,7 +28,7 @@ export const PROVIDERS = [
     label: 'Instagram',
     color: 'from-purple-500 to-pink-500',
     windsorEndpoint: 'instagram',
-    description: 'Instagram uzleti fiok es tartalom',
+    description: 'Instagram üzleti fiók és tartalom',
     supportsOAuth: true,
   },
   {
@@ -44,7 +44,7 @@ export const PROVIDERS = [
     label: 'YouTube',
     color: 'from-red-600 to-red-400',
     windsorEndpoint: 'youtube',
-    description: 'YouTube csatorna es videok',
+    description: 'YouTube csatorna és videók',
     supportsOAuth: true,
   },
 ] as const;

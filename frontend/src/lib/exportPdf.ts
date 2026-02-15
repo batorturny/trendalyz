@@ -1,7 +1,40 @@
 import { toCanvas } from 'html-to-image';
 import jsPDF from 'jspdf';
 
-const PAGE_BG = '#020617';
+/**
+ * Read the current theme's --surface color from the document.
+ * Returns { hex, rgb } where rgb is [r,g,b] for jsPDF.setFillColor.
+ */
+function getPageBg(): { hex: string; rgb: [number, number, number] } {
+  const style = getComputedStyle(document.documentElement);
+  const raw = style.getPropertyValue('--surface').trim();
+
+  // Parse hex color
+  const match = raw.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (match) {
+    return {
+      hex: raw,
+      rgb: [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16)],
+    };
+  }
+
+  // Fallback based on dark class
+  const isDark = document.documentElement.classList.contains('dark');
+  return isDark
+    ? { hex: '#1a1a1e', rgb: [26, 26, 30] }
+    : { hex: '#f4f4f6', rgb: [244, 244, 246] };
+}
+
+/**
+ * Check if a pixel [r,g,b] is close to the target background color.
+ */
+function isNearBg(r: number, g: number, b: number, bg: [number, number, number], tolerance = 20): boolean {
+  return (
+    Math.abs(r - bg[0]) < tolerance &&
+    Math.abs(g - bg[1]) < tolerance &&
+    Math.abs(b - bg[2]) < tolerance
+  );
+}
 
 /**
  * Convert external images (quickchart.io) to inline data URLs
@@ -42,11 +75,11 @@ function restoreImages(originals: Map<HTMLImageElement, string>) {
  * Render a single HTML element to a canvas with the given width.
  * Sets a temporary fixed width to match the container layout.
  */
-async function renderSection(el: HTMLElement, width: number): Promise<HTMLCanvasElement> {
+async function renderSection(el: HTMLElement, width: number, bgHex: string): Promise<HTMLCanvasElement> {
   const originals = await inlineExternalImages(el);
   try {
     return await toCanvas(el, {
-      backgroundColor: PAGE_BG,
+      backgroundColor: bgHex,
       pixelRatio: 2,
       width,
       cacheBust: true,
@@ -67,6 +100,8 @@ async function renderSection(el: HTMLElement, width: number): Promise<HTMLCanvas
 function sliceCanvas(
   canvas: HTMLCanvasElement,
   maxSliceH: number,
+  bgRgb: [number, number, number],
+  bgHex: string,
 ): HTMLCanvasElement[] {
   const slices: HTMLCanvasElement[] = [];
   const ctx = canvas.getContext('2d')!;
@@ -76,7 +111,7 @@ function sliceCanvas(
     let sliceH = Math.min(maxSliceH, canvas.height - srcY);
 
     // If there's more content after this slice, try to find a natural break
-    // Look for a dark horizontal band (section gap) near the bottom of the slice
+    // Look for a background-colored horizontal band near the bottom of the slice
     if (srcY + sliceH < canvas.height && sliceH > 100) {
       const searchStart = Math.floor(sliceH * 0.75);
       let bestBreak = sliceH;
@@ -84,16 +119,14 @@ function sliceCanvas(
 
       for (let y = sliceH - 1; y >= searchStart; y--) {
         const row = ctx.getImageData(0, srcY + y, canvas.width, 1).data;
-        let darkPixels = 0;
+        let bgPixels = 0;
         for (let x = 0; x < canvas.width * 4; x += 4) {
-          // Check if pixel is close to PAGE_BG (#020617)
-          if (row[x] < 15 && row[x + 1] < 20 && row[x + 2] < 40) {
-            darkPixels++;
+          if (isNearBg(row[x], row[x + 1], row[x + 2], bgRgb)) {
+            bgPixels++;
           }
         }
-        const score = darkPixels / canvas.width;
+        const score = bgPixels / canvas.width;
         if (score > 0.95) {
-          // Found a row that's almost entirely background — good break point
           bestBreak = y;
           bestScore = score;
           break;
@@ -113,7 +146,7 @@ function sliceCanvas(
     sliceCanvas.width = canvas.width;
     sliceCanvas.height = sliceH;
     const sliceCtx = sliceCanvas.getContext('2d')!;
-    sliceCtx.fillStyle = PAGE_BG;
+    sliceCtx.fillStyle = bgHex;
     sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
     sliceCtx.drawImage(
       canvas,
@@ -129,6 +162,8 @@ function sliceCanvas(
 }
 
 export async function exportPdf(container: HTMLElement, filename: string) {
+  const { hex: bgHex, rgb: bgRgb } = getPageBg();
+
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pdfW = pdf.internal.pageSize.getWidth();   // 210
   const pdfH = pdf.internal.pageSize.getHeight();  // 297
@@ -150,12 +185,12 @@ export async function exportPdf(container: HTMLElement, filename: string) {
   let pageNum = 0;
 
   // Draw background on first page
-  pdf.setFillColor(2, 6, 23);
+  pdf.setFillColor(bgRgb[0], bgRgb[1], bgRgb[2]);
   pdf.rect(0, 0, pdfW, pdfH, 'F');
 
   for (const sectionEl of sectionEls) {
     // Render this section to a canvas
-    const canvas = await renderSection(sectionEl, containerWidth);
+    const canvas = await renderSection(sectionEl, containerWidth, bgHex);
 
     const ratio = canvas.height / canvas.width;
     const sectionMmH = contentW * ratio;
@@ -168,7 +203,7 @@ export async function exportPdf(container: HTMLElement, filename: string) {
         // Start a new page
         pdf.addPage();
         pageNum++;
-        pdf.setFillColor(2, 6, 23);
+        pdf.setFillColor(bgRgb[0], bgRgb[1], bgRgb[2]);
         pdf.rect(0, 0, pdfW, pdfH, 'F');
         curY = margin;
       }
@@ -181,7 +216,6 @@ export async function exportPdf(container: HTMLElement, filename: string) {
       curY += sectionMmH + sectionGap;
     } else {
       // Section is taller than one page — needs slicing
-      // (e.g. a long video table)
       const pixelsPerMm = canvas.width / contentW;
       const maxSlicePixelH = Math.floor(pageContentH * pixelsPerMm);
 
@@ -189,18 +223,18 @@ export async function exportPdf(container: HTMLElement, filename: string) {
       if (curY > margin + 1) {
         pdf.addPage();
         pageNum++;
-        pdf.setFillColor(2, 6, 23);
+        pdf.setFillColor(bgRgb[0], bgRgb[1], bgRgb[2]);
         pdf.rect(0, 0, pdfW, pdfH, 'F');
         curY = margin;
       }
 
-      const slices = sliceCanvas(canvas, maxSlicePixelH);
+      const slices = sliceCanvas(canvas, maxSlicePixelH, bgRgb, bgHex);
 
       for (let i = 0; i < slices.length; i++) {
         if (i > 0) {
           pdf.addPage();
           pageNum++;
-          pdf.setFillColor(2, 6, 23);
+          pdf.setFillColor(bgRgb[0], bgRgb[1], bgRgb[2]);
           pdf.rect(0, 0, pdfW, pdfH, 'F');
           curY = margin;
         }

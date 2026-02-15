@@ -22,25 +22,25 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create user + company in a transaction
+    // Create user first, then company (so we can set adminId)
     const user = await prisma.$transaction(async (tx) => {
-      // Create a company for the new admin
-      const company = await tx.company.create({
-        data: {
-          name: name ? `${name} cége` : `${email.split('@')[0]} cége`,
-          status: 'ACTIVE',
-        },
-      });
-
-      // Create the admin user linked to the company
+      // Create the admin user
       const newUser = await tx.user.create({
         data: {
           email,
           name: name || null,
           passwordHash,
           role: 'ADMIN',
-          companyId: company.id,
           emailVerified: new Date(),
+        },
+      });
+
+      // Create a default company owned by this admin
+      await tx.company.create({
+        data: {
+          name: name ? `${name} cége` : `${email.split('@')[0]} cége`,
+          adminId: newUser.id,
+          status: 'ACTIVE',
         },
       });
 
