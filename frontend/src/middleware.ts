@@ -12,7 +12,15 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/oauth/callback');
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
+  const useSecureCookie = req.url.startsWith('https://');
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+    secureCookie: useSecureCookie,
+    cookieName: useSecureCookie
+      ? '__Secure-authjs.session-token'
+      : 'authjs.session-token',
+  });
   const isLoggedIn = !!token;
   const role = token?.role as string | undefined;
 
