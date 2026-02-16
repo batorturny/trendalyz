@@ -122,43 +122,64 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Block CLIENT users whose company is INACTIVE
         if (existingUser.role === 'CLIENT' && existingUser.company?.status === 'INACTIVE') return false;
       }
-      // Google OAuth: only allow existing users (admin must add them first)
+      // Google OAuth: allow registration or login
       if (account?.provider === 'google') {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
           include: { company: { select: { status: true } } },
         });
         if (!existingUser) {
-          return false; // Reject - admin must invite the user first
+          // Create new admin user from Google sign-in (no company, no API keys)
+          const newUser = await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name || user.email!.split('@')[0],
+              role: 'ADMIN',
+            },
+          });
+          // Link Google account to the new user
+          await prisma.account.create({
+            data: {
+              userId: newUser.id,
+              type: account.type,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              access_token: account.access_token,
+              refresh_token: account.refresh_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+            },
+          });
+          return true;
         }
         // Block CLIENT users whose company is INACTIVE
         if (existingUser.role === 'CLIENT' && existingUser.company?.status === 'INACTIVE') {
           return false;
         }
-        {
-          // Link Google account to existing user if not already linked
-          const existingAccount = await prisma.account.findFirst({
-            where: {
+        // Link Google account to existing user if not already linked
+        const existingAccount = await prisma.account.findFirst({
+          where: {
+            userId: existingUser.id,
+            provider: account.provider,
+          },
+        });
+        if (!existingAccount) {
+          await prisma.account.create({
+            data: {
               userId: existingUser.id,
+              type: account.type,
               provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              access_token: account.access_token,
+              refresh_token: account.refresh_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
             },
           });
-          if (!existingAccount) {
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                access_token: account.access_token,
-                refresh_token: account.refresh_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-              },
-            });
-          }
         }
       }
       return true;
