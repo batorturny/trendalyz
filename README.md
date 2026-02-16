@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TikTok Report Generator
 
-## Getting Started
+TikTok stratégiai riport generátor alkalmazás.
 
-First, run the development server:
+## Struktúra
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+├── backend/          # Express API (Docker)
+├── frontend/         # Next.js app (Vercel)
+└── docker-compose.yml
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Indítás
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Backend (Docker)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker-compose up --build
+```
 
-## Learn More
+A backend elérhető: http://localhost:4000
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Frontend (lokális fejlesztés)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cd frontend
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A frontend elérhető: http://localhost:3000
 
-## Deploy on Vercel
+## API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Core
+- `GET /api/health` - Health check
+- `GET /api/companies` - Cégek listája
+- `POST /api/report` - Riport generálás
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Chart API (v2)
+- `GET /api/charts/catalog` - Elérhető chartok listája
+- `POST /api/charts` - Chartok generálása
+
+### Account Management
+- `POST /api/accounts` - Új TikTok fiók hozzáadása
+- `DELETE /api/accounts/:id` - Fiók törlése
+
+## Environment Variables
+
+### Backend (.env)
+```
+WINDSOR_API_KEY=your_windsor_api_key
+PORT=4000
+ENABLE_CHART_API=true
+ENABLE_ACCOUNT_MANAGEMENT=true
+```
+
+### Frontend (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+## API Example: Chart Generation
+
+```bash
+# Get available charts
+curl http://localhost:4000/api/charts/catalog
+
+# Generate charts
+curl -X POST http://localhost:4000/api/charts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accountId": "besth",
+    "startDate": "2026-01-01",
+    "endDate": "2026-01-31",
+    "charts": [
+      {"key": "followers_growth"},
+      {"key": "daily_likes"},
+      {"key": "engagement_by_hour"}
+    ]
+  }'
+```
+
+## Available Charts
+
+| Key | Title | Type |
+|-----|-------|------|
+| `followers_growth` | Követők növekedése | line |
+| `profile_views` | Profil megtekintések | line |
+| `daily_likes` | Napi like-ok | bar |
+| `daily_comments` | Kommentek | bar |
+| `daily_shares` | Megosztások | bar |
+| `engagement_rate` | Engagement rate trend | line |
+| `engagement_by_day` | Engagement napok szerint | bar |
+| `engagement_by_hour` | Engagement órák szerint | bar |
+| `all_videos` | Összes videó | table |
+| `top_3_videos` | Top 3 videó | table |
+| `worst_3_videos` | Legrosszabb 3 videó | table |
+
+## Vercel Deployment
+
+1. Push a kódot GitHub-ra
+2. Kapcsold össze Vercel-lel
+3. Add hozzá a környezeti változót:
+   - `NEXT_PUBLIC_API_URL=https://your-backend-url.com`
+
+## Technológiák
+
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS
+- **Backend**: Node.js, Express
+- **API**: Windsor AI TikTok Organic
+- **Charts**: QuickChart.io

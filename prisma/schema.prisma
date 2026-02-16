@@ -1,0 +1,170 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator backendClient {
+  provider = "prisma-client-js"
+  output   = "../backend/node_modules/.prisma/client"
+}
+
+generator frontendClient {
+  provider = "prisma-client-js"
+  output   = "../frontend/node_modules/.prisma/client"
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum IntegrationProvider {
+  WINDSOR
+  TIKTOK_DIRECT
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING
+}
+
+enum ConnectionProvider {
+  TIKTOK_ORGANIC
+  TIKTOK_ADS
+  FACEBOOK_ORGANIC
+  INSTAGRAM_ORGANIC
+  INSTAGRAM
+  INSTAGRAM_PUBLIC
+  YOUTUBE
+  FACEBOOK
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String?
+  passwordHash     String?
+  role             Role      @default(CLIENT)
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  emailVerified    DateTime?
+  windsorApiKeyEnc String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  ownedCompanies Company[] @relation("AdminCompanies")
+
+  @@index([companyId])
+  @@index([email])
+}
+
+model Company {
+  id                 String        @id @default(cuid())
+  name               String
+  tiktokAccountId    String?
+  windsorWorkspaceId String?
+  adminId            String?
+  admin              User?         @relation("AdminCompanies", fields: [adminId], references: [id], onDelete: SetNull)
+  status             CompanyStatus @default(ACTIVE)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  users        User[]
+  integrations Integration[]
+  connections  IntegrationConnection[]
+
+  @@index([adminId])
+}
+
+model Integration {
+  id              String             @id @default(cuid())
+  companyId       String
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider        IntegrationProvider
+  status          IntegrationStatus  @default(PENDING)
+  accessTokenEnc  String?
+  refreshTokenEnc String?
+  expiresAt       DateTime?
+  errorMessage    String?
+  lastSyncAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([companyId, provider])
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model IntegrationConnection {
+  id                  String             @id @default(cuid())
+  companyId           String
+  company             Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider            ConnectionProvider
+  status              ConnectionStatus   @default(CONNECTED)
+  externalAccountId   String
+  externalAccountName String?
+  lastSyncAt          DateTime?
+  errorMessage        String?
+  metadata            Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@unique([companyId, provider, externalAccountId])
+  @@index([companyId])
+}

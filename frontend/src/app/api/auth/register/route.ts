@@ -1,0 +1,55 @@
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import { NextResponse } from 'next/server';
+
+export async function POST(req: Request) {
+  try {
+    const { email, password, name } = await req.json();
+
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email és jelszó megadása kötelező' }, { status: 400 });
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'A jelszónak legalább 6 karakter hosszúnak kell lennie' }, { status: 400 });
+    }
+
+    // Check if user already exists
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json({ error: 'Ez az email cím már regisztrálva van' }, { status: 400 });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create user first, then company (so we can set adminId)
+    const user = await prisma.$transaction(async (tx) => {
+      // Create the admin user
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          name: name || null,
+          passwordHash,
+          role: 'ADMIN',
+          emailVerified: new Date(),
+        },
+      });
+
+      // Create a default company owned by this admin
+      await tx.company.create({
+        data: {
+          name: name ? `${name} cége` : `${email.split('@')[0]} cége`,
+          adminId: newUser.id,
+          status: 'ACTIVE',
+        },
+      });
+
+      return newUser;
+    });
+
+    return NextResponse.json({ ok: true, email: user.email });
+  } catch (error) {
+    console.error('[REGISTER]', error);
+    return NextResponse.json({ error: 'Szerverhiba' }, { status: 500 });
+  }
+}
