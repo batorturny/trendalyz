@@ -363,9 +363,9 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
   return (
     <WindsorKeyGuard>
-    <div className="p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
+    <div className="p-4 md:p-8">
+      <header className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
           <PlatformIcon platform={getPlatformFromProvider(platform.platformKey)} className="w-7 h-7" />
           {platform.label}
         </h1>
@@ -373,7 +373,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       </header>
 
       {/* Controls */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-8 shadow-[var(--shadow-card)]">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég kiválasztása</label>

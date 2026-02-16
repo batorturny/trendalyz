@@ -23,9 +23,9 @@ export default async function AdminDashboard() {
   ];
 
   return (
-    <div className="p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-black text-[var(--text-primary)]">Admin Dashboard</h1>
+    <div className="p-4 md:p-8">
+      <header className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">Admin Dashboard</h1>
         <p className="text-[var(--text-secondary)] mt-1">Áttekintés</p>
       </header>
 

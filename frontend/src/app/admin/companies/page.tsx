@@ -35,10 +35,10 @@ export default async function CompaniesPage() {
   };
 
   return (
-    <div className="p-8">
-      <header className="flex items-center justify-between mb-8">
+    <div className="p-4 md:p-8">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Cégek</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Cégek</h1>
           <p className="text-[var(--text-secondary)] mt-1">{companies.length} cég</p>
         </div>
         <div className="flex items-center gap-3">
@@ -52,7 +52,8 @@ export default async function CompaniesPage() {
         </div>
       </header>
 
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-[var(--shadow-card)]">
+      {/* Desktop table */}
+      <div className="hidden md:block bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-[var(--shadow-card)]">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs font-bold text-[var(--text-secondary)] uppercase bg-[var(--surface-raised)]">
@@ -115,6 +116,48 @@ export default async function CompaniesPage() {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card layout */}
+      <div className="md:hidden space-y-3">
+        {companies.map((company: any) => {
+          const providers: string[] = Array.from(new Set(company.connections.map((c: any) => c.provider)));
+          return (
+            <Link
+              key={company.id}
+              href={`/admin/companies/${company.id}`}
+              className="block bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 hover:bg-[var(--accent-subtle)] transition-colors"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-[var(--text-primary)]">{company.name}</span>
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                  company.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                  company.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400' :
+                  'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
+                }`}>
+                  {company.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1.5">
+                  {providers.length > 0 ? (
+                    providers.map((p: string) => {
+                      const platform = getPlatformFromProvider(p);
+                      return (
+                        <span key={p} className={PLATFORM_COLORS[platform]}>
+                          <PlatformIcon platform={platform} className="w-4 h-4" />
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="text-xs text-[var(--text-secondary)]">Nincs platform</span>
+                  )}
+                </div>
+                <span className="text-xs text-[var(--text-secondary)]">{company._count.users} felhasználó</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

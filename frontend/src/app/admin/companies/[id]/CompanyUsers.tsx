@@ -53,28 +53,26 @@ export function CompanyUsers({ companyId, users }: Props) {
       {users.length > 0 ? (
         <div className="space-y-2 mb-4">
           {users.map((user) => (
-            <div key={user.id} className="flex items-center justify-between bg-[var(--surface-raised)] rounded-xl p-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[var(--text-primary)] truncate">{user.email}</span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      user.role === 'ADMIN'
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300'
-                        : 'bg-blue-100 text-blue-700 dark:bg-cyan-500/20 dark:text-cyan-300'
-                    }`}>
-                      {user.role}
-                    </span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      user.hasPassword
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300'
-                    }`}>
-                      {user.hasPassword ? 'Aktív' : 'Meghívott'}
-                    </span>
-                  </div>
-                  {user.name && <div className="text-xs text-[var(--text-secondary)]">{user.name}</div>}
+            <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--surface-raised)] rounded-xl p-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] truncate max-w-[200px] sm:max-w-none">{user.email}</span>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    user.role === 'ADMIN'
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300'
+                      : 'bg-blue-100 text-blue-700 dark:bg-cyan-500/20 dark:text-cyan-300'
+                  }`}>
+                    {user.role}
+                  </span>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    user.hasPassword
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300'
+                  }`}>
+                    {user.hasPassword ? 'Aktív' : 'Meghívott'}
+                  </span>
                 </div>
+                {user.name && <div className="text-xs text-[var(--text-secondary)]">{user.name}</div>}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {!user.hasPassword && (
@@ -101,7 +99,7 @@ export function CompanyUsers({ companyId, users }: Props) {
       )}
 
       {/* Add user form */}
-      <form action={handleAdd} className="flex gap-2">
+      <form action={handleAdd} className="flex flex-col sm:flex-row gap-2">
         <input
           name="email"
           type="email"

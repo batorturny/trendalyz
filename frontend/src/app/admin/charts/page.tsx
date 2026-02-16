@@ -402,15 +402,15 @@ export default function AdminChartsPage() {
 
   return (
     <WindsorKeyGuard>
-    <div className="p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold">Chartok</h1>
+    <div className="p-4 md:p-8">
+      <header className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold">Chartok</h1>
         <p className="text-[var(--text-secondary)] mt-1">Multi-platform chart generálás</p>
       </header>
 
       {/* Controls */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-8 shadow-[var(--shadow-card)]">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 items-end mb-5">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-6 items-end mb-5">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég</label>
             <CompanyPicker
@@ -475,7 +475,7 @@ export default function AdminChartsPage() {
 
         {/* Platform Tabs */}
         <div className="border-t border-[var(--border)] pt-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex gap-2 flex-wrap">
               {PLATFORM_TABS.map(tab => {
                 const count = selectedCountByPlatform[tab.key] || 0;
@@ -514,7 +514,7 @@ export default function AdminChartsPage() {
           </div>
 
           {/* Chart Selector */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {Object.entries(byCategory).map(([category, charts]) => (
               <div key={category} className="bg-[var(--surface-raised)] rounded-xl p-4">
                 <h4 className="font-bold text-[var(--text-primary)] mb-3">{CATEGORY_NAMES[category] || category}</h4>
@@ -592,10 +592,11 @@ function AggregateKPIDashboard({ kpis }: { kpis: AggregateKPIs }) {
       {/* Per-company breakdown */}
       {kpis.perCompany.length > 1 && (
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-[var(--shadow-card)]">
-          <div className="px-6 py-3 bg-[var(--surface-raised)] border-b border-[var(--border)]">
+          <div className="px-4 md:px-6 py-3 bg-[var(--surface-raised)] border-b border-[var(--border)]">
             <h3 className="text-sm font-bold text-[var(--text-primary)]">Cégenkénti bontás</h3>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="text-left text-xs font-bold text-[var(--text-secondary)] uppercase">
                 <th className="px-6 py-3">Cég</th>
@@ -625,6 +626,7 @@ function AggregateKPIDashboard({ kpis }: { kpis: AggregateKPIs }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

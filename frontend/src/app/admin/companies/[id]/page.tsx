@@ -32,13 +32,13 @@ export default async function CompanyDetailPage({
   if (!company || company.adminId !== session.user.id) notFound();
 
   return (
-    <div className="p-8">
-      <header className="mb-8">
+    <div className="p-4 md:p-8">
+      <header className="mb-6 md:mb-8">
         <div className="flex items-center gap-3 mb-2">
           <a href="/admin/companies" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm">&larr; Vissza</a>
         </div>
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">{company.name}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold truncate">{company.name}</h1>
           <StatusToggle companyId={company.id} isActive={company.status === 'ACTIVE'} />
         </div>
         <p className="text-[var(--text-secondary)] mt-1">Cég részletei</p>

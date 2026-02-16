@@ -4,9 +4,9 @@ import { createCompany } from '../actions';
 
 export default function NewCompanyPage() {
   return (
-    <div className="p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-black text-[var(--text-primary)]">Új cég hozzáadása</h1>
+    <div className="p-4 md:p-8">
+      <header className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">Új cég hozzáadása</h1>
         <p className="text-[var(--text-secondary)] mt-1">Cég létrehozása és opcionális ügyfél meghívó</p>
       </header>
 
