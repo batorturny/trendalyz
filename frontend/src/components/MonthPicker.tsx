@@ -17,9 +17,18 @@ const MONTH_SHORT = [
 interface MonthPickerProps {
   value: string; // YYYY-MM format
   onChange: (value: string) => void;
+  periodMonths?: number; // current period (1 = single month)
+  onPeriodChange?: (months: number) => void; // callback when period changes
 }
 
-export function MonthPicker({ value, onChange }: MonthPickerProps) {
+/** Calculate the month string N months before a given YYYY-MM */
+function subtractMonths(yyyyMm: string, n: number): string {
+  const [y, m] = yyyyMm.split('-').map(Number);
+  const d = new Date(y, m - 1 - n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange }: MonthPickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -53,6 +62,18 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
   const handleSelect = (monthIdx: number) => {
     const mm = String(monthIdx).padStart(2, '0');
     onChange(`${viewYear}-${mm}`);
+    onPeriodChange?.(1); // reset to single month on manual pick
+    setOpen(false);
+  };
+
+  const handlePeriod = (months: number) => {
+    const now = new Date();
+    // End month = previous completed month
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+    onChange(endMonthStr);
+    setViewYear(prevMonth.getFullYear());
+    onPeriodChange?.(months);
     setOpen(false);
   };
 
@@ -60,10 +81,17 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  // Display text
-  const displayText = value
-    ? `${selectedYear}. ${MONTH_NAMES[selectedMonthIdx - 1]}`
-    : 'Válassz hónapot...';
+  // Build display text
+  let displayText: string;
+  if (!value) {
+    displayText = 'Válassz hónapot...';
+  } else if (periodMonths > 1) {
+    const startMonth = subtractMonths(value, periodMonths - 1);
+    const [sy, sm] = startMonth.split('-').map(Number);
+    displayText = `${sy}. ${MONTH_NAMES[sm - 1]} – ${selectedYear}. ${MONTH_NAMES[selectedMonthIdx - 1]} (${periodMonths} hó)`;
+  } else {
+    displayText = `${selectedYear}. ${MONTH_NAMES[selectedMonthIdx - 1]}`;
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -117,7 +145,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
           <div className="grid grid-cols-3 gap-1.5 p-3">
             {MONTH_SHORT.map((name, idx) => {
               const monthNum = idx + 1;
-              const isSelected = viewYear === selectedYear && monthNum === selectedMonthIdx;
+              const isSelected = periodMonths === 1 && viewYear === selectedYear && monthNum === selectedMonthIdx;
               const isFuture = viewYear > currentYear || (viewYear === currentYear && monthNum > currentMonth);
               const isCurrent = viewYear === currentYear && monthNum === currentMonth;
 
@@ -146,7 +174,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
           </div>
 
           {/* Quick actions */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-t border-[var(--border)]">
             <button
               type="button"
               onClick={() => {
@@ -169,6 +197,35 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
               Aktualis honap
             </button>
           </div>
+
+          {/* Period quick buttons */}
+          {onPeriodChange && (
+            <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[var(--border)]">
+              <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mr-auto">Időszak</span>
+              <button
+                type="button"
+                onClick={() => handlePeriod(3)}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                  periodMonths === 3
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                }`}
+              >
+                3 hónap
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePeriod(6)}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                  periodMonths === 6
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                }`}
+              >
+                6 hónap
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

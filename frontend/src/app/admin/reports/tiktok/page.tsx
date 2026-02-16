@@ -7,7 +7,7 @@ import { MonthPicker } from '@/components/MonthPicker';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { KPICard } from '@/components/KPICard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 
 // ===== Raw totals for proper aggregation =====
@@ -79,7 +79,6 @@ interface DisplayKPI {
 }
 
 function buildMainKPIs(r: RawTotals, isAggregate: boolean): DisplayKPI[] {
-  const vc = r.videoCount || 1;
   const er = r.totalReach > 0
     ? ((r.videoLikes + r.videoComments + r.videoShares) / r.totalReach) * 100
     : 0;
@@ -151,19 +150,39 @@ async function fetchAllInBatches(
   return { succeeded, failed };
 }
 
+/** Generate array of month strings from endMonth going back periodMonths */
+function generateMonths(endMonth: string, periodMonths: number): string[] {
+  const [endYear, endMonthNum] = endMonth.split('-').map(Number);
+  const months: string[] = [];
+  for (let i = periodMonths - 1; i >= 0; i--) {
+    const d = new Date(endYear, endMonthNum - 1 - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    months.push(`${y}-${String(m).padStart(2, '0')}`);
+  }
+  return months;
+}
+
 // ===== Component =====
 
 export default function TikTokReportPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [periodMonths, setPeriodMonths] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [aggregatedTotals, setAggregatedTotals] = useState<RawTotals | null>(null);
   const [aggregatedCount, setAggregatedCount] = useState(0);
+  const [companyConnections, setCompanyConnections] = useState<string[]>([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
+
+  // Check platform availability
+  const platformAvailable = !selectedCompany || isAllCompanies ||
+    companyConnections.includes('TIKTOK_ORGANIC');
 
   useEffect(() => {
     getCompanies()
@@ -175,9 +194,29 @@ export default function TikTokReportPage() {
     setSelectedMonth(`${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`);
   }, []);
 
+  // Fetch connections when company changes
+  useEffect(() => {
+    if (selectedCompany && selectedCompany !== ALL_COMPANIES_ID) {
+      setConnectionsLoading(true);
+      fetch(`/api/admin/connections/${selectedCompany}`, { credentials: 'include' })
+        .then(res => res.json())
+        .then((conns: any[]) => {
+          setCompanyConnections(Array.isArray(conns) ? conns.map((c: any) => c.provider) : []);
+        })
+        .catch(() => setCompanyConnections([]))
+        .finally(() => setConnectionsLoading(false));
+    } else {
+      setCompanyConnections([]);
+    }
+  }, [selectedCompany]);
+
   const handleGenerate = async () => {
     if (!selectedCompany || !selectedMonth) {
       setError('Kérlek válassz céget és hónapot!');
+      return;
+    }
+    if (!isAllCompanies && !platformAvailable) {
+      setError('Ennek a cégnek nincs TikTok integrációja beállítva');
       return;
     }
 
@@ -188,26 +227,71 @@ export default function TikTokReportPage() {
     setAggregatedCount(0);
 
     try {
-      if (isAllCompanies) {
-        const { succeeded, failed } = await fetchAllInBatches(companies, selectedMonth, 3);
-
+      if (periodMonths > 1 && !isAllCompanies) {
+        // Multi-month, single company: fetch each month, aggregate
+        const months = generateMonths(selectedMonth, periodMonths);
         const allRaw: RawTotals[] = [];
-        for (const { report: r } of succeeded) {
-          const raw = extractRawTotals(r);
-          if (hasData(raw)) allRaw.push(raw);
+
+        for (const month of months) {
+          try {
+            const result = await fetchWithRetry(selectedCompany, month);
+            const raw = extractRawTotals(result);
+            if (hasData(raw)) allRaw.push(raw);
+          } catch {
+            // Skip failed months
+          }
         }
 
         if (allRaw.length === 0) {
-          setError('Egyik cégnek sincs TikTok adata a kiválasztott hónapban');
+          setError('Nem sikerült adatot lekérni a megadott időszakra');
         } else {
           setAggregatedTotals(mergeRawTotals(allRaw));
           setAggregatedCount(allRaw.length);
+        }
+      } else if (isAllCompanies) {
+        // All companies, single or multi-month
+        if (periodMonths > 1) {
+          // Multi-month + all companies
+          const months = generateMonths(selectedMonth, periodMonths);
+          const allRaw: RawTotals[] = [];
 
-          if (failed.length > 0) {
-            setError(`${failed.length} cég adatait nem sikerült lekérni: ${failed.map(c => c.name).join(', ')}`);
+          for (const month of months) {
+            const { succeeded } = await fetchAllInBatches(companies, month, 3);
+            for (const { report: r } of succeeded) {
+              const raw = extractRawTotals(r);
+              if (hasData(raw)) allRaw.push(raw);
+            }
+          }
+
+          if (allRaw.length === 0) {
+            setError('Egyik cégnek sincs TikTok adata a kiválasztott időszakban');
+          } else {
+            setAggregatedTotals(mergeRawTotals(allRaw));
+            setAggregatedCount(allRaw.length);
+          }
+        } else {
+          // Single month, all companies (original logic)
+          const { succeeded, failed } = await fetchAllInBatches(companies, selectedMonth, 3);
+
+          const allRaw: RawTotals[] = [];
+          for (const { report: r } of succeeded) {
+            const raw = extractRawTotals(r);
+            if (hasData(raw)) allRaw.push(raw);
+          }
+
+          if (allRaw.length === 0) {
+            setError('Egyik cégnek sincs TikTok adata a kiválasztott hónapban');
+          } else {
+            setAggregatedTotals(mergeRawTotals(allRaw));
+            setAggregatedCount(allRaw.length);
+
+            if (failed.length > 0) {
+              setError(`${failed.length} cég adatait nem sikerült lekérni: ${failed.map(c => c.name).join(', ')}`);
+            }
           }
         }
       } else {
+        // Single company, single month
         const result = await generateReport({ companyId: selectedCompany, month: selectedMonth });
         setReport(result);
       }
@@ -218,111 +302,137 @@ export default function TikTokReportPage() {
     }
   };
 
-  const mainKPIs = aggregatedTotals ? buildMainKPIs(aggregatedTotals, true) : [];
+  const mainKPIs = aggregatedTotals ? buildMainKPIs(aggregatedTotals, isAllCompanies || periodMonths > 1) : [];
   const secondaryKPIs = aggregatedTotals ? buildSecondaryKPIs(aggregatedTotals) : [];
 
-  const hasResults = isAllCompanies ? !!aggregatedTotals : !!report;
+  const hasResults = isAllCompanies || periodMonths > 1 ? !!aggregatedTotals : !!report;
+
+  const periodLabel = periodMonths > 1 && !isAllCompanies
+    ? `${aggregatedCount} hónap`
+    : isAllCompanies
+      ? `${aggregatedCount} cég`
+      : '';
 
   return (
     <WindsorKeyGuard>
-    <div className="p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <PlatformIcon platform="tiktok" className="w-7 h-7" /> TikTok
-        </h1>
-        <p className="text-[var(--text-secondary)] mt-1">TikTok havi riport generálása</p>
-      </header>
+      <div className="p-8">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <PlatformIcon platform="tiktok" className="w-7 h-7" /> TikTok
+          </h1>
+          <p className="text-[var(--text-secondary)] mt-1">TikTok havi riport generálása</p>
+        </header>
 
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-8 shadow-[var(--shadow-card)]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég kiválasztása</label>
-            <CompanyPicker
-              companies={companies}
-              value={selectedCompany}
-              onChange={setSelectedCompany}
-              showAll
-            />
-          </div>
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-8 shadow-[var(--shadow-card)]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég kiválasztása</label>
+              <CompanyPicker
+                companies={companies}
+                value={selectedCompany}
+                onChange={setSelectedCompany}
+                showAll
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
-            <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
-          </div>
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
+              <MonthPicker
+                value={selectedMonth}
+                onChange={setSelectedMonth}
+                periodMonths={periodMonths}
+                onPeriodChange={setPeriodMonths}
+              />
+            </div>
 
-          <div className="flex items-end">
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="btn-press w-full font-bold py-3 px-6 rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--platform-tiktok) 35%, transparent)' }}
-            >
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generálás...</> : 'Riport generálása'}
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
-            {error}
-          </div>
-        )}
-      </div>
-
-      {/* Aggregated KPI view (all companies) */}
-      {isAllCompanies && aggregatedTotals && (
-        <div className="space-y-4 mb-8">
-          {/* Main KPIs */}
-          <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-            <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-              Összesített TikTok KPI-ok ({aggregatedCount} cég)
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {mainKPIs.map((kpi) => (
-                <KPICard key={kpi.label} label={kpi.label} value={kpi.value} />
-              ))}
+            <div className="flex items-end">
+              <button
+                onClick={handleGenerate}
+                disabled={loading || (!isAllCompanies && !platformAvailable)}
+                className="btn-press w-full font-bold py-3 px-6 rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--platform-tiktok) 35%, transparent)' }}
+              >
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generálás...</> : 'Riport generálása'}
+              </button>
             </div>
           </div>
 
-          {/* Secondary per-video stats */}
-          {aggregatedTotals.videoCount > 0 && (
+          {/* Platform not available warning */}
+          {selectedCompany && !isAllCompanies && !connectionsLoading && !platformAvailable && (
+            <div className="mt-4 flex items-center gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <span className="text-sm font-medium">
+                Ennek a cégnek nincs <strong>TikTok</strong> integrációja beállítva.
+                Először adj hozzá egy TikTok kapcsolatot a cég beállításainál.
+              </span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Aggregated KPI view (all companies or multi-month) */}
+        {aggregatedTotals && (
+          <div className="space-y-4 mb-8">
+            {/* Main KPIs */}
             <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
               <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                Videónkénti átlagok
+                Összesített TikTok KPI-ok ({periodLabel})
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {secondaryKPIs.map((kpi) => (
+                {mainKPIs.map((kpi) => (
                   <KPICard key={kpi.label} label={kpi.label} value={kpi.value} />
                 ))}
               </div>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* Single company full report (charts, demographics, etc.) */}
-      {!isAllCompanies && report && <ReportDashboard report={report} />}
+            {/* Secondary per-video stats */}
+            {aggregatedTotals.videoCount > 0 && (
+              <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
+                  Videónkénti átlagok
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {secondaryKPIs.map((kpi) => (
+                    <KPICard key={kpi.label} label={kpi.label} value={kpi.value} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Loading state */}
-      {loading && (
-        <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
-          <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-[var(--text-secondary)]" />
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
-            {isAllCompanies ? `Összesítés... (${companies.length} cég, 3-as csoportokban)` : 'Riport generálása...'}
-          </h2>
-          <p className="text-[var(--text-secondary)]">Adatok lekérése és feldolgozása folyamatban</p>
-        </div>
-      )}
+        {/* Single company full report (charts, demographics, etc.) */}
+        {!isAllCompanies && periodMonths === 1 && report && <ReportDashboard report={report} />}
 
-      {/* Empty state */}
-      {!loading && !hasResults && (
-        <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
-          <PlatformIcon platform="tiktok" className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" />
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">TikTok havi riport</h2>
-          <p className="text-[var(--text-secondary)]">Válassz céget és hónapot, majd generáld a riportot</p>
-        </div>
-      )}
-    </div>
+        {/* Loading state */}
+        {loading && (
+          <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
+            <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-[var(--text-secondary)]" />
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+              {isAllCompanies
+                ? `Összesítés... (${companies.length} cég${periodMonths > 1 ? `, ${periodMonths} hónap` : ''})`
+                : periodMonths > 1
+                  ? `Összesítés... (${periodMonths} hónap)`
+                  : 'Riport generálása...'}
+            </h2>
+            <p className="text-[var(--text-secondary)]">Adatok lekérése és feldolgozása folyamatban</p>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !hasResults && (
+          <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
+            <PlatformIcon platform="tiktok" className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" />
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">TikTok havi riport</h2>
+            <p className="text-[var(--text-secondary)]">Válassz céget és hónapot, majd generáld a riportot</p>
+          </div>
+        )}
+      </div>
     </WindsorKeyGuard>
   );
 }

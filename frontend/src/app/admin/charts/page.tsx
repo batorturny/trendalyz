@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData, ChartsResponse } from '@/lib/api';
+import { sumSeries, lastValue, tableCount } from '@/lib/chartHelpers';
 import { ChartDashboard } from '@/components/ChartDashboard';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
 import { PlatformIcon } from '@/components/PlatformIcon';
@@ -90,29 +91,6 @@ interface AggregateKPIs {
   }[];
 }
 
-/** Extract a numeric sum from a chart's series data */
-function sumSeries(chart: ChartData | undefined): number {
-  if (!chart?.data?.series) return 0;
-  return chart.data.series.reduce((total, s) => {
-    return total + (s.data as number[]).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0);
-  }, 0);
-}
-
-/** Extract the last value from the first series (useful for cumulative metrics like followers) */
-function lastValue(chart: ChartData | undefined): number {
-  if (!chart?.data?.series?.[0]?.data) return 0;
-  const data = chart.data.series[0].data as number[];
-  for (let i = data.length - 1; i >= 0; i--) {
-    if (typeof data[i] === 'number' && data[i] > 0) return data[i];
-  }
-  return 0;
-}
-
-/** Count rows in a table chart */
-function tableRowCount(chart: ChartData | undefined): number {
-  if (!chart?.data?.labels) return 0;
-  return chart.data.labels.length;
-}
 
 function aggregateFromResponses(responses: { name: string; res: ChartsResponse }[]): AggregateKPIs {
   const perCompany: AggregateKPIs['perCompany'] = [];
@@ -128,12 +106,12 @@ function aggregateFromResponses(responses: { name: string; res: ChartsResponse }
     const ttComments = sumSeries(chartMap.get('daily_comments'));
     const ttShares = sumSeries(chartMap.get('daily_shares'));
     const ttFollowers = lastValue(chartMap.get('followers_growth'));
-    const ttVideos = tableRowCount(chartMap.get('video_performance'));
+    const ttVideos = tableCount(chartMap.get('video_performance'));
 
     // Facebook metrics
     const fbReactions = sumSeries(chartMap.get('fb_engagement'));
     const fbFollowers = lastValue(chartMap.get('fb_followers'));
-    const fbPosts = tableRowCount(chartMap.get('fb_post_engagement'));
+    const fbPosts = tableCount(chartMap.get('fb_post_engagement'));
     const fbImpressions = sumSeries(chartMap.get('fb_reach'));
 
     // Instagram metrics

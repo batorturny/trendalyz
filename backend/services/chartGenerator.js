@@ -6,11 +6,10 @@ const { chartCatalog } = require('../config/chartCatalog');
 
 class ChartGenerator {
     constructor(windsorData) {
-        // Handle both flat array and object format
         if (Array.isArray(windsorData)) {
             this.data = windsorData;
             this.daily = windsorData;
-            this.video = windsorData; // Added missing assignment
+            this.video = windsorData;
             this.activity = windsorData;
         } else {
             this.daily = windsorData.daily || [];
@@ -20,21 +19,16 @@ class ChartGenerator {
         }
     }
 
-    // Main entry - generate chart by key
     generate(chartKey, params = {}) {
         const chartDef = chartCatalog.find(c => c.key === chartKey);
-        if (!chartDef) {
-            throw new Error(`Unknown chart: ${chartKey}`);
-        }
+        if (!chartDef) throw new Error(`Unknown chart: ${chartKey}`);
 
         const methodName = `generate_${chartKey}`;
         if (typeof this[methodName] !== 'function') {
-            // Fallback to generic generator
             return this.generateGeneric(chartDef, params);
         }
 
         const chartData = this[methodName](params);
-
         return {
             key: chartKey,
             title: chartDef.title,
@@ -48,7 +42,6 @@ class ChartGenerator {
         };
     }
 
-    // Check if chart data is empty
     isEmpty(data) {
         if (!data) return true;
         if (data.labels && data.labels.length === 0) return true;
@@ -57,78 +50,78 @@ class ChartGenerator {
         return false;
     }
 
-    // Generic generator for simple field-to-chart mapping
-    generateGeneric(chartDef, params) {
+    generateGeneric(chartDef) {
+        return { labels: [], series: [{ name: chartDef.title, data: [] }] };
+    }
+
+    // ===== HELPER GENERATORS =====
+
+    /** Single daily sum metric → line chart */
+    dailyMetric(source, field, name) {
+        const grouped = this.groupByDate(source, 'date');
+        const labels = Object.keys(grouped).sort();
+        return { labels, series: [{ name, data: labels.map(d => this.sumField(grouped[d], field)) }] };
+    }
+
+    /** Daily max value (for cumulative metrics like followers) */
+    dailyMax(source, field, name) {
+        const grouped = this.groupByDate(source, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(d => Math.max(...grouped[d].map(i => parseInt(i[field]) || 0)));
+        return { labels, series: [{ name, data }] };
+    }
+
+    /** Multiple daily sum metrics → multi-series chart */
+    dailyMultiMetric(source, fields) {
+        const grouped = this.groupByDate(source, 'date');
+        const labels = Object.keys(grouped).sort();
         return {
-            labels: [],
-            series: [{ name: chartDef.title, data: [] }]
+            labels,
+            series: fields.map(([field, name]) => ({
+                name, data: labels.map(d => this.sumField(grouped[d], field))
+            }))
         };
     }
 
-    // ===== TREND CHARTS =====
-
-    generate_followers_growth() {
-        const grouped = this.groupByDate(this.daily, 'date');
+    /** Daily average of a float field */
+    dailyAvg(source, field, name) {
+        const grouped = this.groupByDate(source, 'date');
         const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            return Math.max(...items.map(d => parseInt(d.followers_count) || 0));
+        const data = labels.map(d => {
+            const items = grouped[d];
+            const avg = items.reduce((s, i) => s + (parseFloat(i[field]) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
         });
-
-        return {
-            labels,
-            series: [{ name: 'Követők', data }]
-        };
+        return { labels, series: [{ name, data }] };
     }
 
-    generate_profile_views() {
-        const grouped = this.groupByDate(this.daily, 'date');
+    /** Daily float sum (for spend-like metrics) */
+    dailyFloatSum(source, field, name) {
+        const grouped = this.groupByDate(source, 'date');
         const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            return this.sumField(items, 'profile_views');
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Profil nézetek', data }]
-        };
+        const data = labels.map(d =>
+            parseFloat(grouped[d].reduce((s, i) => s + (parseFloat(i[field]) || 0), 0).toFixed(2))
+        );
+        return { labels, series: [{ name, data }] };
     }
 
-    // ===== ENGAGEMENT CHARTS =====
-
-    generate_daily_likes() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'likes'));
-
-        return {
-            labels,
-            series: [{ name: 'Like-ok', data }]
-        };
+    /** Sorted table from video/content data */
+    sortedTable(items, sortField, limit, mapper, headers) {
+        const sorted = [...items]
+            .filter(v => limit > 0 ? parseInt(v[sortField]) > 0 : true)
+            .sort((a, b) => (parseInt(b[sortField]) || 0) - (parseInt(a[sortField]) || 0));
+        const sliced = limit ? sorted.slice(0, Math.abs(limit)) : sorted;
+        const finalItems = limit < 0 ? sliced.reverse() : sliced;
+        return { labels: headers, series: [{ name: 'Items', data: finalItems.map(mapper) }] };
     }
 
-    generate_daily_comments() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'comments'));
+    // ===== TIKTOK ORGANIC CHARTS =====
 
-        return {
-            labels,
-            series: [{ name: 'Kommentek', data }]
-        };
-    }
-
-    generate_daily_shares() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'shares'));
-
-        return {
-            labels,
-            series: [{ name: 'Megosztások', data }]
-        };
-    }
+    generate_followers_growth() { return this.dailyMax(this.daily, 'followers_count', 'Követők'); }
+    generate_profile_views() { return this.dailyMetric(this.daily, 'profile_views', 'Profil nézetek'); }
+    generate_daily_likes() { return this.dailyMetric(this.daily, 'likes', 'Like-ok'); }
+    generate_daily_comments() { return this.dailyMetric(this.daily, 'comments', 'Kommentek'); }
+    generate_daily_shares() { return this.dailyMetric(this.daily, 'shares', 'Megosztások'); }
 
     generate_engagement_rate() {
         const grouped = this.groupByDate(this.data, 'date');
@@ -139,15 +132,38 @@ class ChartGenerator {
             const comments = this.sumField(items, 'video_comments') || this.sumField(items, 'comments');
             const shares = this.sumField(items, 'video_shares') || this.sumField(items, 'shares');
             const views = this.sumField(items, 'video_views_count') || 1;
-
-            const er = ((likes + comments + shares) / views) * 100;
-            return parseFloat(er.toFixed(2));
+            return parseFloat(((likes + comments + shares) / views * 100).toFixed(2));
         });
+        return { labels, series: [{ name: 'ER %', data }] };
+    }
 
+    generate_tt_bio_link_clicks() { return this.dailyMetric(this.daily, 'bio_link_clicks', 'Bio link kattintások'); }
+
+    generate_tt_video_watch_time() {
+        const videos = this.video.filter(v => v.video_average_time_watched);
         return {
-            labels,
-            series: [{ name: 'ER %', data }]
+            labels: videos.map(v => (v.video_caption || '').substring(0, 30) || v.video_id || '-'),
+            series: [{ name: 'Átl. nézési idő (mp)', data: videos.map(v => parseFloat(v.video_average_time_watched) || 0) }]
         };
+    }
+
+    generate_tt_video_retention() {
+        const grouped = this.groupByDate(this.data, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date].filter(i => i.video_full_watched_rate);
+            if (items.length === 0) return 0;
+            return parseFloat((items.reduce((s, i) => s + (parseFloat(i.video_full_watched_rate) || 0), 0) / items.length).toFixed(2));
+        });
+        return { labels, series: [{ name: 'Végignézési arány %', data }] };
+    }
+
+    generate_tt_traffic_sources() {
+        return this._aggregateByField(this.data, 'video_impression_sources_impression_source', 'video_impression_sources_percentage', 'Arány %');
+    }
+
+    generate_tt_audience_demographics() {
+        return this._aggregateByField(this.data, 'audience_ages_age', 'audience_ages_percentage', 'Arány %', true);
     }
 
     // ===== TIMING CHARTS =====
@@ -160,711 +176,116 @@ class ChartGenerator {
         this.activity.forEach(item => {
             const hour = parseInt(item.audience_activity_hour);
             const count = parseInt(item.audience_activity_count) || 0;
-            // Map hour to day (simplified - using hour ranges)
             const dayIndex = hour % 7;
             dayData[dayIndex] += count;
             dayCounts[dayIndex]++;
         });
 
-        const avgData = dayData.map((sum, i) =>
-            dayCounts[i] > 0 ? Math.round(sum / dayCounts[i]) : 0
-        );
-
         return {
             labels: dayNames,
-            series: [{ name: 'Átl. aktivitás', data: avgData }]
+            series: [{ name: 'Átl. aktivitás', data: dayData.map((sum, i) => dayCounts[i] > 0 ? Math.round(sum / dayCounts[i]) : 0) }]
         };
     }
 
     generate_engagement_by_hour() {
         const hourData = new Array(24).fill(0);
-
         this.activity.forEach(item => {
             const hour = parseInt(item.audience_activity_hour);
             const count = parseInt(item.audience_activity_count) || 0;
-            if (hour >= 0 && hour < 24) {
-                hourData[hour] += count;
-            }
+            if (hour >= 0 && hour < 24) hourData[hour] += count;
         });
-
-        return {
-            labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-            series: [{ name: 'Aktivitás', data: hourData }]
-        };
+        return { labels: Array.from({ length: 24 }, (_, i) => `${i}:00`), series: [{ name: 'Aktivitás', data: hourData }] };
     }
 
-    // ===== VIDEO CHARTS =====
+    // ===== VIDEO TABLES =====
 
-    generate_all_videos() {
-        return this.generateVideoTable(this.video);
-    }
-
+    generate_all_videos() { return this.generateVideoTable(this.video); }
     generate_top_3_videos() {
-        const sorted = [...this.video].sort((a, b) =>
-            (parseInt(b.video_views_count) || 0) - (parseInt(a.video_views_count) || 0)
-        );
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.video_views_count) || 0) - (parseInt(a.video_views_count) || 0));
         return this.generateVideoTable(sorted.slice(0, 3));
     }
-
     generate_worst_3_videos() {
-        const sorted = [...this.video]
-            .filter(v => parseInt(v.video_views_count) > 0)
+        const sorted = [...this.video].filter(v => parseInt(v.video_views_count) > 0)
             .sort((a, b) => (parseInt(a.video_views_count) || 0) - (parseInt(b.video_views_count) || 0));
         return this.generateVideoTable(sorted.slice(0, 3));
     }
 
     generateVideoTable(videos) {
-        // Prepare data for Table component (array of objects)
-        // Format: { id, caption, date, views, likes, comments, shares, link }
         const tableData = videos.map(v => ({
-            id: v.video_id,
-            caption: v.video_caption || '-',
+            id: v.video_id, caption: v.video_caption || '-',
             date: v.video_create_datetime ? v.video_create_datetime.substring(0, 10) : '-',
-            views: parseInt(v.video_views_count) || 0,
-            likes: parseInt(v.video_likes) || 0,
-            comments: parseInt(v.video_comments) || 0,
-            shares: parseInt(v.video_shares) || 0,
+            views: parseInt(v.video_views_count) || 0, likes: parseInt(v.video_likes) || 0,
+            comments: parseInt(v.video_comments) || 0, shares: parseInt(v.video_shares) || 0,
             link: v.video_embed_url || '#'
         }));
-
-        // For "table" type charts, we return the array directly as "series" data?
-        // Or standardized format: labels (headers), series (rows)
-        return {
-            labels: ['Dátum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'Link'],
-            series: [{ name: 'Videos', data: tableData }]
-        };
+        return { labels: ['Dátum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== FACEBOOK CHARTS =====
 
-    generate_fb_page_reach() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const reach = labels.map(date => this.sumField(grouped[date], 'reach'));
-        const impressions = labels.map(date => this.sumField(grouped[date], 'impressions'));
+    generate_fb_page_reach() { return this.dailyMultiMetric(this.daily, [['reach', 'Elérés'], ['impressions', 'Impressziók']]); }
+    generate_fb_page_fans() { return this.dailyMax(this.daily, 'page_fans', 'Követők'); }
+    generate_fb_engagement() { return this.dailyMultiMetric(this.daily, [['reactions', 'Reakciók'], ['comments', 'Kommentek'], ['shares', 'Megosztások']]); }
+    generate_fb_post_engagement() { return this.dailyMultiMetric(this.daily, [['post_reactions', 'Reakciók'], ['post_comments', 'Kommentek'], ['post_shares', 'Megosztások'], ['post_clicks', 'Kattintások']]); }
+    generate_fb_video_views() { return this.dailyMetric(this.daily, 'page_video_views', 'Videó megtekintések'); }
+    generate_fb_follows_trend() { return this.dailyMultiMetric(this.daily, [['page_daily_follows', 'Új követők'], ['page_daily_unfollows', 'Követéstörlés']]); }
+    generate_fb_reaction_breakdown() { return this.dailyMultiMetric(this.daily, [['post_reactions_like_total', 'Like'], ['post_reactions_love_total', 'Love'], ['post_reactions_wow_total', 'Wow'], ['post_reactions_haha_total', 'Haha']]); }
+    generate_fb_page_video_time() { return this.dailyMetric(this.daily, 'page_video_view_time', 'Nézési idő'); }
 
-        return {
-            labels,
-            series: [
-                { name: 'Elérés', data: reach },
-                { name: 'Impressziók', data: impressions }
-            ]
-        };
-    }
-
-    generate_fb_page_fans() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            return Math.max(...items.map(d => parseInt(d.page_fans) || 0));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Követők', data }]
-        };
-    }
-
-    generate_fb_engagement() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const reactions = labels.map(date => this.sumField(grouped[date], 'reactions'));
-        const comments = labels.map(date => this.sumField(grouped[date], 'comments'));
-        const shares = labels.map(date => this.sumField(grouped[date], 'shares'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Reakciók', data: reactions },
-                { name: 'Kommentek', data: comments },
-                { name: 'Megosztások', data: shares }
-            ]
-        };
-    }
-
-    generate_fb_post_engagement() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const reactions = labels.map(date => this.sumField(grouped[date], 'post_reactions'));
-        const comments = labels.map(date => this.sumField(grouped[date], 'post_comments'));
-        const shares = labels.map(date => this.sumField(grouped[date], 'post_shares'));
-        const clicks = labels.map(date => this.sumField(grouped[date], 'post_clicks'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Reakciók', data: reactions },
-                { name: 'Kommentek', data: comments },
-                { name: 'Megosztások', data: shares },
-                { name: 'Kattintások', data: clicks }
-            ]
-        };
-    }
-
-    generate_fb_all_posts() {
-        return this.generateFacebookPostTable(this.video);
-    }
-
+    generate_fb_all_posts() { return this.generateFacebookPostTable(this.video); }
     generate_fb_top_3_posts() {
-        const sorted = [...this.video].sort((a, b) =>
-            (parseInt(b.post_reach) || 0) - (parseInt(a.post_reach) || 0)
-        );
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.post_reach) || 0) - (parseInt(a.post_reach) || 0));
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
     generateFacebookPostTable(posts) {
         const tableData = posts.map(p => ({
-            id: p.post_id,
-            caption: p.post_message || '-',
+            id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            impressions: parseInt(p.post_impressions) || 0,
-            reach: parseInt(p.post_reach) || 0,
-            reactions: parseInt(p.post_reactions) || 0,
-            comments: parseInt(p.post_comments) || 0,
-            shares: parseInt(p.post_shares) || 0,
-            clicks: parseInt(p.post_clicks) || 0,
+            impressions: parseInt(p.post_impressions) || 0, reach: parseInt(p.post_reach) || 0,
+            reactions: parseInt(p.post_reactions) || 0, comments: parseInt(p.post_comments) || 0,
+            shares: parseInt(p.post_shares) || 0, clicks: parseInt(p.post_clicks) || 0,
             link: p.post_permalink || '#'
         }));
-
-        return {
-            labels: ['Dátum', 'Üzenet', 'Impressziók', 'Elérés', 'Reakciók', 'Kommentek', 'Megosztások', 'Kattintások', 'Link'],
-            series: [{ name: 'Posts', data: tableData }]
-        };
-    }
-
-    // ===== INSTAGRAM CHARTS =====
-
-    generate_ig_reach() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const reach = labels.map(date => this.sumField(grouped[date], 'reach'));
-        const impressions = labels.map(date => this.sumField(grouped[date], 'impressions'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Elérés', data: reach },
-                { name: 'Impressziók', data: impressions }
-            ]
-        };
-    }
-
-    generate_ig_follower_growth() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            return Math.max(...items.map(d => parseInt(d.follower_count) || 0));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Követők', data }]
-        };
-    }
-
-    generate_ig_engagement() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const likes = labels.map(date => this.sumField(grouped[date], 'likes'));
-        const comments = labels.map(date => this.sumField(grouped[date], 'comments'));
-        const shares = labels.map(date => this.sumField(grouped[date], 'shares'));
-        const saved = labels.map(date => this.sumField(grouped[date], 'saved'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Like-ok', data: likes },
-                { name: 'Kommentek', data: comments },
-                { name: 'Megosztások', data: shares },
-                { name: 'Mentések', data: saved }
-            ]
-        };
-    }
-
-    generate_ig_profile_activity() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const profileViews = labels.map(date => this.sumField(grouped[date], 'profile_views'));
-        const websiteClicks = labels.map(date => this.sumField(grouped[date], 'website_clicks'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Profilnézetek', data: profileViews },
-                { name: 'Weboldal kattintások', data: websiteClicks }
-            ]
-        };
-    }
-
-    generate_ig_all_media() {
-        return this.generateInstagramMediaTable(this.video);
-    }
-
-    generate_ig_top_3_media() {
-        const sorted = [...this.video].sort((a, b) =>
-            (parseInt(b.reach) || 0) - (parseInt(a.reach) || 0)
-        );
-        return this.generateInstagramMediaTable(sorted.slice(0, 3));
-    }
-
-    generateInstagramMediaTable(media) {
-        const tableData = media.map(m => ({
-            id: m.media_id,
-            caption: m.caption || '-',
-            date: m.timestamp ? m.timestamp.substring(0, 10) : '-',
-            impressions: parseInt(m.impressions) || 0,
-            reach: parseInt(m.reach) || 0,
-            likes: parseInt(m.likes) || 0,
-            comments: parseInt(m.comments) || 0,
-            shares: parseInt(m.shares) || 0,
-            saved: parseInt(m.saved) || 0,
-            link: m.permalink || '#'
-        }));
-
-        return {
-            labels: ['Dátum', 'Caption', 'Impressziók', 'Elérés', 'Like-ok', 'Kommentek', 'Megosztások', 'Mentések', 'Link'],
-            series: [{ name: 'Media', data: tableData }]
-        };
-    }
-
-    // ===== YOUTUBE TREND CHARTS =====
-
-    generate_yt_subscribers_growth() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            const gained = this.sumField(items, 'subscribers_gained');
-            const lost = this.sumField(items, 'subscribers_lost');
-            return gained - lost;
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Nettó feliratkozók', data }]
-        };
-    }
-
-    generate_yt_views_trend() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'views'));
-
-        return {
-            labels,
-            series: [{ name: 'Megtekintések', data }]
-        };
-    }
-
-    generate_yt_watch_time() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'estimated_minutes_watched'));
-
-        return {
-            labels,
-            series: [{ name: 'Nézési idő (perc)', data }]
-        };
-    }
-
-    // ===== YOUTUBE ENGAGEMENT CHARTS =====
-
-    generate_yt_daily_engagement() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const likes = labels.map(date => this.sumField(grouped[date], 'likes'));
-        const comments = labels.map(date => this.sumField(grouped[date], 'comments'));
-        const shares = labels.map(date => this.sumField(grouped[date], 'shares'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Like-ok', data: likes },
-                { name: 'Kommentek', data: comments },
-                { name: 'Megosztások', data: shares }
-            ]
-        };
-    }
-
-    generate_yt_engagement_rate() {
-        const grouped = this.groupByDate(this.data, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            const likes = this.sumField(items, 'likes');
-            const comments = this.sumField(items, 'comments');
-            const views = this.sumField(items, 'views') || 1;
-            const er = ((likes + comments) / views) * 100;
-            return parseFloat(er.toFixed(2));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'ER %', data }]
-        };
-    }
-
-    // ===== YOUTUBE VIDEO CHARTS =====
-
-    generate_yt_top_5_videos() {
-        const sorted = [...this.video].sort((a, b) =>
-            (parseInt(b.views) || 0) - (parseInt(a.views) || 0)
-        );
-        return this.generateYouTubeVideoTable(sorted.slice(0, 5));
-    }
-
-    generate_yt_worst_5_videos() {
-        const sorted = [...this.video]
-            .filter(v => parseInt(v.views) > 0)
-            .sort((a, b) => (parseInt(a.views) || 0) - (parseInt(b.views) || 0));
-        return this.generateYouTubeVideoTable(sorted.slice(0, 5));
-    }
-
-    generate_yt_all_videos() {
-        return this.generateYouTubeVideoTable(this.video);
-    }
-
-    generateYouTubeVideoTable(videos) {
-        const tableData = videos.map(v => ({
-            id: v.video_id,
-            title: v.video_title || '-',
-            date: v.video_published_at ? v.video_published_at.substring(0, 10) : '-',
-            views: parseInt(v.views) || 0,
-            likes: parseInt(v.likes) || 0,
-            comments: parseInt(v.comments) || 0,
-            shares: parseInt(v.shares) || 0,
-            avgViewDuration: parseInt(v.average_view_duration) || 0,
-            link: v.video_id ? `https://youtube.com/watch?v=${v.video_id}` : '#'
-        }));
-
-        return {
-            labels: ['Dátum', 'Cím', 'Views', 'Likes', 'Comments', 'Shares', 'Átl. nézési idő', 'Link'],
-            series: [{ name: 'Videos', data: tableData }]
-        };
-    }
-
-    // ===== YOUTUBE AUDIENCE CHARTS =====
-
-    generate_yt_top_countries() {
-        const countryMap = {};
-        this.data.forEach(item => {
-            const country = item.country;
-            if (!country) return;
-            const pct = parseFloat(item.viewer_percentage) || 0;
-            if (!countryMap[country]) countryMap[country] = 0;
-            countryMap[country] += pct;
-        });
-
-        const sorted = Object.entries(countryMap)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 10);
-
-        return {
-            labels: sorted.map(([country]) => country),
-            series: [{ name: 'Nézők %', data: sorted.map(([, pct]) => parseFloat(pct.toFixed(2))) }]
-        };
-    }
-
-    // ===== TIKTOK ORGANIC (NEW) =====
-
-    generate_tt_bio_link_clicks() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'bio_link_clicks'));
-
-        return {
-            labels,
-            series: [{ name: 'Bio link kattintások', data }]
-        };
-    }
-
-    generate_tt_video_watch_time() {
-        const videos = this.video.filter(v => v.video_average_time_watched);
-        const labels = videos.map(v => (v.video_caption || '').substring(0, 30) || v.video_id || '-');
-        const data = videos.map(v => parseFloat(v.video_average_time_watched) || 0);
-
-        return {
-            labels,
-            series: [{ name: 'Átl. nézési idő (mp)', data }]
-        };
-    }
-
-    generate_tt_video_retention() {
-        const grouped = this.groupByDate(this.data, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date].filter(i => i.video_full_watched_rate);
-            if (items.length === 0) return 0;
-            const avg = items.reduce((s, i) => s + (parseFloat(i.video_full_watched_rate) || 0), 0) / items.length;
-            return parseFloat(avg.toFixed(2));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Végignézési arány %', data }]
-        };
-    }
-
-    generate_tt_traffic_sources() {
-        const sourceMap = {};
-        this.data.forEach(item => {
-            const source = item.video_impression_sources_impression_source;
-            if (!source) return;
-            const pct = parseFloat(item.video_impression_sources_percentage) || 0;
-            if (!sourceMap[source]) sourceMap[source] = 0;
-            sourceMap[source] += pct;
-        });
-
-        const sorted = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
-        return {
-            labels: sorted.map(([source]) => source),
-            series: [{ name: 'Arány %', data: sorted.map(([, pct]) => parseFloat(pct.toFixed(2))) }]
-        };
-    }
-
-    generate_tt_audience_demographics() {
-        const ageMap = {};
-        this.data.forEach(item => {
-            const age = item.audience_ages_age;
-            if (!age) return;
-            const pct = parseFloat(item.audience_ages_percentage) || 0;
-            if (!ageMap[age]) ageMap[age] = 0;
-            ageMap[age] += pct;
-        });
-
-        const sorted = Object.entries(ageMap).sort((a, b) => a[0].localeCompare(b[0]));
-        return {
-            labels: sorted.map(([age]) => age),
-            series: [{ name: 'Arány %', data: sorted.map(([, pct]) => parseFloat(pct.toFixed(2))) }]
-        };
-    }
-
-    // ===== TIKTOK ADS =====
-
-    generate_ttads_spend_trend() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            return grouped[date].reduce((s, i) => s + (parseFloat(i.spend) || 0), 0);
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Költés', data: data.map(v => parseFloat(v.toFixed(2))) }]
-        };
-    }
-
-    generate_ttads_impressions_clicks() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const impressions = labels.map(date => this.sumField(grouped[date], 'impressions'));
-        const clicks = labels.map(date => this.sumField(grouped[date], 'clicks'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Impressziók', data: impressions },
-                { name: 'Kattintások', data: clicks }
-            ]
-        };
-    }
-
-    generate_ttads_ctr_trend() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            const avgCtr = items.reduce((s, i) => s + (parseFloat(i.ctr) || 0), 0) / (items.length || 1);
-            return parseFloat(avgCtr.toFixed(2));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'CTR %', data }]
-        };
-    }
-
-    generate_ttads_cpc_cpm() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const cpc = labels.map(date => {
-            const items = grouped[date];
-            const avg = items.reduce((s, i) => s + (parseFloat(i.cpc) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
-        });
-        const cpm = labels.map(date => {
-            const items = grouped[date];
-            const avg = items.reduce((s, i) => s + (parseFloat(i.cpm) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
-        });
-
-        return {
-            labels,
-            series: [
-                { name: 'CPC', data: cpc },
-                { name: 'CPM', data: cpm }
-            ]
-        };
-    }
-
-    generate_ttads_conversions() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'conversions'));
-
-        return {
-            labels,
-            series: [{ name: 'Konverziók', data }]
-        };
-    }
-
-    generate_ttads_cost_per_conversion() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            const avg = items.reduce((s, i) => s + (parseFloat(i.cost_per_conversion) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Költség/konverzió', data }]
-        };
-    }
-
-    generate_ttads_campaign_perf() {
-        const campaignMap = {};
-        this.data.forEach(item => {
-            const name = item.campaign_name;
-            if (!name) return;
-            if (!campaignMap[name]) {
-                campaignMap[name] = { impressions: 0, clicks: 0, spend: 0, conversions: 0 };
-            }
-            campaignMap[name].impressions += parseInt(item.impressions) || 0;
-            campaignMap[name].clicks += parseInt(item.clicks) || 0;
-            campaignMap[name].spend += parseFloat(item.spend) || 0;
-            campaignMap[name].conversions += parseInt(item.conversions) || 0;
-        });
-
-        const tableData = Object.entries(campaignMap).map(([name, stats]) => ({
-            campaign: name,
-            impressions: stats.impressions,
-            clicks: stats.clicks,
-            spend: parseFloat(stats.spend.toFixed(2)),
-            cpc: stats.clicks > 0 ? parseFloat((stats.spend / stats.clicks).toFixed(2)) : 0,
-            ctr: stats.impressions > 0 ? parseFloat(((stats.clicks / stats.impressions) * 100).toFixed(2)) : 0,
-            conversions: stats.conversions,
-        }));
-
-        return {
-            labels: ['Kampány', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Konverziók'],
-            series: [{ name: 'Campaigns', data: tableData }]
-        };
-    }
-
-    generate_ttads_video_engagement() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const plays = labels.map(date => this.sumField(grouped[date], 'video_play_actions'));
-        const watched2s = labels.map(date => this.sumField(grouped[date], 'video_watched_2s'));
-        const watched6s = labels.map(date => this.sumField(grouped[date], 'video_watched_6s'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Lejátszások', data: plays },
-                { name: '2s nézés', data: watched2s },
-                { name: '6s nézés', data: watched6s }
-            ]
-        };
-    }
-
-    // ===== FACEBOOK (NEW) =====
-
-    generate_fb_video_views() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'page_video_views'));
-
-        return {
-            labels,
-            series: [{ name: 'Videó megtekintések', data }]
-        };
-    }
-
-    generate_fb_follows_trend() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const follows = labels.map(date => this.sumField(grouped[date], 'page_daily_follows'));
-        const unfollows = labels.map(date => this.sumField(grouped[date], 'page_daily_unfollows'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Új követők', data: follows },
-                { name: 'Követéstörlés', data: unfollows }
-            ]
-        };
-    }
-
-    generate_fb_reaction_breakdown() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const like = labels.map(date => this.sumField(grouped[date], 'post_reactions_like_total'));
-        const love = labels.map(date => this.sumField(grouped[date], 'post_reactions_love_total'));
-        const wow = labels.map(date => this.sumField(grouped[date], 'post_reactions_wow_total'));
-        const haha = labels.map(date => this.sumField(grouped[date], 'post_reactions_haha_total'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Like', data: like },
-                { name: 'Love', data: love },
-                { name: 'Wow', data: wow },
-                { name: 'Haha', data: haha }
-            ]
-        };
-    }
-
-    generate_fb_page_video_time() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'page_video_view_time'));
-
-        return {
-            labels,
-            series: [{ name: 'Nézési idő', data }]
-        };
+        return { labels: ['Dátum', 'Üzenet', 'Impressziók', 'Elérés', 'Reakciók', 'Kommentek', 'Megosztások', 'Kattintások', 'Link'], series: [{ name: 'Posts', data: tableData }] };
     }
 
     generate_fb_reel_performance() {
         const posts = this.video.filter(p => parseInt(p.post_video_views) > 0);
         const sorted = [...posts].sort((a, b) => (parseInt(b.post_video_views) || 0) - (parseInt(a.post_video_views) || 0));
-
         const tableData = sorted.map(p => ({
-            id: p.post_id,
-            caption: p.post_message || '-',
+            id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            videoViews: parseInt(p.post_video_views) || 0,
-            reactions: parseInt(p.post_reactions) || 0,
-            comments: parseInt(p.post_comments) || 0,
-            shares: parseInt(p.post_shares) || 0,
+            videoViews: parseInt(p.post_video_views) || 0, reactions: parseInt(p.post_reactions) || 0,
+            comments: parseInt(p.post_comments) || 0, shares: parseInt(p.post_shares) || 0,
             link: p.post_permalink || '#'
         }));
-
-        return {
-            labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'],
-            series: [{ name: 'Reels', data: tableData }]
-        };
+        return { labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'], series: [{ name: 'Reels', data: tableData }] };
     }
 
-    // ===== INSTAGRAM BUSINESS (NEW) =====
+    // ===== INSTAGRAM CHARTS =====
+
+    generate_ig_reach() { return this.dailyMultiMetric(this.daily, [['reach', 'Elérés'], ['impressions', 'Impressziók']]); }
+    generate_ig_follower_growth() { return this.dailyMax(this.daily, 'follower_count', 'Követők'); }
+    generate_ig_engagement() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['comments', 'Kommentek'], ['shares', 'Megosztások'], ['saved', 'Mentések']]); }
+    generate_ig_profile_activity() { return this.dailyMultiMetric(this.daily, [['profile_views', 'Profilnézetek'], ['website_clicks', 'Weboldal kattintások']]); }
+    generate_ig_daily_followers() { return this.dailyMetric(this.daily, 'follower_count_1d', 'Napi új követők'); }
+
+    generate_ig_save_rate() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            const saved = this.sumField(items, 'media_saved');
+            const reach = this.sumField(items, 'media_reach') || 1;
+            return parseFloat(((saved / reach) * 100).toFixed(2));
+        });
+        return { labels, series: [{ name: 'Mentési arány %', data }] };
+    }
+
+    generate_ig_story_overview() { return this.dailyMultiMetric(this.daily, [['story_reach', 'Elérés'], ['story_views', 'Megtekintések'], ['story_exits', 'Kilépések']]); }
 
     generate_ig_media_type_breakdown() {
-        // Group media by type from content data
         const typeMap = {};
         this.video.forEach(m => {
             const type = m.media_type || 'OTHER';
@@ -873,7 +294,6 @@ class ChartGenerator {
             typeMap[type].likes += parseInt(m.likes) || 0;
             typeMap[type].comments += parseInt(m.comments) || 0;
         });
-
         const labels = Object.keys(typeMap);
         return {
             labels,
@@ -894,188 +314,202 @@ class ChartGenerator {
             const avg = items.reduce((s, i) => s + (parseFloat(i.media_reel_avg_watch_time) || 0), 0) / (items.length || 1);
             return parseFloat(avg.toFixed(2));
         });
-
-        return {
-            labels,
-            series: [
-                { name: 'Reel nézések', data: views },
-                { name: 'Átl. nézési idő', data: watchTime }
-            ]
-        };
+        return { labels, series: [{ name: 'Reel nézések', data: views }, { name: 'Átl. nézési idő', data: watchTime }] };
     }
 
-    generate_ig_story_overview() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const reach = labels.map(date => this.sumField(grouped[date], 'story_reach'));
-        const views = labels.map(date => this.sumField(grouped[date], 'story_views'));
-        const exits = labels.map(date => this.sumField(grouped[date], 'story_exits'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Elérés', data: reach },
-                { name: 'Megtekintések', data: views },
-                { name: 'Kilépések', data: exits }
-            ]
-        };
+    generate_ig_all_media() { return this.generateInstagramMediaTable(this.video); }
+    generate_ig_top_3_media() {
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.reach) || 0) - (parseInt(a.reach) || 0));
+        return this.generateInstagramMediaTable(sorted.slice(0, 3));
     }
 
-    generate_ig_save_rate() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            const saved = this.sumField(items, 'media_saved');
-            const reach = this.sumField(items, 'media_reach') || 1;
-            return parseFloat(((saved / reach) * 100).toFixed(2));
-        });
-
-        return {
-            labels,
-            series: [{ name: 'Mentési arány %', data }]
-        };
-    }
-
-    generate_ig_daily_followers() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'follower_count_1d'));
-
-        return {
-            labels,
-            series: [{ name: 'Napi új követők', data }]
-        };
+    generateInstagramMediaTable(media) {
+        const tableData = media.map(m => ({
+            id: m.media_id, caption: m.caption || '-',
+            date: m.timestamp ? m.timestamp.substring(0, 10) : '-',
+            impressions: parseInt(m.impressions) || 0, reach: parseInt(m.reach) || 0,
+            likes: parseInt(m.likes) || 0, comments: parseInt(m.comments) || 0,
+            shares: parseInt(m.shares) || 0, saved: parseInt(m.saved) || 0,
+            link: m.permalink || '#'
+        }));
+        return { labels: ['Dátum', 'Caption', 'Impressziók', 'Elérés', 'Like-ok', 'Kommentek', 'Megosztások', 'Mentések', 'Link'], series: [{ name: 'Media', data: tableData }] };
     }
 
     // ===== INSTAGRAM PUBLIC =====
 
-    generate_igpub_engagement_overview() {
-        const grouped = this.groupByDate(this.data, 'date');
-        const labels = Object.keys(grouped).sort();
-        const likes = labels.map(date => this.sumField(grouped[date], 'media_like_count'));
-        const comments = labels.map(date => this.sumField(grouped[date], 'media_comments_count'));
-
-        return {
-            labels,
-            series: [
-                { name: 'Like-ok', data: likes },
-                { name: 'Kommentek', data: comments }
-            ]
-        };
-    }
+    generate_igpub_engagement_overview() { return this.dailyMultiMetric(this.data, [['media_like_count', 'Like-ok'], ['media_comments_count', 'Kommentek']]); }
 
     generate_igpub_avg_engagement() {
         const grouped = this.groupByDate(this.data, 'date');
         const labels = Object.keys(grouped).sort();
-        const likesPerPost = labels.map(date => {
-            const items = grouped[date];
-            const avg = items.reduce((s, i) => s + (parseFloat(i.likes_per_post) || 0), 0) / (items.length || 1);
+        const avgField = (items, field) => {
+            const avg = items.reduce((s, i) => s + (parseFloat(i[field]) || 0), 0) / (items.length || 1);
             return parseFloat(avg.toFixed(2));
-        });
-        const commentsPerPost = labels.map(date => {
-            const items = grouped[date];
-            const avg = items.reduce((s, i) => s + (parseFloat(i.comments_per_post) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
-        });
-
+        };
         return {
             labels,
             series: [
-                { name: 'Átl. like/poszt', data: likesPerPost },
-                { name: 'Átl. komment/poszt', data: commentsPerPost }
+                { name: 'Átl. like/poszt', data: labels.map(d => avgField(grouped[d], 'likes_per_post')) },
+                { name: 'Átl. komment/poszt', data: labels.map(d => avgField(grouped[d], 'comments_per_post')) }
             ]
         };
     }
 
-    generate_igpub_all_media() {
-        return this.generateIGPublicMediaTable(this.video);
-    }
-
+    generate_igpub_all_media() { return this.generateIGPublicMediaTable(this.video); }
     generate_igpub_top_3_media() {
-        const sorted = [...this.video].sort((a, b) =>
-            (parseInt(b.media_like_count) || 0) - (parseInt(a.media_like_count) || 0)
-        );
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.media_like_count) || 0) - (parseInt(a.media_like_count) || 0));
         return this.generateIGPublicMediaTable(sorted.slice(0, 3));
     }
 
     generateIGPublicMediaTable(media) {
         const tableData = media.map(m => ({
-            id: m.media_id,
-            caption: m.media_caption || '-',
+            id: m.media_id, caption: m.media_caption || '-',
             date: m.media_timestamp ? m.media_timestamp.substring(0, 10) : '-',
-            likes: parseInt(m.media_like_count) || 0,
-            comments: parseInt(m.media_comments_count) || 0,
-            type: m.media_type || '-',
-            link: m.media_permalink || '#'
+            likes: parseInt(m.media_like_count) || 0, comments: parseInt(m.media_comments_count) || 0,
+            type: m.media_type || '-', link: m.media_permalink || '#'
         }));
-
-        return {
-            labels: ['Dátum', 'Caption', 'Like-ok', 'Kommentek', 'Típus', 'Link'],
-            series: [{ name: 'Media', data: tableData }]
-        };
+        return { labels: ['Dátum', 'Caption', 'Like-ok', 'Kommentek', 'Típus', 'Link'], series: [{ name: 'Media', data: tableData }] };
     }
 
-    // ===== YOUTUBE (NEW) =====
+    // ===== YOUTUBE CHARTS =====
+
+    generate_yt_subscribers_growth() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => this.sumField(grouped[date], 'subscribers_gained') - this.sumField(grouped[date], 'subscribers_lost'));
+        return { labels, series: [{ name: 'Nettó feliratkozók', data }] };
+    }
+
+    generate_yt_views_trend() { return this.dailyMetric(this.daily, 'views', 'Megtekintések'); }
+    generate_yt_watch_time() { return this.dailyMetric(this.daily, 'estimated_minutes_watched', 'Nézési idő (perc)'); }
+    generate_yt_daily_engagement() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['comments', 'Kommentek'], ['shares', 'Megosztások']]); }
+
+    generate_yt_engagement_rate() {
+        const grouped = this.groupByDate(this.data, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            const likes = this.sumField(items, 'likes');
+            const comments = this.sumField(items, 'comments');
+            const views = this.sumField(items, 'views') || 1;
+            return parseFloat(((likes + comments) / views * 100).toFixed(2));
+        });
+        return { labels, series: [{ name: 'ER %', data }] };
+    }
+
+    generate_yt_top_countries() {
+        return this._aggregateByField(this.data, 'country', 'viewer_percentage', 'Nézők %', false, 10);
+    }
 
     generate_yt_avg_view_pct() {
         const videos = this.video.filter(v => v.average_view_percentage);
-        const labels = videos.map(v => (v.video_title || '').substring(0, 30) || v.video_id || '-');
-        const data = videos.map(v => parseFloat(v.average_view_percentage) || 0);
-
         return {
-            labels,
-            series: [{ name: 'Nézési %', data: data.map(v => parseFloat(v.toFixed(2))) }]
+            labels: videos.map(v => (v.video_title || '').substring(0, 30) || v.video_id || '-'),
+            series: [{ name: 'Nézési %', data: videos.map(v => parseFloat((parseFloat(v.average_view_percentage) || 0).toFixed(2))) }]
         };
     }
 
-    generate_yt_playlist_adds() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'videos_added_to_playlists'));
+    generate_yt_playlist_adds() { return this.dailyMetric(this.daily, 'videos_added_to_playlists', 'Playlisthez adva'); }
+    generate_yt_premium_views() { return this.dailyMetric(this.daily, 'red_views', 'Premium nézések'); }
+    generate_yt_likes_dislikes() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['dislikes', 'Dislike-ok']]); }
 
-        return {
-            labels,
-            series: [{ name: 'Playlisthez adva', data }]
-        };
+    generate_yt_top_5_videos() {
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.views) || 0) - (parseInt(a.views) || 0));
+        return this.generateYouTubeVideoTable(sorted.slice(0, 5));
+    }
+    generate_yt_worst_5_videos() {
+        const sorted = [...this.video].filter(v => parseInt(v.views) > 0)
+            .sort((a, b) => (parseInt(a.views) || 0) - (parseInt(b.views) || 0));
+        return this.generateYouTubeVideoTable(sorted.slice(0, 5));
+    }
+    generate_yt_all_videos() { return this.generateYouTubeVideoTable(this.video); }
+
+    generateYouTubeVideoTable(videos) {
+        const tableData = videos.map(v => ({
+            id: v.video_id, title: v.video_title || '-',
+            date: v.video_published_at ? v.video_published_at.substring(0, 10) : '-',
+            views: parseInt(v.views) || 0, likes: parseInt(v.likes) || 0,
+            comments: parseInt(v.comments) || 0, shares: parseInt(v.shares) || 0,
+            avgViewDuration: parseInt(v.average_view_duration) || 0,
+            link: v.video_id ? `https://youtube.com/watch?v=${v.video_id}` : '#'
+        }));
+        return { labels: ['Dátum', 'Cím', 'Views', 'Likes', 'Comments', 'Shares', 'Átl. nézési idő', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
-    generate_yt_premium_views() {
+    // ===== TIKTOK ADS =====
+
+    generate_ttads_spend_trend() { return this.dailyFloatSum(this.daily, 'spend', 'Költés'); }
+    generate_ttads_impressions_clicks() { return this.dailyMultiMetric(this.daily, [['impressions', 'Impressziók'], ['clicks', 'Kattintások']]); }
+    generate_ttads_ctr_trend() { return this.dailyAvg(this.daily, 'ctr', 'CTR %'); }
+    generate_ttads_cpc_cpm() {
         const grouped = this.groupByDate(this.daily, 'date');
         const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => this.sumField(grouped[date], 'red_views'));
-
-        return {
-            labels,
-            series: [{ name: 'Premium nézések', data }]
+        const avgField = (items, field) => {
+            const avg = items.reduce((s, i) => s + (parseFloat(i[field]) || 0), 0) / (items.length || 1);
+            return parseFloat(avg.toFixed(2));
         };
-    }
-
-    generate_yt_likes_dislikes() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const likes = labels.map(date => this.sumField(grouped[date], 'likes'));
-        const dislikes = labels.map(date => this.sumField(grouped[date], 'dislikes'));
-
         return {
             labels,
             series: [
-                { name: 'Like-ok', data: likes },
-                { name: 'Dislike-ok', data: dislikes }
+                { name: 'CPC', data: labels.map(d => avgField(grouped[d], 'cpc')) },
+                { name: 'CPM', data: labels.map(d => avgField(grouped[d], 'cpm')) }
             ]
         };
+    }
+    generate_ttads_conversions() { return this.dailyMetric(this.daily, 'conversions', 'Konverziók'); }
+    generate_ttads_cost_per_conversion() { return this.dailyAvg(this.daily, 'cost_per_conversion', 'Költség/konverzió'); }
+    generate_ttads_video_engagement() { return this.dailyMultiMetric(this.daily, [['video_play_actions', 'Lejátszások'], ['video_watched_2s', '2s nézés'], ['video_watched_6s', '6s nézés']]); }
+
+    generate_ttads_campaign_perf() {
+        const campaignMap = {};
+        this.data.forEach(item => {
+            const name = item.campaign_name;
+            if (!name) return;
+            if (!campaignMap[name]) campaignMap[name] = { impressions: 0, clicks: 0, spend: 0, conversions: 0 };
+            campaignMap[name].impressions += parseInt(item.impressions) || 0;
+            campaignMap[name].clicks += parseInt(item.clicks) || 0;
+            campaignMap[name].spend += parseFloat(item.spend) || 0;
+            campaignMap[name].conversions += parseInt(item.conversions) || 0;
+        });
+        const tableData = Object.entries(campaignMap).map(([name, s]) => ({
+            campaign: name, impressions: s.impressions, clicks: s.clicks,
+            spend: parseFloat(s.spend.toFixed(2)),
+            cpc: s.clicks > 0 ? parseFloat((s.spend / s.clicks).toFixed(2)) : 0,
+            ctr: s.impressions > 0 ? parseFloat(((s.clicks / s.impressions) * 100).toFixed(2)) : 0,
+            conversions: s.conversions,
+        }));
+        return { labels: ['Kampány', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Konverziók'], series: [{ name: 'Campaigns', data: tableData }] };
     }
 
     // ===== UTILITY METHODS =====
 
+    /** Aggregate by a categorical field, sum a percentage field */
+    _aggregateByField(source, keyField, valueField, seriesName, sortAlpha = false, limit = 0) {
+        const map = {};
+        source.forEach(item => {
+            const key = item[keyField];
+            if (!key) return;
+            const pct = parseFloat(item[valueField]) || 0;
+            if (!map[key]) map[key] = 0;
+            map[key] += pct;
+        });
+        let sorted = Object.entries(map);
+        if (sortAlpha) sorted.sort((a, b) => a[0].localeCompare(b[0]));
+        else sorted.sort((a, b) => b[1] - a[1]);
+        if (limit > 0) sorted = sorted.slice(0, limit);
+        return {
+            labels: sorted.map(([k]) => k),
+            series: [{ name: seriesName, data: sorted.map(([, v]) => parseFloat(v.toFixed(2))) }]
+        };
+    }
+
     groupByDate(items, dateField) {
         const groups = {};
         if (!Array.isArray(items)) return groups;
-
         items.forEach(item => {
             const date = item[dateField];
             if (!date) return;
-            const key = date.substring(0, 10); // YYYY-MM-DD
+            const key = date.substring(0, 10);
             if (!groups[key]) groups[key] = [];
             groups[key].push(item);
         });
