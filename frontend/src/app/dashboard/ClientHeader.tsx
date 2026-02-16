@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
-import { Settings } from 'lucide-react';
+import { Settings, Menu, X } from 'lucide-react';
 
 const platformTabs = [
   { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
@@ -25,18 +26,19 @@ interface Props {
 
 export function ClientHeader({ companyName, userEmail, connectedProviders }: Props) {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="bg-[var(--surface)] border-b border-[var(--border)]">
-      <div className="max-w-7xl mx-auto px-6 py-5">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
         <div className="flex items-center justify-between">
           <div>
             <TrendalyzLogo size="sm" />
             {companyName && <p className="text-[var(--text-secondary)] font-semibold text-xs mt-1">{companyName}</p>}
           </div>
 
-          <div className="flex items-center gap-6">
-            {/* Platform Navigation */}
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
             <nav className="flex gap-1">
               {platformTabs.map(tab => {
                 const isActive = tab.href === '/dashboard'
@@ -75,7 +77,6 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
               })}
             </nav>
 
-            {/* Theme toggle + User info */}
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <span className="text-xs text-[var(--text-secondary)]">{userEmail}</span>
@@ -90,8 +91,108 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
               </button>
             </div>
           </div>
+
+          {/* Mobile hamburger button */}
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Menü bezárása' : 'Menü megnyitása'}
+          >
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5 text-[var(--text-primary)]" />
+            ) : (
+              <Menu className="w-5 h-5 text-[var(--text-primary)]" />
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile slide-out drawer */}
+      {mobileMenuOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="md:hidden fixed inset-0 bg-black/40 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer */}
+          <div className="md:hidden fixed top-0 right-0 h-full w-72 bg-[var(--surface)] border-l border-[var(--border)] z-50 overflow-y-auto animate-slide-in-right">
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+              <span className="text-xs text-[var(--text-secondary)] truncate">{userEmail}</span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Menü bezárása"
+              >
+                <X className="w-5 h-5 text-[var(--text-primary)]" />
+              </button>
+            </div>
+
+            {/* Platform tabs */}
+            <nav className="p-4 space-y-1">
+              <p className="px-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Platformok</p>
+              {platformTabs.map(tab => {
+                const isActive = tab.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : pathname === tab.href || pathname.startsWith(tab.href + '/');
+                const isEnabled = tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p));
+
+                if (!isEnabled) {
+                  return (
+                    <span
+                      key={tab.href}
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40"
+                    >
+                      <PlatformIcon platform={tab.platform} className="w-4 h-4" />
+                      {tab.label}
+                    </span>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={tab.href}
+                    href={tab.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                    }`}
+                    style={isActive ? { backgroundColor: tab.color } : undefined}
+                  >
+                    <PlatformIcon platform={tab.platform} className="w-4 h-4" />
+                    {tab.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Settings + Logout */}
+            <div className="p-4 border-t border-[var(--border)] space-y-1">
+              <Link
+                href="/dashboard/settings"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)] transition"
+              >
+                <Settings className="w-4 h-4" />
+                Beállítások
+              </Link>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-xs text-[var(--text-secondary)]">Téma</span>
+                <ThemeToggle />
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-[var(--error)] hover:bg-red-500/10 transition"
+              >
+                Kijelentkezés
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 }

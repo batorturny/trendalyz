@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /login
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /api
+Disallow: /set-password
+Sitemap: https://trendalyz.hu/sitemap.xml

@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="h-screen bg-[var(--surface)] text-[var(--text-primary)] flex overflow-hidden">
+    <div className="h-screen bg-[var(--surface)] text-[var(--text-primary)] flex flex-col md:flex-row overflow-hidden">
       <AdminSidebar userName={session.user.name || session.user.email || 'Admin'} />
       <main className="flex-1 overflow-y-auto">
         {children}

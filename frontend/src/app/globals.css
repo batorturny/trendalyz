@@ -122,6 +122,51 @@
   }
 }
 
+/* Mobile optimizations */
+@media (max-width: 767px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Minimum tap target size */
+  a, button, [role="button"], input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exceptions for inline text elements */
+  a:not([class]), span > a {
+    min-height: auto;
+    min-width: auto;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Slide-in animations for mobile drawers */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s ease-out;
+}
+
 /* Print styles for PDF export */
 @media print {
   body {

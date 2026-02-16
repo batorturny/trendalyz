@@ -5,8 +5,9 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { LayoutDashboard, Building2, BarChart3, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Settings, Menu, X } from 'lucide-react';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
+import { useState, useEffect } from 'react';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,11 +25,11 @@ const platformItems = [
   { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)' },
 ];
 
-export function AdminSidebar({ userName }: { userName: string }) {
+function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 shrink-0 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col h-full">
+    <>
       {/* Logo */}
       <div className="p-6 border-b border-[var(--border)]">
         <TrendalyzLogo size="sm" />
@@ -46,6 +47,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 isActive
                   ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
@@ -68,6 +70,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onNavigate}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                   isActive
                     ? 'bg-[var(--surface-raised)] text-[var(--text-primary)]'
@@ -85,7 +88,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
         </div>
       </nav>
 
-      {/* Footer: Theme toggle + User info + logout */}
+      {/* Footer */}
       <div className="p-4 border-t border-[var(--border)] space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs text-[var(--text-secondary)] truncate">{userName}</div>
@@ -98,6 +101,63 @@ export function AdminSidebar({ userName }: { userName: string }) {
           Kijelentkezés
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function AdminSidebar({ userName }: { userName: string }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  return (
+    <>
+      {/* Mobile hamburger button - fixed top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Menü megnyitása"
+        >
+          <Menu className="w-5 h-5 text-[var(--text-primary)]" />
+        </button>
+        <TrendalyzLogo size="sm" />
+      </div>
+
+      {/* Mobile spacer for fixed top bar */}
+      <div className="md:hidden h-[60px] shrink-0" />
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 shrink-0 bg-[var(--surface)] border-r border-[var(--border)] flex-col h-full">
+        <SidebarContent userName={userName} />
+      </aside>
+
+      {/* Mobile overlay + drawer */}
+      {mobileOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 bg-black/40 z-40"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="md:hidden fixed top-0 left-0 h-full w-72 bg-[var(--surface)] border-r border-[var(--border)] z-50 flex flex-col animate-slide-in-left">
+            {/* Close button */}
+            <div className="absolute top-4 right-4 z-10">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Menü bezárása"
+              >
+                <X className="w-5 h-5 text-[var(--text-primary)]" />
+              </button>
+            </div>
+            <SidebarContent userName={userName} onNavigate={() => setMobileOpen(false)} />
+          </aside>
+        </>
+      )}
+    </>
   );
 }
