@@ -80,10 +80,10 @@ if (process.env.RESEND_API_KEY) {
         port: 465,
         auth: { user: 'resend', pass: process.env.RESEND_API_KEY },
       },
-      from: process.env.EMAIL_FROM || 'noreply@makeden.hu',
+      from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
       async sendVerificationRequest({ identifier: email, url }) {
         await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'noreply@makeden.hu',
+          from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
           to: email,
           subject: 'Bejelentkezés - Trendalyz',
           html: `

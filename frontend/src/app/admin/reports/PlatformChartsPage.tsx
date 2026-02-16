@@ -8,8 +8,9 @@ import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
+import { SendReportModal } from '@/components/SendReportModal';
 
 interface PlatformConfig {
   platformKey: string;
@@ -230,6 +231,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [failedCompanies, setFailedCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
 
@@ -388,15 +390,24 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
             <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
           </div>
 
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               onClick={handleGenerate}
               disabled={loading}
-              className="btn-press w-full font-bold py-3 px-6 rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="btn-press flex-1 font-bold py-3 px-6 rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ backgroundColor: `color-mix(in srgb, ${platform.borderColor} 35%, transparent)` }}
             >
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generálás...</> : 'Riport generálása'}
             </button>
+            {hasResults && !isAllCompanies && (
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="btn-press py-3 px-4 rounded-xl bg-[var(--accent)] text-white hover:brightness-110 flex items-center gap-2 font-bold"
+                title="Riport küldés emailben"
+              >
+                <Mail className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -487,6 +498,16 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         </div>
       )}
     </div>
+      {/* Email modal */}
+      {showEmailModal && selectedCompany && !isAllCompanies && (
+        <SendReportModal
+          companyId={selectedCompany}
+          companyName={companies.find(c => c.id === selectedCompany)?.name || ''}
+          platform={platform.platformKey}
+          month={selectedMonth}
+          onClose={() => setShowEmailModal(false)}
+        />
+      )}
     </WindsorKeyGuard>
   );
 }

@@ -40,7 +40,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
               {platformTabs.map(tab => {
                 const isActive = tab.href === '/dashboard'
                   ? pathname === '/dashboard'
-                  : pathname.startsWith(tab.href);
+                  : pathname === tab.href || pathname.startsWith(tab.href + '/');
                 const isEnabled = tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p));
 
                 if (!isEnabled) {

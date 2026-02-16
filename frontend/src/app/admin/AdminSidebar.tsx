@@ -62,7 +62,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
         <div className="pt-4 mt-4 border-t border-[var(--border)]">
           <p className="px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Riportok</p>
           {platformItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
             return (
               <Link

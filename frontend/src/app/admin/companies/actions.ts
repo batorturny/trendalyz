@@ -80,7 +80,7 @@ export async function createCompany(formData: FormData) {
 
     if (resend) {
       await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'noreply@makeden.hu',
+        from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
         to: clientEmail,
         subject: `Meghívó - ${name} Trendalyz`,
         html: `
@@ -192,7 +192,7 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
 
   if (resend) {
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@makeden.hu',
+      from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
       to: email,
       subject: `Meghívó - ${company.name} Trendalyz`,
       html: `
@@ -242,7 +242,7 @@ export async function resendInvite(userId: string, companyId: string) {
 
   if (resend) {
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@makeden.hu',
+      from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
       to: user.email,
       subject: `Meghívó újraküldve - ${company.name} Trendalyz`,
       html: `

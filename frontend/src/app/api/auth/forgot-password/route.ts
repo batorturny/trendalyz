@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     const resetUrl = `${process.env.NEXTAUTH_URL}/set-password?token=${token}`;
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@makeden.hu',
+      from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
       to: user.email,
       subject: 'Jelszó visszaállítás - Trendalyz',
       html: `
