@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST() {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'Trendalyz <onboarding@resend.dev>',
+      from: 'Trendalyz <noreply@trendalyz.hu>',
       to: ['bator.turny@gmail.com'],
       subject: 'Teszt email - Trendalyz',
       react: EmailTemplate({ firstName: 'Bátor' }),
