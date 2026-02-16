@@ -460,6 +460,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                     );
                   }
 
+                  const isFollowerChart = chart.key.includes('follower') || chart.key === 'fb_fans';
                   return (
                     <Chart
                       key={chart.key}
@@ -469,6 +470,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                       label={chart.data?.series?.[0]?.name || chart.title}
                       color={chart.color}
                       title={chart.title}
+                      beginAtZero={!isFollowerChart}
                     />
                   );
                 })}

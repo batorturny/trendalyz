@@ -128,7 +128,7 @@ export function ReportDashboard({ report }: Props) {
         <h3 className="text-xl font-bold mb-4 border-l-4 border-[var(--platform-tiktok)] pl-3">Napi trendek</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Chart type="bar" labels={report.data.daily.chartLabels} data={report.data.daily.likesData} label="Napi like-ok" color="#bc6aff" />
-          <Chart type="line" labels={report.data.daily.chartLabels} data={report.data.daily.totalFollowersData} label="Követők száma" color="#00ff95" />
+          <Chart type="line" labels={report.data.daily.chartLabels} data={report.data.daily.totalFollowersData} label="Követők száma" color="#00ff95" beginAtZero={false} />
           <Chart type="bar" labels={report.data.daily.chartLabels} data={report.data.daily.commentsData} label="Kommentek" color="#ffce44" height={250} />
           <Chart type="bar" labels={report.data.daily.chartLabels} data={report.data.daily.sharesData} label="Megosztások" color="#4d96ff" height={250} />
         </div>

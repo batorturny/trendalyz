@@ -35,9 +35,10 @@ interface ChartProps {
   color?: string;
   height?: number;
   title?: string;
+  beginAtZero?: boolean;
 }
 
-export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title }: ChartProps) {
+export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title, beginAtZero: beginAtZeroProp = true }: ChartProps) {
   const { theme } = useTheme();
   const chartRef = useRef<ChartJS<'bar' | 'line'>>(null);
 
@@ -134,7 +135,17 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
           callback: (val) => typeof val === 'number' ? val.toLocaleString('hu-HU') : val,
         },
         grid: { color: gridColor },
-        beginAtZero: true,
+        beginAtZero: beginAtZeroProp,
+        ...(!beginAtZeroProp && trimmedData.length > 0 ? (() => {
+          const minVal = Math.min(...trimmedData);
+          const maxVal = Math.max(...trimmedData);
+          const range = maxVal - minVal || 1;
+          const padding = range * 0.15;
+          return {
+            suggestedMin: Math.floor(minVal - padding),
+            suggestedMax: Math.ceil(maxVal + padding),
+          };
+        })() : {}),
       },
     },
   };
