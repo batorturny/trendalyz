@@ -148,6 +148,25 @@
   }
 }
 
+/* Responsive visibility - bulletproof media queries for mobile/desktop */
+@media (max-width: 767px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: flex !important;
+  }
+  .mobile-only {
+    display: none !important;
+  }
+  .layout-row-desktop {
+    flex-direction: row !important;
+  }
+}
+
 /* Slide-in animations for mobile drawers */
 @keyframes slide-in-right {
   from { transform: translateX(100%); }

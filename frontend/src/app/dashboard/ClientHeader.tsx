@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -28,9 +28,14 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   return (
     <header className="bg-[var(--surface)] border-b border-[var(--border)]">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
+      <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div>
             <TrendalyzLogo size="sm" />
@@ -38,7 +43,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="desktop-only items-center gap-6">
             <nav className="flex gap-1">
               {platformTabs.map(tab => {
                 const isActive = tab.href === '/dashboard'
@@ -94,7 +99,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
 
           {/* Mobile hamburger button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="mobile-only p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] items-center justify-center"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Menü bezárása' : 'Menü megnyitása'}
           >
@@ -112,12 +117,12 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
         <>
           {/* Overlay */}
           <div
-            className="md:hidden fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setMobileMenuOpen(false)}
           />
 
           {/* Drawer */}
-          <div className="md:hidden fixed top-0 right-0 h-full w-72 bg-[var(--surface)] border-l border-[var(--border)] z-50 overflow-y-auto animate-slide-in-right">
+          <div className="fixed top-0 right-0 h-full w-72 bg-[var(--surface)] border-l border-[var(--border)] z-50 overflow-y-auto animate-slide-in-right">
             <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
               <span className="text-xs text-[var(--text-secondary)] truncate">{userEmail}</span>
               <button

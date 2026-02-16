@@ -117,7 +117,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
   return (
     <>
       {/* Mobile hamburger button - fixed top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
+      <div className="mobile-only fixed top-0 left-0 right-0 z-30 bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => setMobileOpen(true)}
           className="p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -129,10 +129,10 @@ export function AdminSidebar({ userName }: { userName: string }) {
       </div>
 
       {/* Mobile spacer for fixed top bar */}
-      <div className="md:hidden h-[60px] shrink-0" />
+      <div className="mobile-only h-[60px] shrink-0" />
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 shrink-0 bg-[var(--surface)] border-r border-[var(--border)] flex-col h-full">
+      <aside className="desktop-only w-64 shrink-0 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col h-full">
         <SidebarContent userName={userName} />
       </aside>
 
@@ -140,10 +140,10 @@ export function AdminSidebar({ userName }: { userName: string }) {
       {mobileOpen && (
         <>
           <div
-            className="md:hidden fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="md:hidden fixed top-0 left-0 h-full w-72 bg-[var(--surface)] border-r border-[var(--border)] z-50 flex flex-col animate-slide-in-left">
+          <aside className="fixed top-0 left-0 h-full w-72 bg-[var(--surface)] border-r border-[var(--border)] z-50 flex flex-col animate-slide-in-left">
             {/* Close button */}
             <div className="absolute top-4 right-4 z-10">
               <button
