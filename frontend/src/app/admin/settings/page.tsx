@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
 import { WindsorApiKeyForm } from './WindsorApiKeyForm';
+import { DeleteAccountButton } from '@/app/dashboard/settings/DeleteAccountButton';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -38,6 +39,14 @@ export default async function SettingsPage() {
         <section>
           <h2 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-3">Integrációk</h2>
           <WindsorApiKeyForm hasKey={!!user?.windsorApiKeyEnc} keyHint={keyHint} />
+        </section>
+
+        <section className="pt-6 border-t border-[var(--border)]">
+          <h2 className="text-xs font-bold text-[var(--error)] uppercase mb-3">Veszélyes zóna</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
+            A fiók törlése végleges és visszavonhatatlan. Minden adatod elvész.
+          </p>
+          <DeleteAccountButton />
         </section>
       </div>
     </div>

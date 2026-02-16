@@ -114,7 +114,7 @@ export function WindsorApiKeyForm({ hasKey, keyHint }: { hasKey: boolean; keyHin
           type={showKey ? 'text' : 'password'}
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          placeholder={savedKey ? 'Új kulcs megadása a csere éhez...' : 'Illeszd be a Windsor API kulcsod...'}
+          placeholder={savedKey ? 'Új kulcs megadása a cseréhez...' : 'Illeszd be a Windsor API kulcsod...'}
           className="w-full px-4 py-3 pr-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] font-mono"
         />
         <button

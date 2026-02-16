@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
+import { Settings } from 'lucide-react';
 
 const platformTabs = [
   { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
@@ -78,6 +79,9 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <span className="text-xs text-[var(--text-secondary)]">{userEmail}</span>
+              <Link href="/dashboard/settings" className="p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] transition" title="Beállítások">
+                <Settings className="w-4 h-4 text-[var(--text-secondary)]" />
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="text-xs text-[var(--error)] hover:opacity-80 font-semibold"
