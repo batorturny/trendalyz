@@ -5,10 +5,10 @@ import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { Building2 } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
-import { Chart } from '@/components/Chart';
+import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
-import { exportPdf } from '@/lib/exportPdf';
+// exportPdf is loaded dynamically on demand
 
 interface PlatformConfig {
   platformKey: string;
@@ -250,6 +250,7 @@ export function ClientPlatformPage({ platform }: { platform: PlatformConfig }) {
     if (!reportRef.current) return;
     setExporting(true);
     try {
+      const { exportPdf } = await import('@/lib/exportPdf');
       await exportPdf(reportRef.current, `${platform.label}_riport_${selectedMonth}`);
     } catch (err) {
       console.error('PDF export error:', err);

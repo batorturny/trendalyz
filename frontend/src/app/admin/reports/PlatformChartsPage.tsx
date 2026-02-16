@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { KPICard } from '@/components/KPICard';
-import { Chart } from '@/components/Chart';
+import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';

@@ -1,7 +1,7 @@
 'use client';
 
 import { ChartData } from '@/lib/api';
-import { Chart } from './Chart';
+import { ChartLazy as Chart } from './ChartLazy';
 import { VideoTable as VideoTableComponent } from './VideoTable';
 import { BarChart3 } from 'lucide-react';
 

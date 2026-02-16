@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
-import { Chart } from '@/components/Chart';
+import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker } from '@/components/CompanyPicker';
 import { BarChart3, TrendingUp, Heart, Clock, Film, Loader2, Rocket } from 'lucide-react';

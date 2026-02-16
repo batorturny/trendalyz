@@ -2,7 +2,7 @@
 
 import { ReportResponse } from '@/lib/api';
 import { KPICard } from './KPICard';
-import { Chart } from './Chart';
+import { ChartLazy as Chart } from './ChartLazy';
 import { TopVideoCard } from './TopVideoCard';
 import { VideoTable } from './VideoTable';
 import { DemographicsCard } from './DemographicsCard';

@@ -6,7 +6,7 @@ import { generateReport, ReportResponse } from '@/lib/api';
 import { Building2 } from 'lucide-react';
 import { ReportDashboard } from '@/components/ReportDashboard';
 import { MonthPicker } from '@/components/MonthPicker';
-import { exportPdf } from '@/lib/exportPdf';
+// exportPdf is loaded dynamically on demand to avoid bundling jspdf + html-to-image
 import { PlatformIcon } from '@/components/PlatformIcon';
 
 export default function DashboardPage() {
@@ -57,6 +57,7 @@ export default function DashboardPage() {
     if (!reportRef.current || !report) return;
     setExporting(true);
     try {
+      const { exportPdf } = await import('@/lib/exportPdf');
       await exportPdf(reportRef.current, `TikTok_riport_${report.company.name}_${selectedMonth}`);
     } catch (err) {
       console.error('PDF export error:', err);
