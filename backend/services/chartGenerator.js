@@ -176,18 +176,25 @@ class ChartGenerator {
         this.data.forEach(item => {
             const g = item.video_audience_genders_gender;
             const p = parseFloat(item.video_audience_genders_percentage) || 0;
-            if (!g || p === 0) return;
+            if (!g || p < 0) return; // Allow 0 but usually it's > 0
             if (!genderMap[g]) genderMap[g] = [];
             genderMap[g].push(p);
         });
+
         const labels = [];
         const data = [];
         const nameMap = { 'female_vv': 'Nő', 'male_vv': 'Férfi', 'other_vv': 'Egyéb' };
-        for (const [key, values] of Object.entries(genderMap)) {
-            labels.push(nameMap[key] || key);
-            const avg = values.reduce((s, v) => s + v, 0) / values.length;
-            data.push(parseFloat((avg * 100).toFixed(1)));
-        }
+        const order = ['male_vv', 'female_vv', 'other_vv'];
+
+        order.forEach(key => {
+            if (genderMap[key]) {
+                const values = genderMap[key];
+                const avg = values.reduce((s, v) => s + v, 0) / values.length;
+                labels.push(nameMap[key] || key);
+                data.push(parseFloat((avg * 100).toFixed(1)));
+            }
+        });
+
         return { labels, series: [{ name: 'Arány %', data }] };
     }
 
