@@ -610,7 +610,55 @@ if (ENABLE_ACCOUNT_MANAGEMENT) {
 }
 
 // ============================================
-// START SERVER
+// REPORT SUMMARY ROUTES
+// ============================================
+
+app.post('/api/summary', requireInternalAuth, async (req, res) => {
+    try {
+        const { companyId, month, content } = req.body;
+        if (!companyId || !month) return res.status(400).json({ error: 'Missing companyId or month' });
+
+        const summary = await prisma.reportSummary.upsert({
+            where: {
+                companyId_month: {
+                    companyId,
+                    month,
+                },
+            },
+            update: { content },
+            create: {
+                companyId,
+                month,
+                content,
+            },
+        });
+        res.json(summary);
+    } catch (error) {
+        console.error('Error saving summary:', error);
+        res.status(500).json({ error: 'Failed to save summary' });
+    }
+});
+
+app.get('/api/summary/:companyId/:month', requireCompanyAccess(req => req.params.companyId), async (req, res) => {
+    try {
+        const { companyId, month } = req.params;
+        const summary = await prisma.reportSummary.findUnique({
+            where: {
+                companyId_month: {
+                    companyId,
+                    month,
+                },
+            },
+        });
+        res.json(summary || { content: '' });
+    } catch (error) {
+        console.error('Error fetching summary:', error);
+        res.status(500).json({ error: 'Failed to fetch summary' });
+    }
+});
+
+// ============================================
+// PDF GENERATION (Puppeteer)
 // ============================================
 
 app.listen(PORT, async () => {

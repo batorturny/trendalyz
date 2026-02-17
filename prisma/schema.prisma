@@ -168,3 +168,16 @@ model IntegrationConnection {
   @@unique([companyId, provider, externalAccountId])
   @@index([companyId])
 }
+
+model ReportSummary {
+  id        String   @id @default(cuid())
+  companyId String
+  month     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, month])
+}

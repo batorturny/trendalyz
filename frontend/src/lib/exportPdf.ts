@@ -49,15 +49,20 @@ async function inlineExternalImages(el: HTMLElement): Promise<Map<HTMLImageEleme
       try {
         originals.set(img, img.src);
         const resp = await fetch(img.src);
+        if (!resp.ok) throw new Error('Fetch failed');
         const blob = await resp.blob();
+        if (blob.size === 0 || !blob.type.startsWith('image/')) throw new Error('Invalid image');
+
         const dataUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
         img.src = dataUrl;
-      } catch {
-        // leave original src if fetch fails
+      } catch (err) {
+        // If fetch fails, replace with transparent placeholder to prevent PDF error
+        console.warn('Failed to load image for PDF:', img.src);
+        img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
       }
     })
   );
