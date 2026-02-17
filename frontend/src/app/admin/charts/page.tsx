@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData, ChartsResponse } from '@/lib/api';
-import { sumSeries, lastValue, tableCount, extractKPIs, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
+import { sumSeries, lastValue, getTableData, tableSum, extractKPIs, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
@@ -343,49 +343,62 @@ function aggregateFromResponses(responses: { name: string; res: ChartsResponse }
   const perCompany: AggregateKPIs['perCompany'] = [];
   let totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
   let totalVideos = 0, totalFollowers = 0;
-  const engagementRates: number[] = [];
 
   for (const { name, res } of responses) {
     const chartMap = new Map(res.charts.map(c => [c.key, c]));
+
+    // --- TikTok Organic ---
+    const ttProfileViews = sumSeries(chartMap.get('profile_views'));
+    const ttVideoViews = tableSum(chartMap.get('all_videos'), 'views');
     const ttLikes = sumSeries(chartMap.get('daily_likes'));
     const ttComments = sumSeries(chartMap.get('daily_comments'));
     const ttShares = sumSeries(chartMap.get('daily_shares'));
     const ttFollowers = lastValue(chartMap.get('followers_growth'));
-    const ttVideos = tableCount(chartMap.get('all_videos'));
+    const ttVideos = getTableData(chartMap.get('all_videos')).length;
+
+    // --- Facebook Organic ---
+    const fbReach = sumSeries(chartMap.get('fb_page_reach'));
     const fbReactions = sumSeries(chartMap.get('fb_engagement'));
     const fbFollowers = lastValue(chartMap.get('fb_page_fans'));
-    const fbPosts = tableCount(chartMap.get('fb_all_posts'));
-    const fbImpressions = sumSeries(chartMap.get('fb_page_reach'), 1);
+    const fbPosts = getTableData(chartMap.get('fb_all_posts')).length;
+    const fbVideoViews = sumSeries(chartMap.get('fb_video_views'));
+
+    // --- Instagram Organic ---
+    const igReach = sumSeries(chartMap.get('ig_reach'));
     const igLikes = sumSeries(chartMap.get('ig_engagement'));
     const igFollowers = lastValue(chartMap.get('ig_follower_growth'));
-    const igImpressions = sumSeries(chartMap.get('ig_reach'), 1);
+    const igMedia = getTableData(chartMap.get('ig_all_media')).length;
+
+    // --- YouTube ---
     const ytViews = sumSeries(chartMap.get('yt_views_trend'));
     const ytLikes = sumSeries(chartMap.get('yt_daily_engagement'));
     const ytFollowers = sumSeries(chartMap.get('yt_subscribers_growth'));
-    const erChart = chartMap.get('engagement_rate');
-    let erAvg = 0;
-    if (erChart?.data?.series?.[0]?.data) {
-      const erData = (erChart.data.series[0].data as number[]).filter(v => typeof v === 'number' && v > 0);
-      if (erData.length > 0) erAvg = erData.reduce((a, b) => a + b, 0) / erData.length;
-    }
-    const companyViews = fbImpressions + igImpressions + ytViews;
+    const ytVideos = getTableData(chartMap.get('yt_all_videos')).length;
+
+    // Aggregate per company
+    const companyViews = ttProfileViews + ttVideoViews + fbReach + fbVideoViews + igReach + ytViews;
     const companyLikes = ttLikes + fbReactions + igLikes + ytLikes;
     const companyComments = ttComments;
     const companyShares = ttShares;
-    const companyVideos = ttVideos + fbPosts;
+    const companyVideos = ttVideos + fbPosts + igMedia + ytVideos;
     const companyFollowers = ttFollowers + fbFollowers + igFollowers + ytFollowers;
+
+    // ER% = interactions / views * 100 (capped at 100%)
+    const companyInteractions = companyLikes + companyComments + companyShares;
+    const companyER = companyViews > 0 ? Math.min(companyInteractions / companyViews * 100, 100) : 0;
+
     totalViews += companyViews;
     totalLikes += companyLikes;
     totalComments += companyComments;
     totalShares += companyShares;
     totalVideos += companyVideos;
     totalFollowers += companyFollowers;
-    if (erAvg > 0) engagementRates.push(erAvg);
-    perCompany.push({ name, views: companyViews, likes: companyLikes, comments: companyComments, shares: companyShares, videos: companyVideos, engagementRate: erAvg });
+
+    perCompany.push({ name, views: companyViews, likes: companyLikes, comments: companyComments, shares: companyShares, videos: companyVideos, engagementRate: companyER });
   }
 
   const totalInteractions = totalLikes + totalComments + totalShares;
-  const avgER = engagementRates.length > 0 ? engagementRates.reduce((a, b) => a + b, 0) / engagementRates.length : 0;
+  const avgER = totalViews > 0 ? Math.min(totalInteractions / totalViews * 100, 100) : 0;
   return {
     companyCount: responses.length, totalViews, totalLikes, totalComments, totalShares,
     totalVideos, totalFollowers, avgEngagementRate: avgER,
@@ -500,6 +513,56 @@ function MultiSelectDropdown({ label, items, selected, onToggle, onSelectAll, on
               );
             })}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Styled month picker dropdown (matches dark theme)
+function MonthPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClick);
+      return () => document.removeEventListener('mousedown', handleClick);
+    }
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold flex items-center justify-between gap-2 hover:border-[var(--accent)] transition-colors cursor-pointer"
+      >
+        <span className="truncate">{formatMonthLabel(value)}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-lg max-h-64 overflow-y-auto">
+          {options.map(m => {
+            const selected = m === value;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { onChange(m); setOpen(false); }}
+                className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${selected
+                    ? 'bg-[var(--accent-subtle)] text-[var(--text-primary)] font-bold'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
+                  }`}
+              >
+                <span>{formatMonthLabel(m)}</span>
+                {selected && <Check className="w-3.5 h-3.5 text-[var(--accent)]" />}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1132,17 +1195,9 @@ export default function AdminChartsPage() {
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Időszak</label>
               <div className="flex items-center gap-2">
-                <select value={startMonth} onChange={e => setStartMonth(e.target.value)} className={selectClass}>
-                  {monthOptions.map(m => (
-                    <option key={m} value={m}>{formatMonthLabel(m)}</option>
-                  ))}
-                </select>
+                <MonthPicker options={monthOptions} value={startMonth} onChange={setStartMonth} />
                 <span className="text-[var(--text-secondary)] font-bold px-1">&mdash;</span>
-                <select value={endMonth} onChange={e => setEndMonth(e.target.value)} className={selectClass}>
-                  {monthOptions.filter(m => m >= startMonth).map(m => (
-                    <option key={m} value={m}>{formatMonthLabel(m)}</option>
-                  ))}
-                </select>
+                <MonthPicker options={monthOptions.filter(m => m >= startMonth)} value={endMonth} onChange={setEndMonth} />
               </div>
             </div>
 

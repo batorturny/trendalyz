@@ -149,12 +149,12 @@ const KPI_DESC: Record<string, { title: string; text: string; tip: string }> = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getTableData(chart: ChartData | undefined): any[] {
+export function getTableData(chart: ChartData | undefined): any[] {
   if (!chart || chart.empty || !chart.data?.series?.[0]?.data) return [];
   return chart.data.series[0].data as any[];
 }
 
-function tableSum(chart: ChartData | undefined, field: string): number {
+export function tableSum(chart: ChartData | undefined, field: string): number {
   return getTableData(chart).reduce((s, r) => s + (Number(r[field]) || 0), 0);
 }
 
