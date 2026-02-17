@@ -14,7 +14,7 @@ const platformTabs = [
   { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'], disabled: true },
   { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'], disabled: true },
   { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'], disabled: true },
-  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'], disabled: true },
+  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'] },
   { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'], disabled: true },
 ];
 
@@ -51,9 +51,11 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                   : pathname === tab.href || pathname.startsWith(tab.href + '/');
 
                 // Check if manually disabled OR if no provider connected (except main TikTok which is always visible if not disabled)
-                // Actually, logic was: tab.platform === 'tiktok' || ...
-                // Now:
-                const isEnabled = !tab.disabled && (tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p)));
+                // Main TikTok dashboard is always enabled (demo/organic). Others need provider connection.
+                const isEnabled = !tab.disabled && (
+                  (tab.platform === 'tiktok' && tab.href === '/dashboard') ||
+                  tab.providers.some(p => connectedProviders.includes(p))
+                );
 
                 if (!isEnabled) {
                   return (
