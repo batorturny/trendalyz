@@ -32,7 +32,7 @@ export const PROVIDERS = [
     supportsOAuth: true,
   },
   {
-    key: 'INSTAGRAM' as const,
+    key: 'INSTAGRAM_ORGANIC' as const,
     label: 'Instagram',
     color: 'from-purple-500 to-pink-500',
     windsorEndpoint: 'instagram',
