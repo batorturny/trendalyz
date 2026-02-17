@@ -17,7 +17,7 @@ export default function PlatformDashboardPage() {
     <ClientPlatformPage
       platform={{
         ...config,
-        icon: <PlatformIcon platform={config.platformIcon} className="w-14 h-14" />,
+        icon: <PlatformIcon platform={config.platformIcon as 'tiktok' | 'facebook' | 'instagram' | 'youtube'} className="w-14 h-14" />,
       }}
     />
   );

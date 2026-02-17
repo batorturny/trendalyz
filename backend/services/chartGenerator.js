@@ -211,14 +211,27 @@ class ChartGenerator {
     }
 
     generateVideoTable(videos) {
-        const tableData = videos.map(v => ({
-            id: v.video_id, caption: v.video_caption || '-',
-            date: v.video_create_datetime ? v.video_create_datetime.substring(0, 10) : '-',
-            views: parseInt(v.video_views_count) || 0, likes: parseInt(v.video_likes) || 0,
-            comments: parseInt(v.video_comments) || 0, shares: parseInt(v.video_shares) || 0,
-            link: v.video_embed_url || '#'
-        }));
-        return { labels: ['Dátum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        const tableData = videos.map(v => {
+            const views = parseInt(v.video_views_count) || 0;
+            const reach = parseInt(v.video_reach) || 0;
+            const likes = parseInt(v.video_likes) || 0;
+            const comments = parseInt(v.video_comments) || 0;
+            const shares = parseInt(v.video_shares) || 0;
+            const newFollowers = parseInt(v.video_new_followers) || 0;
+            const fullWatchRate = parseFloat(v.video_full_watched_rate) || 0;
+            const avgWatchTime = parseFloat(v.video_average_time_watched_non_aggregated) || 0;
+            const er = reach > 0 ? parseFloat(((likes + comments + shares) / reach * 100).toFixed(2)) : 0;
+            return {
+                id: v.video_id, caption: v.video_caption || '-',
+                date: v.video_create_datetime ? v.video_create_datetime.substring(0, 10) : '-',
+                views, likes, comments, shares, reach, newFollowers,
+                fullWatchRate: parseFloat((fullWatchRate * 100).toFixed(2)),
+                avgWatchTime: parseFloat(avgWatchTime.toFixed(1)),
+                engagementRate: er,
+                link: v.video_embed_url || '#'
+            };
+        });
+        return { labels: ['Dátum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'Elérés', 'Új követők', 'Végignézés%', 'Átl. nézési idő', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== FACEBOOK CHARTS =====
@@ -425,15 +438,23 @@ class ChartGenerator {
     generate_yt_all_videos() { return this.generateYouTubeVideoTable(this.video); }
 
     generateYouTubeVideoTable(videos) {
-        const tableData = videos.map(v => ({
-            id: v.video_id, title: v.video_title || '-',
-            date: v.video_published_at ? v.video_published_at.substring(0, 10) : '-',
-            views: parseInt(v.views) || 0, likes: parseInt(v.likes) || 0,
-            comments: parseInt(v.comments) || 0, shares: parseInt(v.shares) || 0,
-            avgViewDuration: parseInt(v.average_view_duration) || 0,
-            link: v.video_id ? `https://youtube.com/watch?v=${v.video_id}` : '#'
-        }));
-        return { labels: ['Dátum', 'Cím', 'Views', 'Likes', 'Comments', 'Shares', 'Átl. nézési idő', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        const tableData = videos.map(v => {
+            const views = parseInt(v.views) || 0;
+            const likes = parseInt(v.likes) || 0;
+            const comments = parseInt(v.comments) || 0;
+            const shares = parseInt(v.shares) || 0;
+            const er = views > 0 ? parseFloat(((likes + comments + shares) / views * 100).toFixed(2)) : 0;
+            return {
+                id: v.video_id, title: v.video_title || '-',
+                date: v.video_published_at ? v.video_published_at.substring(0, 10) : '-',
+                views, likes, comments, shares,
+                avgViewDuration: parseInt(v.average_view_duration) || 0,
+                avgViewPercentage: parseFloat(v.average_view_percentage) || 0,
+                engagementRate: er,
+                link: v.video_id ? `https://youtube.com/watch?v=${v.video_id}` : '#'
+            };
+        });
+        return { labels: ['Dátum', 'Cím', 'Views', 'Likes', 'Comments', 'Shares', 'Átl. nézési idő', 'Nézési%', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====

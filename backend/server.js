@@ -503,6 +503,8 @@ if (ENABLE_CHART_API) {
             const chartKeys = charts.map(c => c.key);
             const validation = validateChartKeys(chartKeys);
             if (!validation.valid) {
+                console.error('[CHART API] Invalid chart keys:', validation.invalidKeys);
+                console.error('[CHART API] Requested keys:', chartKeys);
                 return res.status(400).json({
                     error: 'Invalid chart keys',
                     invalidKeys: validation.invalidKeys,

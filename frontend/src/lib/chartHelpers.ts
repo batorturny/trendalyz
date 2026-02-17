@@ -36,13 +36,81 @@ export function findChart(results: ChartData[], key: string): ChartData | undefi
 // ===== KPI extraction =====
 
 export interface KPI {
+  key: string;
   label: string;
   value: string | number;
   change?: number | null;
+  /** Aggregation hint for multi-month: 'sum' (default), 'last' (use latest), 'avg' */
+  agg?: 'sum' | 'last' | 'avg';
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getTableData(chart: ChartData | undefined): any[] {
+  if (!chart || chart.empty || !chart.data?.series?.[0]?.data) return [];
+  return chart.data.series[0].data as any[];
+}
+
+function tableSum(chart: ChartData | undefined, field: string): number {
+  return getTableData(chart).reduce((s, r) => s + (Number(r[field]) || 0), 0);
+}
+
+function tableAvg(chart: ChartData | undefined, field: string): number {
+  const rows = getTableData(chart);
+  if (rows.length === 0) return 0;
+  return rows.reduce((s, r) => s + (Number(r[field]) || 0), 0) / rows.length;
+}
+
+function fmtPct(n: number): string { return `${n.toFixed(2)}%`; }
+function fmtDec(n: number): string { return n.toFixed(2); }
+function fmtDec1(n: number): string { return n.toFixed(1); }
 
 export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
   switch (platformKey) {
+    case 'TIKTOK_ORGANIC': {
+      const followers = findChart(results, 'followers_growth');
+      const profileViews = findChart(results, 'profile_views');
+      const likes = findChart(results, 'daily_likes');
+      const comments = findChart(results, 'daily_comments');
+      const shares = findChart(results, 'daily_shares');
+      const er = findChart(results, 'engagement_rate');
+      const videos = findChart(results, 'all_videos');
+      const bioClicks = findChart(results, 'tt_bio_link_clicks');
+
+      const totalLikes = sumSeries(likes);
+      const totalComments = sumSeries(comments);
+      const totalShares = sumSeries(shares);
+      const vidRows = getTableData(videos);
+      const vidCount = vidRows.length;
+      const totalVidViews = tableSum(videos, 'views');
+      const totalVidReach = tableSum(videos, 'reach');
+
+      return [
+        // Alap metrikák
+        { key: 'tt_followers', label: 'Követők', value: lastValue(followers), agg: 'last' },
+        { key: 'tt_profile_views', label: 'Profilnézetek', value: sumSeries(profileViews) },
+        { key: 'tt_likes', label: 'Like-ok', value: totalLikes },
+        { key: 'tt_comments', label: 'Kommentek', value: totalComments },
+        { key: 'tt_shares', label: 'Megosztások', value: totalShares },
+        { key: 'tt_er', label: 'ER%', value: fmtPct(avgSeries(er)), agg: 'avg' },
+        { key: 'tt_videos', label: 'Videók száma', value: vidCount },
+        { key: 'tt_bio_clicks', label: 'Bio link kattintás', value: sumSeries(bioClicks) },
+        // Arány metrikák
+        { key: 'tt_like_per_view', label: 'Like / megtekintés', value: fmtPct(totalVidViews > 0 ? totalLikes / totalVidViews * 100 : 0), agg: 'avg' },
+        { key: 'tt_comment_per_view', label: 'Komment / megtekintés', value: fmtPct(totalVidViews > 0 ? totalComments / totalVidViews * 100 : 0), agg: 'avg' },
+        { key: 'tt_share_per_view', label: 'Megosztás / megtekintés', value: fmtPct(totalVidViews > 0 ? totalShares / totalVidViews * 100 : 0), agg: 'avg' },
+        { key: 'tt_interactions_total', label: 'Összes interakció', value: totalLikes + totalComments + totalShares },
+        // Átlag videó KPI-ok
+        { key: 'tt_avg_views', label: 'Átl. megtekintés/videó', value: vidCount > 0 ? Math.round(totalVidViews / vidCount) : 0, agg: 'avg' },
+        { key: 'tt_avg_likes', label: 'Átl. like/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount) : 0, agg: 'avg' },
+        { key: 'tt_avg_comments', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount) : 0, agg: 'avg' },
+        { key: 'tt_avg_shares', label: 'Átl. megosztás/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'shares') / vidCount) : 0, agg: 'avg' },
+        { key: 'tt_avg_er', label: 'Átl. ER%/videó', value: fmtPct(tableAvg(videos, 'engagementRate')), agg: 'avg' },
+        { key: 'tt_avg_watch_time', label: 'Átl. nézési idő', value: fmtDec1(tableAvg(videos, 'avgWatchTime')), agg: 'avg' },
+        { key: 'tt_avg_full_watch', label: 'Átl. teljes megtekintés%', value: fmtPct(tableAvg(videos, 'fullWatchRate')), agg: 'avg' },
+        { key: 'tt_avg_new_followers', label: 'Átl. új követő/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'newFollowers') / vidCount) : 0, agg: 'avg' },
+        { key: 'tt_total_reach', label: 'Össz. elérés', value: totalVidReach },
+      ];
+    }
     case 'TIKTOK_ADS': {
       const spend = findChart(results, 'ttads_spend_trend');
       const impClicks = findChart(results, 'ttads_impressions_clicks');
@@ -50,15 +118,25 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const cpcCpm = findChart(results, 'ttads_cpc_cpm');
       const conversions = findChart(results, 'ttads_conversions');
       const costConv = findChart(results, 'ttads_cost_per_conversion');
+
+      const totalSpend = sumSeries(spend);
+      const totalImpressions = sumSeries(impClicks, 0);
+      const totalClicks = sumSeries(impClicks, 1);
+      const totalConversions = sumSeries(conversions);
+
       return [
-        { label: 'Költés', value: sumSeries(spend) },
-        { label: 'Impressziók', value: sumSeries(impClicks, 0) },
-        { label: 'Kattintások', value: sumSeries(impClicks, 1) },
-        { label: 'CTR%', value: `${avgSeries(ctr).toFixed(2)}%` },
-        { label: 'CPC', value: `${avgSeries(cpcCpm, 0).toFixed(2)}` },
-        { label: 'CPM', value: `${avgSeries(cpcCpm, 1).toFixed(2)}` },
-        { label: 'Konverziók', value: sumSeries(conversions) },
-        { label: 'Költség/konverzió', value: `${avgSeries(costConv).toFixed(2)}` },
+        { key: 'ttads_spend', label: 'Költés', value: totalSpend },
+        { key: 'ttads_impressions', label: 'Impressziók', value: totalImpressions },
+        { key: 'ttads_clicks', label: 'Kattintások', value: totalClicks },
+        { key: 'ttads_ctr', label: 'CTR%', value: fmtPct(avgSeries(ctr)), agg: 'avg' },
+        { key: 'ttads_cpc', label: 'CPC', value: fmtDec(avgSeries(cpcCpm, 0)), agg: 'avg' },
+        { key: 'ttads_cpm', label: 'CPM', value: fmtDec(avgSeries(cpcCpm, 1)), agg: 'avg' },
+        { key: 'ttads_conv', label: 'Konverziók', value: totalConversions },
+        { key: 'ttads_cost_conv', label: 'Költség/konverzió', value: fmtDec(avgSeries(costConv)), agg: 'avg' },
+        // Arány metrikák
+        { key: 'ttads_roas', label: 'ROAS', value: totalSpend > 0 ? fmtDec(totalConversions / totalSpend) : '0.00', agg: 'avg' },
+        { key: 'ttads_conv_rate', label: 'Konverziós arány%', value: fmtPct(totalClicks > 0 ? totalConversions / totalClicks * 100 : 0), agg: 'avg' },
+        { key: 'ttads_spend_per_click', label: 'Költés/kattintás', value: totalClicks > 0 ? fmtDec(totalSpend / totalClicks) : '0.00', agg: 'avg' },
       ];
     }
     case 'FACEBOOK_ORGANIC': {
@@ -68,16 +146,35 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const posts = findChart(results, 'fb_all_posts');
       const follows = findChart(results, 'fb_follows_trend');
       const videoViews = findChart(results, 'fb_video_views');
+
+      const totalReach = sumSeries(reach, 0);
+      const totalReactions = sumSeries(engagement, 0);
+      const totalComments = sumSeries(engagement, 1);
+      const totalShares = sumSeries(engagement, 2);
+      const totalInteractions = totalReactions + totalComments + totalShares;
+      const postRows = getTableData(posts);
+      const postCount = postRows.length;
+
       return [
-        { label: 'Követők', value: lastValue(fans) },
-        { label: 'Elérés', value: sumSeries(reach, 0) },
-        { label: 'Impressziók', value: sumSeries(reach, 1) },
-        { label: 'Reakciók', value: sumSeries(engagement, 0) },
-        { label: 'Kommentek', value: sumSeries(engagement, 1) },
-        { label: 'Megosztások', value: sumSeries(engagement, 2) },
-        { label: 'Posztok', value: tableCount(posts) },
-        { label: 'Napi új követők', value: sumSeries(follows, 0) },
-        { label: 'Videó nézések', value: sumSeries(videoViews) },
+        // Alap metrikák
+        { key: 'fb_followers', label: 'Követők', value: lastValue(fans), agg: 'last' },
+        { key: 'fb_reach', label: 'Elérés', value: totalReach },
+        { key: 'fb_impressions', label: 'Impressziók', value: sumSeries(reach, 1) },
+        { key: 'fb_reactions', label: 'Reakciók', value: totalReactions },
+        { key: 'fb_comments', label: 'Kommentek', value: totalComments },
+        { key: 'fb_shares', label: 'Megosztások', value: totalShares },
+        { key: 'fb_posts', label: 'Posztok', value: postCount },
+        { key: 'fb_new_follows', label: 'Napi új követők', value: sumSeries(follows, 0) },
+        { key: 'fb_video_views', label: 'Videó nézések', value: sumSeries(videoViews) },
+        // Arány metrikák
+        { key: 'fb_interactions_total', label: 'Összes interakció', value: totalInteractions },
+        { key: 'fb_reaction_per_reach', label: 'Reakció / elérés', value: fmtPct(totalReach > 0 ? totalReactions / totalReach * 100 : 0), agg: 'avg' },
+        { key: 'fb_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalInteractions / totalReach * 100 : 0), agg: 'avg' },
+        // Átlag poszt KPI-ok
+        { key: 'fb_avg_reach_post', label: 'Átl. elérés/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reach') / postCount) : 0, agg: 'avg' },
+        { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reactions') / postCount) : 0, agg: 'avg' },
+        { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount) : 0, agg: 'avg' },
+        { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount) : 0, agg: 'avg' },
       ];
     }
     case 'INSTAGRAM_ORGANIC': {
@@ -89,31 +186,58 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const dailyFollowers = findChart(results, 'ig_daily_followers');
       const saveRate = findChart(results, 'ig_save_rate');
       const storyOverview = findChart(results, 'ig_story_overview');
+
+      const totalReach = sumSeries(reach, 0);
+      const totalLikes = sumSeries(engagement, 0);
+      const totalComments = sumSeries(engagement, 1);
+      const totalShares = sumSeries(engagement, 2);
+      const totalSaves = sumSeries(engagement, 3);
+      const totalInteractions = totalLikes + totalComments + totalShares + totalSaves;
+      const mediaRows = getTableData(media);
+      const mediaCount = mediaRows.length;
+
       return [
-        { label: 'Követők', value: lastValue(followers) },
-        { label: 'Elérés', value: sumSeries(reach, 0) },
-        { label: 'Impressziók', value: sumSeries(reach, 1) },
-        { label: 'Like-ok', value: sumSeries(engagement, 0) },
-        { label: 'Kommentek', value: sumSeries(engagement, 1) },
-        { label: 'Megosztások', value: sumSeries(engagement, 2) },
-        { label: 'Mentések', value: sumSeries(engagement, 3) },
-        { label: 'Profilnézetek', value: sumSeries(profile, 0) },
-        { label: 'Tartalmak', value: tableCount(media) },
-        { label: 'Napi új követők', value: sumSeries(dailyFollowers) },
-        { label: 'Mentési arány', value: `${avgSeries(saveRate).toFixed(2)}%` },
-        { label: 'Story elérés', value: sumSeries(storyOverview, 0) },
+        // Alap metrikák
+        { key: 'ig_followers', label: 'Követők', value: lastValue(followers), agg: 'last' },
+        { key: 'ig_reach_kpi', label: 'Elérés', value: totalReach },
+        { key: 'ig_impressions', label: 'Impressziók', value: sumSeries(reach, 1) },
+        { key: 'ig_likes', label: 'Like-ok', value: totalLikes },
+        { key: 'ig_comments', label: 'Kommentek', value: totalComments },
+        { key: 'ig_shares', label: 'Megosztások', value: totalShares },
+        { key: 'ig_saves', label: 'Mentések', value: totalSaves },
+        { key: 'ig_profile_views', label: 'Profilnézetek', value: sumSeries(profile, 0) },
+        { key: 'ig_media_count', label: 'Tartalmak', value: mediaCount },
+        { key: 'ig_new_followers', label: 'Napi új követők', value: sumSeries(dailyFollowers) },
+        { key: 'ig_save_rate_kpi', label: 'Mentési arány', value: fmtPct(avgSeries(saveRate)), agg: 'avg' },
+        { key: 'ig_story_reach', label: 'Story elérés', value: sumSeries(storyOverview, 0) },
+        // Arány metrikák
+        { key: 'ig_interactions_total', label: 'Összes interakció', value: totalInteractions },
+        { key: 'ig_like_per_reach', label: 'Like / elérés', value: fmtPct(totalReach > 0 ? totalLikes / totalReach * 100 : 0), agg: 'avg' },
+        { key: 'ig_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalInteractions / totalReach * 100 : 0), agg: 'avg' },
+        // Átlag tartalom KPI-ok
+        { key: 'ig_avg_reach_media', label: 'Átl. elérés/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'reach') / mediaCount) : 0, agg: 'avg' },
+        { key: 'ig_avg_likes_media', label: 'Átl. like/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'likes') / mediaCount) : 0, agg: 'avg' },
+        { key: 'ig_avg_comments_media', label: 'Átl. komment/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'comments') / mediaCount) : 0, agg: 'avg' },
+        { key: 'ig_avg_saves_media', label: 'Átl. mentés/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'saved') / mediaCount) : 0, agg: 'avg' },
+        { key: 'ig_avg_shares_media', label: 'Átl. megosztás/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'shares') / mediaCount) : 0, agg: 'avg' },
       ];
     }
     case 'INSTAGRAM_PUBLIC': {
       const engagement = findChart(results, 'igpub_engagement_overview');
       const avgEng = findChart(results, 'igpub_avg_engagement');
       const allMedia = findChart(results, 'igpub_all_media');
+
+      const totalLikes = sumSeries(engagement, 0);
+      const totalComments = sumSeries(engagement, 1);
+
       return [
-        { label: 'Like-ok', value: sumSeries(engagement, 0) },
-        { label: 'Kommentek', value: sumSeries(engagement, 1) },
-        { label: 'Átl. like/poszt', value: `${avgSeries(avgEng, 0).toFixed(1)}` },
-        { label: 'Átl. komment/poszt', value: `${avgSeries(avgEng, 1).toFixed(1)}` },
-        { label: 'Tartalmak', value: tableCount(allMedia) },
+        { key: 'igpub_likes', label: 'Like-ok', value: totalLikes },
+        { key: 'igpub_comments', label: 'Kommentek', value: totalComments },
+        { key: 'igpub_avg_likes', label: 'Átl. like/poszt', value: fmtDec1(avgSeries(avgEng, 0)), agg: 'avg' },
+        { key: 'igpub_avg_comments', label: 'Átl. komment/poszt', value: fmtDec1(avgSeries(avgEng, 1)), agg: 'avg' },
+        { key: 'igpub_media', label: 'Tartalmak', value: tableCount(allMedia) },
+        { key: 'igpub_interactions', label: 'Összes interakció', value: totalLikes + totalComments },
+        { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt', value: fmtDec1(avgSeries(avgEng, 0) + avgSeries(avgEng, 1)), agg: 'avg' },
       ];
     }
     case 'YOUTUBE': {
@@ -125,17 +249,37 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const videos = findChart(results, 'yt_all_videos');
       const avgViewPct = findChart(results, 'yt_avg_view_pct');
       const playlistAdds = findChart(results, 'yt_playlist_adds');
+
+      const totalViews = sumSeries(views);
+      const totalLikes = sumSeries(engagement, 0);
+      const totalComments = sumSeries(engagement, 1);
+      const totalShares = sumSeries(engagement, 2);
+      const totalInteractions = totalLikes + totalComments + totalShares;
+      const vidRows = getTableData(videos);
+      const vidCount = vidRows.length;
+
       return [
-        { label: 'Új feliratkozók', value: sumSeries(subs) },
-        { label: 'Megtekintések', value: sumSeries(views) },
-        { label: 'Nézési idő (perc)', value: sumSeries(watchTime) },
-        { label: 'Like-ok', value: sumSeries(engagement, 0) },
-        { label: 'Kommentek', value: sumSeries(engagement, 1) },
-        { label: 'Megosztások', value: sumSeries(engagement, 2) },
-        { label: 'ER%', value: `${avgSeries(er).toFixed(2)}%` },
-        { label: 'Videók', value: tableCount(videos) },
-        { label: 'Átl. nézési %', value: `${avgSeries(avgViewPct).toFixed(1)}%` },
-        { label: 'Playlist hozzáadás', value: sumSeries(playlistAdds) },
+        // Alap metrikák
+        { key: 'yt_subs', label: 'Új feliratkozók', value: sumSeries(subs) },
+        { key: 'yt_views_kpi', label: 'Megtekintések', value: totalViews },
+        { key: 'yt_watch', label: 'Nézési idő (perc)', value: sumSeries(watchTime) },
+        { key: 'yt_likes_kpi', label: 'Like-ok', value: totalLikes },
+        { key: 'yt_comments_kpi', label: 'Kommentek', value: totalComments },
+        { key: 'yt_shares_kpi', label: 'Megosztások', value: totalShares },
+        { key: 'yt_er', label: 'ER%', value: fmtPct(avgSeries(er)), agg: 'avg' },
+        { key: 'yt_video_count', label: 'Videók', value: vidCount },
+        { key: 'yt_avg_view', label: 'Átl. nézési %', value: `${avgSeries(avgViewPct).toFixed(1)}%`, agg: 'avg' },
+        { key: 'yt_playlist', label: 'Playlist hozzáadás', value: sumSeries(playlistAdds) },
+        // Arány metrikák
+        { key: 'yt_like_per_view', label: 'Like / megtekintés', value: fmtPct(totalViews > 0 ? totalLikes / totalViews * 100 : 0), agg: 'avg' },
+        { key: 'yt_comment_per_view', label: 'Komment / megtekintés', value: fmtPct(totalViews > 0 ? totalComments / totalViews * 100 : 0), agg: 'avg' },
+        { key: 'yt_interactions_total', label: 'Összes interakció', value: totalInteractions },
+        // Átlag videó KPI-ok
+        { key: 'yt_avg_views_video', label: 'Átl. megtekintés/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'views') / vidCount) : 0, agg: 'avg' },
+        { key: 'yt_avg_likes_video', label: 'Átl. like/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount) : 0, agg: 'avg' },
+        { key: 'yt_avg_comments_video', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount) : 0, agg: 'avg' },
+        { key: 'yt_avg_watch_time_video', label: 'Átl. nézési idő/videó', value: vidCount > 0 ? fmtDec1(tableAvg(videos, 'avgViewDuration')) : '0.0', agg: 'avg' },
+        { key: 'yt_avg_er_video', label: 'Átl. ER%/videó', value: fmtPct(tableAvg(videos, 'engagementRate')), agg: 'avg' },
       ];
     }
     default:
@@ -178,45 +322,60 @@ export function aggregateMonthlyKPIs(allMonthKpis: KPI[][]): KPI[] {
   if (allMonthKpis.length === 1) return allMonthKpis[0];
 
   const count = allMonthKpis.length;
+  // Build merged map keyed by KPI key for reliable matching
   const merged: KPI[] = allMonthKpis[0].map(kpi => ({ ...kpi }));
+  const keyIndex = new Map(merged.map((kpi, idx) => [kpi.key, idx]));
 
   for (let i = 1; i < count; i++) {
     const row = allMonthKpis[i];
-    for (let j = 0; j < merged.length && j < row.length; j++) {
-      const mVal = merged[j].value;
-      const rVal = row[j].value;
+    for (const rKpi of row) {
+      const idx = keyIndex.get(rKpi.key);
+      if (idx === undefined) continue;
+      const m = merged[idx];
+
+      // For 'last' aggregation, always take the latest month's value
+      if (m.agg === 'last') {
+        m.value = rKpi.value;
+        continue;
+      }
+
+      const mVal = m.value;
+      const rVal = rKpi.value;
 
       if (typeof mVal === 'number' && typeof rVal === 'number') {
-        // Sum numeric values
-        merged[j].value = mVal + rVal;
+        m.value = mVal + rVal;
       } else if (typeof mVal === 'string' && typeof rVal === 'string') {
         const mNum = parseFloat(mVal);
         const rNum = parseFloat(rVal);
         if (!isNaN(mNum) && !isNaN(rNum)) {
           if (mVal.endsWith('%') && rVal.endsWith('%')) {
-            // Running sum for now, we'll average at the end
-            merged[j].value = `${(mNum + rNum).toFixed(2)}%`;
+            m.value = `${(mNum + rNum).toFixed(2)}%`;
           } else {
-            merged[j].value = `${(mNum + rNum).toFixed(2)}`;
+            m.value = `${(mNum + rNum).toFixed(2)}`;
           }
         }
       }
     }
   }
 
-  // Now average the percentage values
-  for (let j = 0; j < merged.length; j++) {
-    const val = merged[j].value;
+  // Now average the percentage values and 'avg' hints
+  for (const kpi of merged) {
+    const val = kpi.value;
     if (typeof val === 'string' && val.endsWith('%')) {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-        merged[j].value = `${(num / count).toFixed(2)}%`;
+        kpi.value = `${(num / count).toFixed(2)}%`;
       }
     }
+    if (kpi.agg === 'avg' && typeof kpi.value === 'number') {
+      kpi.value = Math.round(kpi.value / count);
+    }
+    if (kpi.agg === 'avg' && typeof kpi.value === 'string' && !kpi.value.endsWith('%')) {
+      const num = parseFloat(kpi.value);
+      if (!isNaN(num)) kpi.value = (num / count).toFixed(2);
+    }
+    kpi.change = undefined;
   }
-
-  // Remove change percentages for multi-month (not meaningful)
-  merged.forEach(kpi => { kpi.change = undefined; });
 
   return merged;
 }

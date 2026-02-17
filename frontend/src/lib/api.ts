@@ -178,7 +178,9 @@ export async function generateCharts(params: {
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || error.error || 'Failed to generate charts');
+        const msg = error.error || 'Failed to generate charts';
+        const detail = error.invalidKeys ? ` [${error.invalidKeys.join(', ')}]` : '';
+        throw new Error(msg + detail);
     }
 
     return response.json();
