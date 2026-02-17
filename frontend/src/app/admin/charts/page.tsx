@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData, ChartsResponse } from '@/lib/api';
-import { sumSeries, lastValue, getTableData, tableSum, extractKPIs, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
+import { extractKPIs, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
@@ -339,51 +339,33 @@ interface AggregateKPIs {
   }[];
 }
 
+function kpiNum(kpis: KPI[], key: string): number {
+  const k = kpis.find(k => k.key === key);
+  if (!k) return 0;
+  if (typeof k.value === 'number') return k.value;
+  const n = parseFloat(String(k.value).replace(/[^0-9.-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
 function aggregateFromResponses(responses: { name: string; res: ChartsResponse }[]): AggregateKPIs {
   const perCompany: AggregateKPIs['perCompany'] = [];
   let totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
   let totalVideos = 0, totalFollowers = 0;
 
   for (const { name, res } of responses) {
-    const chartMap = new Map(res.charts.map(c => [c.key, c]));
+    // Use extractKPIs — same logic as individual company chart view
+    const tt = extractKPIs('TIKTOK_ORGANIC', res.charts);
+    const fb = extractKPIs('FACEBOOK_ORGANIC', res.charts);
+    const ig = extractKPIs('INSTAGRAM_ORGANIC', res.charts);
+    const yt = extractKPIs('YOUTUBE', res.charts);
 
-    // --- TikTok Organic ---
-    const ttProfileViews = sumSeries(chartMap.get('profile_views'));
-    const ttVideoViews = tableSum(chartMap.get('all_videos'), 'views');
-    const ttLikes = sumSeries(chartMap.get('daily_likes'));
-    const ttComments = sumSeries(chartMap.get('daily_comments'));
-    const ttShares = sumSeries(chartMap.get('daily_shares'));
-    const ttFollowers = lastValue(chartMap.get('followers_growth'));
-    const ttVideos = getTableData(chartMap.get('all_videos')).length;
+    const companyViews = kpiNum(tt, 'tt_profile_views') + kpiNum(fb, 'fb_reach') + kpiNum(ig, 'ig_reach_kpi') + kpiNum(yt, 'yt_views_kpi');
+    const companyLikes = kpiNum(tt, 'tt_likes') + kpiNum(fb, 'fb_reactions') + kpiNum(ig, 'ig_likes') + kpiNum(yt, 'yt_likes_kpi');
+    const companyComments = kpiNum(tt, 'tt_comments') + kpiNum(fb, 'fb_comments') + kpiNum(ig, 'ig_comments') + kpiNum(yt, 'yt_comments_kpi');
+    const companyShares = kpiNum(tt, 'tt_shares') + kpiNum(fb, 'fb_shares') + kpiNum(ig, 'ig_shares') + kpiNum(yt, 'yt_shares_kpi');
+    const companyVideos = kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_posts') + kpiNum(ig, 'ig_media_count') + kpiNum(yt, 'yt_video_count');
+    const companyFollowers = kpiNum(tt, 'tt_total_followers') + kpiNum(fb, 'fb_followers') + kpiNum(ig, 'ig_followers') + kpiNum(yt, 'yt_subs');
 
-    // --- Facebook Organic ---
-    const fbReach = sumSeries(chartMap.get('fb_page_reach'));
-    const fbReactions = sumSeries(chartMap.get('fb_engagement'));
-    const fbFollowers = lastValue(chartMap.get('fb_page_fans'));
-    const fbPosts = getTableData(chartMap.get('fb_all_posts')).length;
-    const fbVideoViews = sumSeries(chartMap.get('fb_video_views'));
-
-    // --- Instagram Organic ---
-    const igReach = sumSeries(chartMap.get('ig_reach'));
-    const igLikes = sumSeries(chartMap.get('ig_engagement'));
-    const igFollowers = lastValue(chartMap.get('ig_follower_growth'));
-    const igMedia = getTableData(chartMap.get('ig_all_media')).length;
-
-    // --- YouTube ---
-    const ytViews = sumSeries(chartMap.get('yt_views_trend'));
-    const ytLikes = sumSeries(chartMap.get('yt_daily_engagement'));
-    const ytFollowers = sumSeries(chartMap.get('yt_subscribers_growth'));
-    const ytVideos = getTableData(chartMap.get('yt_all_videos')).length;
-
-    // Aggregate per company
-    const companyViews = ttProfileViews + ttVideoViews + fbReach + fbVideoViews + igReach + ytViews;
-    const companyLikes = ttLikes + fbReactions + igLikes + ytLikes;
-    const companyComments = ttComments;
-    const companyShares = ttShares;
-    const companyVideos = ttVideos + fbPosts + igMedia + ytVideos;
-    const companyFollowers = ttFollowers + fbFollowers + igFollowers + ytFollowers;
-
-    // ER% = interactions / views * 100 (capped at 100%)
     const companyInteractions = companyLikes + companyComments + companyShares;
     const companyER = companyViews > 0 ? Math.min(companyInteractions / companyViews * 100, 100) : 0;
 
@@ -554,8 +536,8 @@ function MonthPicker({ options, value, onChange }: { options: string[]; value: s
                 type="button"
                 onClick={() => { onChange(m); setOpen(false); }}
                 className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${selected
-                    ? 'bg-[var(--accent-subtle)] text-[var(--text-primary)] font-bold'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
+                  ? 'bg-[var(--accent-subtle)] text-[var(--text-primary)] font-bold'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
                   }`}
               >
                 <span>{formatMonthLabel(m)}</span>
