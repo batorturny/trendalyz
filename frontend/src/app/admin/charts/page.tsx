@@ -399,7 +399,7 @@ const KPI_CHART_KEYS = [
   'yt_views_trend', 'yt_daily_engagement', 'yt_subscribers_growth', 'yt_watch_time', 'yt_engagement_rate', 'yt_all_videos', 'yt_avg_view_pct', 'yt_playlist_adds',
   'igpub_engagement_overview', 'igpub_avg_engagement', 'igpub_all_media',
   'ttads_spend_trend', 'ttads_impressions_clicks', 'ttads_ctr_trend', 'ttads_cpc_cpm', 'ttads_conversions', 'ttads_cost_per_conversion',
-  'tt_bio_link_clicks',
+  'tt_bio_link_clicks', 'tt_total_followers',
 ];
 
 // ============================================

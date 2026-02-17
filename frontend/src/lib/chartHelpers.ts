@@ -432,6 +432,16 @@ export function aggregateMonthlyKPIs(allMonthKpis: KPI[][]): KPI[] {
   const merged: KPI[] = allMonthKpis[0].map(kpi => ({ ...kpi }));
   const keyIndex = new Map(merged.map((kpi, idx) => [kpi.key, idx]));
 
+  // Initialize values for accumulation
+  for (const m of merged) {
+    if (m.agg === 'last') continue; // Will be set to last month's value later
+    // Convert initial value to number for accumulation
+    if (typeof m.value === 'string') {
+      const parsed = parseFloat(m.value.replace(/[^0-9.-]/g, ''));
+      m.value = isNaN(parsed) ? 0 : parsed;
+    }
+  }
+
   for (let i = 1; i < count; i++) {
     const row = allMonthKpis[i];
     for (const rKpi of row) {
@@ -439,48 +449,45 @@ export function aggregateMonthlyKPIs(allMonthKpis: KPI[][]): KPI[] {
       if (idx === undefined) continue;
       const m = merged[idx];
 
-      // For 'last' aggregation, always take the latest month's value
+      // For 'last' aggregation, always take the latest month's value directly
       if (m.agg === 'last') {
         m.value = rKpi.value;
         continue;
       }
 
-      const mVal = m.value;
-      const rVal = rKpi.value;
+      let rVal = rKpi.value;
+      if (typeof rVal === 'string') {
+        const parsed = parseFloat(rVal.replace(/[^0-9.-]/g, ''));
+        rVal = isNaN(parsed) ? 0 : parsed;
+      }
 
-      if (typeof mVal === 'number' && typeof rVal === 'number') {
-        m.value = mVal + rVal;
-      } else if (typeof mVal === 'string' && typeof rVal === 'string') {
-        const mNum = parseFloat(mVal);
-        const rNum = parseFloat(rVal);
-        if (!isNaN(mNum) && !isNaN(rNum)) {
-          if (mVal.endsWith('%') && rVal.endsWith('%')) {
-            m.value = `${(mNum + rNum).toFixed(2)}%`;
-          } else {
-            m.value = `${(mNum + rNum).toFixed(2)}`;
-          }
-        }
+      if (typeof m.value === 'number' && typeof rVal === 'number') {
+        m.value += rVal;
       }
     }
   }
 
-  // Now average the percentage values and 'avg' hints
-  for (const kpi of merged) {
-    const val = kpi.value;
-    if (typeof val === 'string' && val.endsWith('%')) {
-      const num = parseFloat(val);
-      if (!isNaN(num)) {
-        kpi.value = `${(num / count).toFixed(2)}%`;
+  // Finalize values (average if needed, format back to string if needed)
+  for (const m of merged) {
+    if (m.agg === 'last') continue;
+
+    if (typeof m.value === 'number') {
+      if (m.agg === 'avg' || m.key.includes('_er') || m.key.includes('rate') || m.key.includes('ctr') || m.key.includes('_avg_')) {
+        m.value = m.value / count;
+      }
+
+      // Format back to string if original was percentage or if it looks like a rate
+      const original = allMonthKpis[0].find(k => k.key === m.key)?.value;
+      if (typeof original === 'string' && original.endsWith('%')) {
+        m.value = `${m.value.toFixed(2)}%`;
+      } else if (m.agg === 'avg' && !Number.isInteger(m.value)) {
+        m.value = m.value.toFixed(1); // Decimals for averages
+        if (m.value.endsWith('.0')) m.value = m.value.slice(0, -2);
+      } else if (!m.agg) {
+        // Sums are usually integers, but keep decimals if present
+        m.value = Math.round(m.value * 100) / 100;
       }
     }
-    if (kpi.agg === 'avg' && typeof kpi.value === 'number') {
-      kpi.value = Math.round(kpi.value / count);
-    }
-    if (kpi.agg === 'avg' && typeof kpi.value === 'string' && !kpi.value.endsWith('%')) {
-      const num = parseFloat(kpi.value);
-      if (!isNaN(num)) kpi.value = (num / count).toFixed(2);
-    }
-    kpi.change = undefined;
   }
 
   return merged;
