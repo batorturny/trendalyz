@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { PROVIDERS, type ConnectionProvider } from '@/types/integration';
 import { addConnection } from '../actions';
 import { ChevronRight } from 'lucide-react';
@@ -25,6 +25,12 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
   const [error, setError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
 
+  // Windsor OAuth popup state
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [oauthStatus, setOauthStatus] = useState<'idle' | 'loading' | 'popup' | 'syncing' | 'done' | 'error'>('idle');
+  const popupRef = useRef<Window | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const reset = () => {
     setStep(1);
     setSelectedProvider(null);
@@ -33,6 +39,9 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
     setError(null);
     setSaving(false);
     setShowManual(false);
+    setOauthLoading(false);
+    setOauthStatus('idle');
+    if (pollRef.current) clearInterval(pollRef.current);
   };
 
   const handleClose = () => {
@@ -50,6 +59,57 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
     setAccountName(pickedName);
     setShowManual(false);
   };
+
+  // Windsor OAuth popup flow
+  const handleWindsorOAuth = useCallback(async () => {
+    if (!selectedProvider) return;
+
+    const providerMeta = PROVIDERS.find(p => p.key === selectedProvider);
+    if (!providerMeta) return;
+
+    setOauthLoading(true);
+    setOauthStatus('loading');
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/windsor/auth-link?source=${encodeURIComponent(providerMeta.windsorEndpoint)}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || 'Nem sikerült az OAuth link generálása');
+      }
+
+      const w = 600, h = 700;
+      const left = (window.screen.width - w) / 2;
+      const top = (window.screen.height - h) / 2;
+
+      popupRef.current = window.open(
+        data.url,
+        'windsor_oauth',
+        `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`
+      );
+
+      setOauthStatus('popup');
+
+      pollRef.current = setInterval(() => {
+        if (popupRef.current && popupRef.current.closed) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          popupRef.current = null;
+          setOauthStatus('syncing');
+          setTimeout(() => {
+            setOauthStatus('done');
+            setOauthLoading(false);
+          }, 2000);
+        }
+      }, 500);
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Ismeretlen hiba';
+      setError(message);
+      setOauthStatus('error');
+      setOauthLoading(false);
+    }
+  }, [selectedProvider]);
 
   const handleSave = async () => {
     if (!selectedProvider || !accountId.trim()) {
@@ -103,11 +163,10 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                   key={provider.key}
                   onClick={() => handleSelectProvider(provider.key)}
                   disabled={alreadyExists}
-                  className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
-                    alreadyExists
+                  className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${alreadyExists
                       ? 'border-[var(--border)] opacity-40 cursor-not-allowed'
                       : 'border-[var(--border)] hover:bg-[var(--accent-subtle)]'
-                  }`}
+                    }`}
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl text-white"
@@ -135,38 +194,64 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               <span className="font-semibold text-[var(--text-primary)]">{selectedMeta.label}</span>
             </div>
 
-            {/* OAuth Connect Button - primary option */}
+            {/* Windsor OAuth Connect Button */}
             {selectedMeta.supportsOAuth && (
-              <a
-                href={`/api/oauth/authorize?provider=${selectedProvider}&companyId=${companyId}`}
-                className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] hover:bg-[var(--accent-subtle)] transition-all group"
+              <button
+                onClick={handleWindsorOAuth}
+                disabled={oauthLoading}
+                className="flex items-center gap-4 p-4 rounded-xl border border-[var(--accent)] bg-[var(--accent-subtle)] hover:brightness-110 transition-all group w-full text-left disabled:opacity-60 disabled:cursor-wait"
               >
-                <div className="w-10 h-10 rounded-lg bg-[var(--accent-subtle)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
+                <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center text-[var(--accent)]">
+                  {oauthStatus === 'loading' || oauthStatus === 'syncing' ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : oauthStatus === 'done' ? (
+                    <svg className="w-5 h-5 text-[var(--success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  )}
                 </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-[var(--text-primary)]">Kapcsolódás {selectedMeta.label}-kal</div>
-                  <div className="text-xs text-[var(--text-secondary)]">OAuth bejelentkezés - automatikus beállítás</div>
+                  <div className="font-semibold text-[var(--text-primary)]">
+                    {oauthStatus === 'idle' && `Kapcsolódás ${selectedMeta.label}-kal`}
+                    {oauthStatus === 'loading' && 'Kapcsolat előkészítése...'}
+                    {oauthStatus === 'popup' && 'Várakozás a bejelentkezésre...'}
+                    {oauthStatus === 'syncing' && 'Fiók szinkronizálása...'}
+                    {oauthStatus === 'done' && 'Bejelentkezés sikeres!'}
+                    {oauthStatus === 'error' && 'Hiba történt'}
+                  </div>
+                  <div className="text-xs text-[var(--text-secondary)]">
+                    {oauthStatus === 'idle' && 'Bejelentkezés popup ablakban — egy kattintás'}
+                    {oauthStatus === 'loading' && 'OAuth link generálása...'}
+                    {oauthStatus === 'popup' && 'Jelentkezz be a felugró ablakban, majd zárd be'}
+                    {oauthStatus === 'syncing' && 'Fiók adatok lekérése Windsor-ből...'}
+                    {oauthStatus === 'done' && 'Válaszd ki a fiókot az alábbi listából'}
+                    {oauthStatus === 'error' && 'Próbáld újra'}
+                  </div>
                 </div>
-                <svg className="w-5 h-5 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
+              </button>
             )}
 
-            {/* Divider between OAuth and manual options */}
+            {/* Divider */}
             {selectedMeta.supportsOAuth && (
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-[var(--border)]" />
-                <span className="text-xs text-[var(--text-secondary)]">vagy manuális módon</span>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  {oauthStatus === 'done' ? 'válaszd ki a fiókot' : 'vagy válassz meglévő fiókot'}
+                </span>
                 <div className="flex-1 h-px bg-[var(--border)]" />
               </div>
             )}
 
-            {/* Windsor Account Picker */}
+            {/* Windsor Account Picker — refreshes after OAuth done */}
             <WindsorAccountPicker
+              key={oauthStatus === 'done' ? `refresh-${Date.now()}` : 'initial'}
               provider={selectedProvider!}
               existingAccountIds={existingAccountIds}
               onSelect={handleAccountPicked}
@@ -262,7 +347,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
 
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => { setStep(1); setError(null); setShowManual(false); setAccountId(''); setAccountName(''); }}
+                onClick={() => { setStep(1); setError(null); setShowManual(false); setAccountId(''); setAccountName(''); setOauthStatus('idle'); setOauthLoading(false); }}
                 className="px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Vissza
