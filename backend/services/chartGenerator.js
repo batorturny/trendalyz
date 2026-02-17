@@ -166,6 +166,30 @@ class ChartGenerator {
         return this._aggregateByField(this.data, 'audience_ages_age', 'audience_ages_percentage', 'Arány %', true);
     }
 
+    generate_tt_gender_demographics() {
+        const genderMap = {};
+        this.data.forEach(item => {
+            const g = item.video_audience_genders_gender;
+            const p = parseFloat(item.video_audience_genders_percentage) || 0;
+            if (!g || p === 0) return;
+            if (!genderMap[g]) genderMap[g] = [];
+            genderMap[g].push(p);
+        });
+        const labels = [];
+        const data = [];
+        const nameMap = { 'female_vv': 'Nő', 'male_vv': 'Férfi', 'other_vv': 'Egyéb' };
+        for (const [key, values] of Object.entries(genderMap)) {
+            labels.push(nameMap[key] || key);
+            const avg = values.reduce((s, v) => s + v, 0) / values.length;
+            data.push(parseFloat((avg * 100).toFixed(1)));
+        }
+        return { labels, series: [{ name: 'Arány %', data }] };
+    }
+
+    generate_tt_total_followers() {
+        return this.dailyMax(this.daily, 'total_followers_count', 'Összes követő');
+    }
+
     // ===== TIMING CHARTS =====
 
     generate_engagement_by_day() {
@@ -201,25 +225,61 @@ class ChartGenerator {
 
     generate_all_videos() { return this.generateVideoTable(this.video); }
     generate_top_3_videos() {
-        const sorted = [...this.video].sort((a, b) => (parseInt(b.video_views_count) || 0) - (parseInt(a.video_views_count) || 0));
-        return this.generateVideoTable(sorted.slice(0, 3));
+        const deduped = this._dedupeVideos(this.video);
+        const sorted = [...deduped].sort((a, b) => b._maxViews - a._maxViews);
+        return this._buildVideoTable(sorted.slice(0, 3));
     }
     generate_worst_3_videos() {
-        const sorted = [...this.video].filter(v => parseInt(v.video_views_count) > 0)
-            .sort((a, b) => (parseInt(a.video_views_count) || 0) - (parseInt(b.video_views_count) || 0));
-        return this.generateVideoTable(sorted.slice(0, 3));
+        const deduped = this._dedupeVideos(this.video).filter(v => v._maxViews > 0);
+        const sorted = [...deduped].sort((a, b) => a._maxViews - b._maxViews);
+        return this._buildVideoTable(sorted.slice(0, 3));
     }
 
-    generateVideoTable(videos) {
-        const tableData = videos.map(v => {
-            const views = parseInt(v.video_views_count) || 0;
-            const reach = parseInt(v.video_reach) || 0;
-            const likes = parseInt(v.video_likes) || 0;
-            const comments = parseInt(v.video_comments) || 0;
-            const shares = parseInt(v.video_shares) || 0;
-            const newFollowers = parseInt(v.video_new_followers) || 0;
-            const fullWatchRate = parseFloat(v.video_full_watched_rate) || 0;
-            const avgWatchTime = parseFloat(v.video_average_time_watched_non_aggregated) || 0;
+    /** Deduplicate video rows by video_id, taking max for cumulative metrics and avg for rate metrics */
+    _dedupeVideos(videos) {
+        const map = {};
+        videos.forEach(v => {
+            const id = v.video_id;
+            if (!id) return;
+            if (!map[id]) {
+                map[id] = { rows: [], id };
+            }
+            map[id].rows.push(v);
+        });
+        return Object.values(map).map(({ rows, id }) => {
+            const maxInt = (field) => Math.max(...rows.map(r => parseInt(r[field]) || 0));
+            const avgFloat = (field) => {
+                const vals = rows.map(r => parseFloat(r[field]) || 0).filter(v => v > 0);
+                return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+            };
+            const first = rows[0];
+            return {
+                video_id: id,
+                video_caption: first.video_caption,
+                video_create_datetime: first.video_create_datetime,
+                video_embed_url: first.video_embed_url,
+                _maxViews: maxInt('video_views_count'),
+                _maxReach: maxInt('video_reach'),
+                _maxLikes: maxInt('video_likes'),
+                _maxComments: maxInt('video_comments'),
+                _maxShares: maxInt('video_shares'),
+                _maxNewFollowers: maxInt('video_new_followers'),
+                _avgFullWatchRate: avgFloat('video_full_watched_rate'),
+                _avgWatchTime: avgFloat('video_average_time_watched_non_aggregated'),
+            };
+        });
+    }
+
+    _buildVideoTable(deduped) {
+        const tableData = deduped.map(v => {
+            const views = v._maxViews;
+            const reach = v._maxReach;
+            const likes = v._maxLikes;
+            const comments = v._maxComments;
+            const shares = v._maxShares;
+            const newFollowers = v._maxNewFollowers;
+            const fullWatchRate = v._avgFullWatchRate;
+            const avgWatchTime = v._avgWatchTime;
             const er = reach > 0 ? parseFloat(((likes + comments + shares) / reach * 100).toFixed(2)) : 0;
             return {
                 id: v.video_id, caption: v.video_caption || '-',
@@ -232,6 +292,11 @@ class ChartGenerator {
             };
         });
         return { labels: ['Dátum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'Elérés', 'Új követők', 'Végignézés%', 'Átl. nézési idő', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+    }
+
+    generateVideoTable(videos) {
+        const deduped = this._dedupeVideos(videos);
+        return this._buildVideoTable(deduped);
     }
 
     // ===== FACEBOOK CHARTS =====
