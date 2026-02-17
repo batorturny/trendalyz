@@ -10,7 +10,7 @@ const ChartGenerator = require('./services/chartGenerator');
 const { processReport } = require('./services/report');
 const { getAllCompanies, getCompanyById, addCompany, removeCompany } = require('./config/companies');
 const { chartCatalog, validateChartKeys, getCatalogByCategory } = require('./config/chartCatalog');
-const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT, ENABLE_MULTI_PLATFORM } = require('./config/featureFlags');
+const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT, ENABLE_MULTI_PLATFORM, ENABLE_BILLING } = require('./config/featureFlags');
 const { parseUserContext, requireAdmin, requireCompanyAccess } = require('./middleware/authContext');
 const { WindsorMultiPlatform } = require('./services/windsorMultiPlatform');
 const connectionService = require('./services/connectionService');
@@ -24,6 +24,60 @@ const { getWindsorApiKey, getWindsorApiKeyForCompany } = require('./services/adm
 const prisma = require('./lib/prisma');
 
 const app = express();
+
+// ============================================
+// STRIPE WEBHOOK — must be BEFORE express.json()
+// Raw body needed for Stripe signature verification
+// ============================================
+if (ENABLE_BILLING) {
+    const stripeService = require('./services/stripeService');
+
+    app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+        const sig = req.headers['stripe-signature'];
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+        if (!webhookSecret) {
+            console.error('[Stripe Webhook] STRIPE_WEBHOOK_SECRET not configured');
+            return res.status(500).json({ error: 'Webhook secret not configured' });
+        }
+
+        let event;
+        try {
+            event = stripeService.stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+        } catch (err) {
+            console.error('[Stripe Webhook] Signature verification failed:', err.message);
+            return res.status(400).json({ error: 'Webhook signature verification failed' });
+        }
+
+        try {
+            switch (event.type) {
+                case 'customer.subscription.created':
+                    await stripeService.handleSubscriptionCreated(event.data.object);
+                    break;
+                case 'customer.subscription.updated':
+                    await stripeService.handleSubscriptionUpdated(event.data.object);
+                    break;
+                case 'customer.subscription.deleted':
+                    await stripeService.handleSubscriptionDeleted(event.data.object);
+                    break;
+                case 'invoice.paid':
+                    await stripeService.handleInvoicePaid(event.data.object);
+                    break;
+                case 'invoice.payment_failed':
+                    await stripeService.handlePaymentFailed(event.data.object);
+                    break;
+                default:
+                    console.log(`[Stripe Webhook] Unhandled event: ${event.type}`);
+            }
+            res.json({ received: true });
+        } catch (err) {
+            console.error(`[Stripe Webhook] Handler error for ${event.type}:`, err);
+            res.status(500).json({ error: 'Webhook handler error' });
+        }
+    });
+
+    console.log('Stripe webhook endpoint registered (raw body)');
+}
 
 /**
  * Resolve TikTok account ID for a company.
@@ -658,7 +712,161 @@ app.get('/api/summary/:companyId/:month', requireCompanyAccess(req => req.params
 });
 
 // ============================================
-// PDF GENERATION (Puppeteer)
+// BILLING ROUTES (Feature Flag Protected)
+// ============================================
+
+if (ENABLE_BILLING) {
+    const stripeService = require('./services/stripeService');
+    const { PLANS } = require('./config/plans');
+
+    // Get current subscription
+    app.get('/api/billing/subscription', requireAdmin, async (req, res) => {
+        try {
+            const sub = await stripeService.getSubscription(req.userContext.userId);
+            res.json(sub || { tier: 'FREE', status: 'ACTIVE', companyLimit: 1 });
+        } catch (error) {
+            console.error('Error fetching subscription:', error);
+            res.status(500).json({ error: 'Failed to fetch subscription' });
+        }
+    });
+
+    // Create checkout session
+    app.post('/api/billing/checkout', requireAdmin, async (req, res) => {
+        try {
+            const { tier, currency = 'eur', successUrl, cancelUrl } = req.body;
+
+            if (!tier || !successUrl || !cancelUrl) {
+                return res.status(400).json({ error: 'tier, successUrl, and cancelUrl are required' });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { id: req.userContext.userId },
+                select: { email: true, name: true },
+            });
+
+            const result = await stripeService.createCheckoutSession({
+                userId: req.userContext.userId,
+                email: user.email,
+                name: user.name || user.email,
+                tier,
+                currency,
+                successUrl,
+                cancelUrl,
+            });
+
+            res.json(result);
+        } catch (error) {
+            console.error('Error creating checkout:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Customer portal session
+    app.post('/api/billing/portal', requireAdmin, async (req, res) => {
+        try {
+            const { returnUrl } = req.body;
+            const sub = await prisma.subscription.findUnique({
+                where: { userId: req.userContext.userId },
+                select: { stripeCustomerId: true },
+            });
+
+            if (!sub?.stripeCustomerId) {
+                return res.status(404).json({ error: 'Nincs Stripe fiók' });
+            }
+
+            const result = await stripeService.createPortalSession(sub.stripeCustomerId, returnUrl);
+            res.json(result);
+        } catch (error) {
+            console.error('Error creating portal session:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Change plan
+    app.post('/api/billing/change-plan', requireAdmin, async (req, res) => {
+        try {
+            const { tier, currency = 'eur' } = req.body;
+            if (!tier) return res.status(400).json({ error: 'tier is required' });
+
+            const result = await stripeService.changePlan(req.userContext.userId, tier, currency);
+            res.json(result);
+        } catch (error) {
+            console.error('Error changing plan:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Cancel subscription
+    app.post('/api/billing/cancel', requireAdmin, async (req, res) => {
+        try {
+            const result = await stripeService.cancelSubscription(req.userContext.userId);
+            res.json(result);
+        } catch (error) {
+            console.error('Error canceling subscription:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Reactivate subscription
+    app.post('/api/billing/reactivate', requireAdmin, async (req, res) => {
+        try {
+            const result = await stripeService.reactivateSubscription(req.userContext.userId);
+            res.json(result);
+        } catch (error) {
+            console.error('Error reactivating subscription:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get invoices
+    app.get('/api/billing/invoices', requireAdmin, async (req, res) => {
+        try {
+            const sub = await prisma.subscription.findUnique({
+                where: { userId: req.userContext.userId },
+                select: { stripeCustomerId: true },
+            });
+
+            if (!sub?.stripeCustomerId) {
+                return res.json([]);
+            }
+
+            const invoices = await stripeService.getInvoices(sub.stripeCustomerId);
+            res.json(invoices);
+        } catch (error) {
+            console.error('Error fetching invoices:', error);
+            res.status(500).json({ error: 'Failed to fetch invoices' });
+        }
+    });
+
+    // Get usage (company count vs limit)
+    app.get('/api/billing/usage', requireAdmin, async (req, res) => {
+        try {
+            const usage = await stripeService.getUsage(req.userContext.userId);
+            res.json(usage);
+        } catch (error) {
+            console.error('Error fetching usage:', error);
+            res.status(500).json({ error: 'Failed to fetch usage' });
+        }
+    });
+
+    // Get plans config (public within auth)
+    app.get('/api/billing/plans', (req, res) => {
+        const plans = Object.values(PLANS).map(p => ({
+            tier: p.tier,
+            name: p.name,
+            companyLimit: p.companyLimit,
+            prices: p.prices,
+            features: p.features,
+            popular: p.popular || false,
+        }));
+        res.json(plans);
+    });
+
+    console.log('Billing routes enabled');
+}
+
+// ============================================
+// START SERVER
 // ============================================
 
 app.listen(PORT, async () => {

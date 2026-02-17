@@ -196,6 +196,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       return addDescriptions([
         { key: 'tt_followers', label: 'Össz. követőnövekedés', value: sumSeries(followers) },
         { key: 'tt_total_followers', label: 'Összes követő', value: lastValue(totalFollowersChart), agg: 'last' },
+        { key: 'tt_total_views', label: 'Össz. megtekintés', value: totalVidViews },
         { key: 'tt_profile_views', label: 'Profilnézetek', value: sumSeries(profileViews) },
         { key: 'tt_likes', label: 'Like-ok', value: totalLikes },
         { key: 'tt_comments', label: 'Kommentek', value: totalComments },

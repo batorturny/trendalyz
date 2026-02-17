@@ -14,4 +14,7 @@ module.exports = {
 
     // Enable multi-platform integration (Facebook, Instagram alongside TikTok)
     ENABLE_MULTI_PLATFORM: process.env.ENABLE_MULTI_PLATFORM !== 'false',
+
+    // Enable Stripe billing / subscription management
+    ENABLE_BILLING: process.env.ENABLE_BILLING === 'true',
 };

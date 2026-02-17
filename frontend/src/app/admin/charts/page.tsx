@@ -40,6 +40,7 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       // Alap metrikák
       { key: 'tt_followers', label: 'Össz. követőnövekedés', chartKeys: ['followers_growth'] },
       { key: 'tt_total_followers', label: 'Összes követő', chartKeys: ['tt_total_followers'] },
+      { key: 'tt_total_views', label: 'Össz. megtekintés', chartKeys: ['all_videos'] },
       { key: 'tt_profile_views', label: 'Profilnézetek', chartKeys: ['profile_views'] },
       { key: 'tt_likes', label: 'Like-ok', chartKeys: ['daily_likes'] },
       { key: 'tt_comments', label: 'Kommentek', chartKeys: ['daily_comments'] },

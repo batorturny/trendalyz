@@ -108,9 +108,10 @@ model Company {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
-  users        User[]
-  integrations Integration[]
-  connections  IntegrationConnection[]
+  users           User[]
+  integrations    Integration[]
+  connections     IntegrationConnection[]
+  reportSummaries ReportSummary[]
 
   @@index([adminId])
 }
