@@ -201,6 +201,7 @@ model ReportSummary {
   @@unique([companyId, month])
 }
 
+
 model Subscription {
   id                   String             @id @default(cuid())
   userId               String             @unique
