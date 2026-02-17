@@ -19,11 +19,11 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; dis
 
 const platformItems = [
   { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
-  { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', disabled: true },
-  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', disabled: true },
-  { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', disabled: true },
-  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', disabled: true },
+  { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)' },
   { href: '/admin/reports/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
+  { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)' },
+  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', disabled: true },
+  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', disabled: true },
 ];
 
 function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
@@ -83,14 +83,14 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
                 <span
                   key={item.href}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed group relative"
-                  title="Fejlesztés alatt"
+                  title="Hamarosan érkezik"
                 >
                   <PlatformIcon platform={item.platform} className="w-4 h-4 grayscale" />
                   {item.label}
-                  <span className="ml-auto text-[10px] uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">WIP</span>
                 </span>
               );
             }
+
 
             const isActive = pathname === item.href;
 
