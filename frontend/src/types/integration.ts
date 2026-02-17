@@ -30,6 +30,7 @@ export const PROVIDERS = [
     windsorEndpoint: 'tiktok',
     description: 'TikTok fizetett hirdetések',
     supportsOAuth: true,
+    isDev: true,
   },
   {
     key: 'INSTAGRAM_ORGANIC' as const,
@@ -53,7 +54,8 @@ export const PROVIDERS = [
     color: 'from-purple-500 to-pink-500',
     windsorEndpoint: 'instagram_public',
     description: 'Instagram publikus profil elemzés (versenytárs)',
-    supportsOAuth: false,
+    supportsOAuth: false, // Windsor doesn't support OAuth for this yet?
+    isDev: true,
   },
   {
     key: 'YOUTUBE' as const,

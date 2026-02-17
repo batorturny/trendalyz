@@ -157,31 +157,46 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
           <div className="grid gap-3">
             {PROVIDERS.map((provider) => {
               const alreadyExists = existingProviders.includes(provider.key);
+              // @ts-ignore - isDev might not be in the type definition yet if types are not fully updated in IDE context, but it is in the file
+              const isDev = provider.isDev;
+              const isDisabled = alreadyExists || isDev;
+
               const providerColor = provider.key.includes('TIKTOK') ? 'var(--platform-tiktok)' : provider.key.includes('FACEBOOK') ? 'var(--platform-facebook)' : provider.key.includes('INSTAGRAM') ? 'var(--platform-instagram)' : 'var(--platform-youtube)';
+
               return (
-                <button
-                  key={provider.key}
-                  onClick={() => handleSelectProvider(provider.key)}
-                  disabled={alreadyExists}
-                  className={`flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${alreadyExists
-                      ? 'border-[var(--border)] opacity-40 cursor-not-allowed'
+                <div key={provider.key} className="relative group">
+                  <button
+                    onClick={() => handleSelectProvider(provider.key)}
+                    disabled={isDisabled}
+                    title={isDev ? "Fejlesztés alatt" : alreadyExists ? "Már hozzáadva" : ""}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${isDisabled
+                      ? 'border-[var(--border)] opacity-50 cursor-not-allowed grayscale-[0.5]'
                       : 'border-[var(--border)] hover:bg-[var(--accent-subtle)]'
-                    }`}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl text-white"
-                    style={{ backgroundColor: providerColor }}
+                      }`}
                   >
-                    <PlatformIcon platform={getPlatformFromProvider(provider.key)} className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-[var(--text-primary)]">{provider.label}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">{provider.description}</div>
-                    {alreadyExists && (
-                      <div className="text-xs text-[var(--success)] mt-1">Már hozzáadva</div>
-                    )}
-                  </div>
-                </button>
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl text-white"
+                      style={{ backgroundColor: providerColor }}
+                    >
+                      <PlatformIcon platform={getPlatformFromProvider(provider.key)} className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                        {provider.label}
+                        {isDev && <span className="text-[10px] uppercase tracking-wider bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded">Dev</span>}
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)]">{provider.description}</div>
+                      {alreadyExists && (
+                        <div className="text-xs text-[var(--success)] mt-1">Már hozzáadva</div>
+                      )}
+                      {isDev && (
+                        <div className="text-xs text-[var(--warning)] mt-1 font-medium opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 bg-[var(--surface)] px-2 py-1 rounded shadow-sm border border-[var(--border)]">
+                          Fejlesztés alatt 🚧
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </div>
               );
             })}
           </div>
