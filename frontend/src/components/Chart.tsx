@@ -38,9 +38,22 @@ interface ChartProps {
   beginAtZero?: boolean;
 }
 
-export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title, beginAtZero: beginAtZeroProp = true }: ChartProps) {
+export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title, beginAtZero: beginAtZeroProp }: ChartProps) {
   const { theme } = useTheme();
   const chartRef = useRef<ChartJS<'bar' | 'line'>>(null);
+
+  // Auto-detect beginAtZero: if the data range is small relative to max, zoom in
+  const beginAtZero = (() => {
+    if (beginAtZeroProp !== undefined) return beginAtZeroProp;
+    if (data.length === 0) return true;
+    const nums = data.filter(v => typeof v === 'number' && v > 0);
+    if (nums.length < 2) return true;
+    const minVal = Math.min(...nums);
+    const maxVal = Math.max(...nums);
+    const range = maxVal - minVal;
+    // If variation is < 20% of max, zoom in to show growth
+    return range / maxVal > 0.2;
+  })();
 
   const textColor = theme === 'dark' ? '#e5e5e5' : '#374151';
   const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
@@ -56,26 +69,26 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
         data: trimmedData,
         ...(type === 'bar'
           ? {
-              backgroundColor: color,
-              hoverBackgroundColor: `color-mix(in srgb, ${color} 80%, white)`,
-              borderRadius: 4,
-              borderSkipped: 'bottom' as const,
-            }
+            backgroundColor: color,
+            hoverBackgroundColor: `color-mix(in srgb, ${color} 80%, white)`,
+            borderRadius: 4,
+            borderSkipped: 'bottom' as const,
+          }
           : {
-              borderColor: color,
-              backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
-              fill: true,
-              borderWidth: 2.5,
-              tension: 0.35,
-              pointRadius: 4,
-              pointHoverRadius: 7,
-              pointBackgroundColor: color,
-              pointBorderColor: theme === 'dark' ? '#1a1a1e' : '#ffffff',
-              pointBorderWidth: 2,
-              pointHoverBorderWidth: 3,
-              pointHoverBackgroundColor: color,
-              pointHoverBorderColor: theme === 'dark' ? '#1a1a1e' : '#ffffff',
-            }),
+            borderColor: color,
+            backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+            fill: true,
+            borderWidth: 2.5,
+            tension: 0.35,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: color,
+            pointBorderColor: theme === 'dark' ? '#1a1a1e' : '#ffffff',
+            pointBorderWidth: 2,
+            pointHoverBorderWidth: 3,
+            pointHoverBackgroundColor: color,
+            pointHoverBorderColor: theme === 'dark' ? '#1a1a1e' : '#ffffff',
+          }),
       },
     ],
   };
@@ -135,9 +148,9 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
           callback: (val) => typeof val === 'number' ? val.toLocaleString('hu-HU') : val,
         },
         grid: { color: gridColor },
-        beginAtZero: beginAtZeroProp,
-        ...(!beginAtZeroProp && trimmedData.length > 0 ? (() => {
-          const minVal = Math.min(...trimmedData);
+        beginAtZero,
+        ...(!beginAtZero && trimmedData.length > 0 ? (() => {
+          const minVal = Math.min(...trimmedData.filter(v => v > 0));
           const maxVal = Math.max(...trimmedData);
           const range = maxVal - minVal || 1;
           const padding = range * 0.15;
