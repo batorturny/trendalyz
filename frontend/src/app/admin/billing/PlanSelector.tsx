@@ -61,7 +61,7 @@ export function PlanSelector({
 
   async function handleSelectPlan(tier: string) {
     if (tier === 'ENTERPRISE') {
-      window.location.href = 'mailto:hello@trendalyz.hu?subject=Enterprise%20csomag%20érdeklődés';
+      window.location.href = 'mailto:turnybator@makeden.hu?subject=Enterprise%20csomag%20érdeklődés';
       return;
     }
 
@@ -127,21 +127,19 @@ export function PlanSelector({
         <div className="flex bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-0.5">
           <button
             onClick={() => setCurrency('eur')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all ${
-              currency === 'eur'
+            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all ${currency === 'eur'
                 ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
+              }`}
           >
             EUR
           </button>
           <button
             onClick={() => setCurrency('huf')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all ${
-              currency === 'huf'
+            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all ${currency === 'huf'
                 ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
+              }`}
           >
             HUF
           </button>
@@ -159,11 +157,10 @@ export function PlanSelector({
           return (
             <div
               key={plan.tier}
-              className={`relative bg-[var(--surface)] border rounded-2xl p-5 flex flex-col shadow-[var(--shadow-card)] transition-all ${
-                plan.popular
+              className={`relative bg-[var(--surface)] border rounded-2xl p-5 flex flex-col shadow-[var(--shadow-card)] transition-all ${plan.popular
                   ? 'border-[var(--accent)] ring-1 ring-[var(--accent)]'
                   : 'border-[var(--border)]'
-              } ${isCurrent ? 'opacity-80' : ''}`}
+                } ${isCurrent ? 'opacity-80' : ''}`}
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-xs font-bold rounded-full">
@@ -211,19 +208,18 @@ export function PlanSelector({
                 <button
                   onClick={() => handleSelectPlan(plan.tier)}
                   disabled={loading === plan.tier}
-                  className={`px-4 py-2.5 text-sm font-bold rounded-xl transition-all disabled:opacity-50 ${
-                    plan.popular
+                  className={`px-4 py-2.5 text-sm font-bold rounded-xl transition-all disabled:opacity-50 ${plan.popular
                       ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)] hover:brightness-110'
                       : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'
-                  }`}
+                    }`}
                 >
                   {loading === plan.tier
                     ? 'Feldolgozás...'
                     : isUpgrade
-                    ? 'Csomag váltás'
-                    : isDowngrade
-                    ? 'Visszalépés'
-                    : 'Kiválasztás'
+                      ? 'Csomag váltás'
+                      : isDowngrade
+                        ? 'Visszalépés'
+                        : 'Kiválasztás'
                   }
                 </button>
               )}
