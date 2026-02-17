@@ -1242,7 +1242,7 @@ export default function AdminChartsPage() {
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                     {kpiList.map((kpi) => (
-                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} />
+                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} description={kpi.description} />
                     ))}
                   </div>
                 </div>
@@ -1270,7 +1270,7 @@ export default function AdminChartsPage() {
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                     {kpiList.map((kpi) => (
-                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} />
+                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} description={kpi.description} />
                     ))}
                   </div>
                 </div>
