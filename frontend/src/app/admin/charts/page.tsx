@@ -538,7 +538,7 @@ function PlatformSection({
   onSelectAllDist, onClearDist,
   onSelectAllPlatform, onClearPlatform,
 }: PlatformSectionProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const totalSelected =
     config.kpis.filter(i => selectedKPIs.has(i.key)).length +

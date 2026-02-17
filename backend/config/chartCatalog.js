@@ -403,13 +403,33 @@ const chartCatalog = [
     },
     {
         key: 'tt_audience_demographics',
-        title: 'Közönség demográfia',
-        description: 'Közönség demográfia (kor/nem)',
+        title: 'Életkori megoszlás',
+        description: 'Közönség életkori megoszlása',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
         color: '#ffce44',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['audience_ages_age', 'audience_ages_percentage']
+    },
+    {
+        key: 'tt_gender_demographics',
+        title: 'Nemek megoszlása',
+        description: 'Közönség nemi megoszlása',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#f472b6',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['video_audience_genders_gender', 'video_audience_genders_percentage']
+    },
+    {
+        key: 'tt_total_followers',
+        title: 'Összes követő',
+        description: 'Összes követő szám trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#22d3ee',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['total_followers_count']
     },
 
     // ========== TIKTOK ADS ==========

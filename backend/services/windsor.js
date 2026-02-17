@@ -90,13 +90,19 @@ class WindsorService {
     async fetchAllChartData(tiktokAccountId, dateFrom, dateTo) {
         const fields = [
             // Daily data
-            'date', 'followers_count', 'profile_views', 'likes', 'comments', 'shares',
+            'date', 'followers_count', 'total_followers_count', 'profile_views', 'likes', 'comments', 'shares',
             // Video data
             'video_id', 'video_caption', 'video_create_datetime', 'video_embed_url',
             'video_views_count', 'video_reach', 'video_likes', 'video_comments',
             'video_shares', 'video_new_followers', 'video_full_watched_rate',
+            'video_average_time_watched_non_aggregated',
             // Activity data
-            'audience_activity_hour', 'audience_activity_count'
+            'audience_activity_hour', 'audience_activity_count',
+            // Demographics
+            'audience_ages_age', 'audience_ages_percentage',
+            'video_audience_genders_gender', 'video_audience_genders_percentage',
+            // Traffic sources
+            'video_impression_sources_impression_source', 'video_impression_sources_percentage'
         ].join(',');
 
         return this.fetchData(tiktokAccountId, dateFrom, dateTo, fields);
