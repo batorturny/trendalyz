@@ -1,4 +1,5 @@
 'use client';
+// Force rebuild for deployment sync
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
