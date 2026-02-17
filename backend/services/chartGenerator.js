@@ -162,11 +162,13 @@ class ChartGenerator {
     }
 
     generate_tt_traffic_sources() {
-        return this._aggregateByField(this.data, 'video_impression_sources_impression_source', 'video_impression_sources_percentage', 'Arány %', false, 0, 100);
+        // Multiplier 1 is fine here because we normalize (calculate % of total)
+        return this._aggregateByField(this.data, 'video_impression_sources_impression_source', 'video_impression_sources_percentage', 'Arány %', false, 0, 1, true);
     }
 
     generate_tt_audience_demographics() {
-        return this._aggregateByField(this.data, 'audience_ages_age', 'audience_ages_percentage', 'Arány %', true, 0, 100);
+        // Multiplier 1 is fine here because we normalize (calculate % of total)
+        return this._aggregateByField(this.data, 'audience_ages_age', 'audience_ages_percentage', 'Arány %', true, 0, 1, true);
     }
 
     generate_tt_gender_demographics() {
@@ -575,7 +577,7 @@ class ChartGenerator {
     // ===== UTILITY METHODS =====
 
     /** Aggregate by a categorical field, sum a percentage field */
-    _aggregateByField(source, keyField, valueField, seriesName, sortAlpha = false, limit = 0, multiplier = 1) {
+    _aggregateByField(source, keyField, valueField, seriesName, sortAlpha = false, limit = 0, multiplier = 1, normalize = false) {
         const map = {};
         source.forEach(item => {
             const key = item[keyField];
@@ -585,7 +587,7 @@ class ChartGenerator {
             map[key] += val;
         });
 
-        // Calculate total for normalization if needed
+        // Calculate total for normalization
         const total = Object.values(map).reduce((a, b) => a + b, 0);
 
         let sorted = Object.entries(map);
@@ -596,7 +598,15 @@ class ChartGenerator {
 
         return {
             labels: sorted.map(([k]) => k),
-            series: [{ name: seriesName, data: sorted.map(([, v]) => parseFloat((v * multiplier).toFixed(2))) }]
+            series: [{
+                name: seriesName,
+                data: sorted.map(([, v]) => {
+                    if (normalize && total > 0) {
+                        return parseFloat(((v / total) * 100).toFixed(2));
+                    }
+                    return parseFloat((v * multiplier).toFixed(2));
+                })
+            }]
         };
     }
 
