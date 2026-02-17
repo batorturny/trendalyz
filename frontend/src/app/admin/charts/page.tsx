@@ -44,7 +44,7 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'tt_likes', label: 'Like-ok', chartKeys: ['daily_likes'] },
       { key: 'tt_comments', label: 'Kommentek', chartKeys: ['daily_comments'] },
       { key: 'tt_shares', label: 'Megosztások', chartKeys: ['daily_shares'] },
-      { key: 'tt_er', label: 'ER%', chartKeys: ['engagement_rate'] },
+      { key: 'tt_er', label: 'ER%', chartKeys: ['all_videos'] },
       { key: 'tt_videos', label: 'Videók száma', chartKeys: ['all_videos'] },
       { key: 'tt_bio_clicks', label: 'Bio link kattintás', chartKeys: ['tt_bio_link_clicks'] },
       // Arány metrikák
@@ -57,7 +57,7 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'tt_avg_likes', label: 'Átl. like/videó', chartKeys: ['all_videos'] },
       { key: 'tt_avg_comments', label: 'Átl. komment/videó', chartKeys: ['all_videos'] },
       { key: 'tt_avg_shares', label: 'Átl. megosztás/videó', chartKeys: ['all_videos'] },
-      { key: 'tt_avg_er', label: 'Átl. ER%/videó', chartKeys: ['all_videos'] },
+      // tt_avg_er removed as redundant with tt_er
       { key: 'tt_avg_watch_time', label: 'Átl. nézési idő (mp)', chartKeys: ['all_videos'] },
       { key: 'tt_avg_full_watch', label: 'Átl. végignézés%', chartKeys: ['all_videos'] },
       { key: 'tt_avg_new_followers', label: 'Átl. új követő/videó', chartKeys: ['all_videos'] },
@@ -1134,6 +1134,8 @@ export default function AdminChartsPage() {
 
   // Group results by platform for rendering
   const resultsByPlatform = useMemo(() => {
+    // If multi-month selected, hide all charts except KPIs
+    if (isMultiMonth) return {};
     const grouped: Record<string, { daily: ChartData[]; distributions: ChartData[] }> = {};
     for (const platKey of PLATFORM_ORDER) {
       const sel = selections[platKey];

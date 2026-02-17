@@ -47,8 +47,9 @@ function extractRawTotals(report: ReportResponse): RawTotals {
     videoComments: v.totalComments,
     videoShares: v.totalShares,
     videoNewFollowers: v.totalNewFollowers,
-    avgEngagement: v.avgEngagement * v.videoCount, // store as weighted sum
-    avgFullWatchRate: v.avgFullWatchRate * v.videoCount,
+    // Store weighted sum (avg * count) so we can average it later by dividing by total video count
+    avgEngagement: (v.avgEngagement || 0) * v.videoCount,
+    avgFullWatchRate: (v.avgFullWatchRate || 0) * v.videoCount,
   };
 }
 
@@ -79,9 +80,9 @@ interface DisplayKPI {
 }
 
 function buildMainKPIs(r: RawTotals, isAggregate: boolean): DisplayKPI[] {
-  const er = r.totalReach > 0
-    ? ((r.videoLikes + r.videoComments + r.videoShares) / r.totalReach) * 100
-    : 0;
+  // User requested average of individual video ERs: sum(video_ER) / count(videos)
+  // r.avgEngagement stores the sum of ERs (see extractRawTotals)
+  const er = r.videoCount > 0 ? r.avgEngagement / r.videoCount : 0;
 
   return [
     { label: isAggregate ? 'Össz követők' : 'Követők', value: r.currentFollowers },

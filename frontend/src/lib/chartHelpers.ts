@@ -200,7 +200,8 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'tt_likes', label: 'Like-ok', value: totalLikes },
         { key: 'tt_comments', label: 'Kommentek', value: totalComments },
         { key: 'tt_shares', label: 'Megosztások', value: totalShares },
-        { key: 'tt_er', label: 'ER%', value: `${avgSeries(er).toFixed(2)}%`, agg: 'avg' },
+        // User requested average of individual video ERs: sum(video_ER) / count(videos)
+        { key: 'tt_er', label: 'ER%', value: `${tableAvg(videos, 'engagementRate').toFixed(2)}%`, agg: 'avg' },
         { key: 'tt_videos', label: 'Videók száma', value: vidCount },
         { key: 'tt_bio_clicks', label: 'Bio link kattintás', value: sumSeries(bioClicks) },
         { key: 'tt_like_per_view', label: 'Like / megtekintés', value: fmtPct(totalVidViews > 0 ? totalLikes / totalVidViews * 100 : 0), agg: 'avg' },
