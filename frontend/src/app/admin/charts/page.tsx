@@ -483,13 +483,13 @@ function MultiSelectDropdown({ label, items, selected, onToggle, onSelectAll, on
                   type="button"
                   onClick={() => onToggle(item.key)}
                   className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${isSelected
-                      ? 'text-[var(--text-primary)] bg-[var(--accent-subtle)]'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
+                    ? 'text-[var(--text-primary)] bg-[var(--accent-subtle)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
                     }`}
                 >
                   <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected
-                      ? 'border-transparent text-white'
-                      : 'border-[var(--border)]'
+                    ? 'border-transparent text-white'
+                    : 'border-[var(--border)]'
                     }`}
                     style={isSelected ? { backgroundColor: color || 'var(--accent)' } : undefined}
                   >
@@ -1058,8 +1058,15 @@ export default function AdminChartsPage() {
       if (platCharts.length > 0) {
         const allKpis = extractKPIs(platKey, platCharts);
         // Filter to only show KPIs selected by user
-        const filtered = allKpis.filter(k => sel.kpis.has(k.key));
-        if (filtered.length > 0 && filtered.some(k => typeof k.value === 'number' ? k.value > 0 : k.value !== '0' && k.value !== '0.00%')) {
+        const filtered = allKpis
+          .filter(k => sel.kpis.has(k.key))
+          .filter(k => {
+            const v = k.value;
+            if (typeof v === 'number') return v !== 0;
+            if (typeof v === 'string') return v !== '0' && v !== '0.00%' && v !== '0.0' && v !== '0%';
+            return true;
+          });
+        if (filtered.length > 0) {
           kpiMap[platKey] = filtered;
         }
       }
@@ -1163,8 +1170,8 @@ export default function AdminChartsPage() {
                 key={p.months}
                 onClick={() => applyPreset(p.months)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activePreset === p.months
-                    ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
-                    : 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
+                  : 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                   }`}
               >
                 {p.label}
