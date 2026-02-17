@@ -19,23 +19,30 @@ export function KPICard({ label, value, change, icon, description }: KPICardProp
     const [open, setOpen] = useState(false);
 
     const formattedValue = typeof value === 'number'
-        ? value.toLocaleString('hu-HU')
+        ? value >= 1_000_000
+            ? `${(value / 1_000_000).toFixed(1)}M`
+            : value >= 10_000
+                ? `${(value / 1_000).toFixed(1)}K`
+                : value.toLocaleString('hu-HU')
         : value;
+
+    // Auto-size: shrink text for long values
+    const valueLen = String(formattedValue).length;
+    const textSize = valueLen > 10 ? 'text-lg' : valueLen > 7 ? 'text-xl' : 'text-3xl';
 
     return (
         <>
             <div
                 onClick={() => description && setOpen(true)}
-                className={`relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-5 text-center shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-md)] transition-all ${
-                    description ? 'cursor-pointer group' : ''
-                }`}
+                className={`relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-5 text-center shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-md)] transition-all min-h-[100px] flex flex-col items-center justify-center ${description ? 'cursor-pointer group' : ''
+                    }`}
             >
                 {change !== null && change !== undefined && (
                     <div className={`absolute top-2 right-3 text-xs font-bold ${change >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
                         {change >= 0 ? '↑' : '↓'}{Math.abs(change).toFixed(1)}%
                     </div>
                 )}
-                <div className="text-3xl font-bold text-[var(--text-primary)] mb-1">
+                <div className={`${textSize} font-bold text-[var(--text-primary)] mb-1 break-all leading-tight`}>
                     {icon && <span className="mr-1">{icon}</span>}
                     {formattedValue}
                 </div>
