@@ -18,11 +18,11 @@ const navItems = [
 
 const platformItems = [
   { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
-  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
-  { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)' },
-  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
+  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', disabled: true },
+  { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', disabled: true },
+  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', disabled: true },
   { href: '/admin/reports/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
-  { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)' },
+  { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', disabled: true },
 ];
 
 function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
@@ -48,11 +48,10 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                isActive
-                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${isActive
+                ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                }`}
             >
               <item.icon className="w-4 h-4" strokeWidth={2} />
               {item.label}
@@ -64,6 +63,20 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
         <div className="pt-4 mt-4 border-t border-[var(--border)]">
           <p className="px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Riportok</p>
           {platformItems.map((item) => {
+            if (item.disabled) {
+              return (
+                <span
+                  key={item.href}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed group relative"
+                  title="Fejlesztés alatt"
+                >
+                  <PlatformIcon platform={item.platform} className="w-4 h-4 grayscale" />
+                  {item.label}
+                  <span className="ml-auto text-[10px] uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity">WIP</span>
+                </span>
+              );
+            }
+
             const isActive = pathname === item.href;
 
             return (
@@ -71,11 +84,10 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
                 key={item.href}
                 href={item.href}
                 onClick={onNavigate}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                  isActive
-                    ? 'bg-[var(--surface-raised)] text-[var(--text-primary)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${isActive
+                  ? 'bg-[var(--surface-raised)] text-[var(--text-primary)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                  }`}
               >
                 {isActive && (
                   <span className="w-0.5 h-5 rounded-full absolute left-4" style={{ backgroundColor: item.color }} />

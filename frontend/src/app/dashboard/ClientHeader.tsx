@@ -11,11 +11,11 @@ import { Settings, Menu, X } from 'lucide-react';
 
 const platformTabs = [
   { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
-  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'] },
-  { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'] },
-  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'] },
+  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'], disabled: true },
+  { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'], disabled: true },
+  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'], disabled: true },
   { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'] },
-  { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'] },
+  { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'], disabled: true },
 ];
 
 interface Props {
@@ -49,16 +49,20 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                 const isActive = tab.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : pathname === tab.href || pathname.startsWith(tab.href + '/');
-                const isEnabled = tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p));
+
+                // Check if manually disabled OR if no provider connected (except main TikTok which is always visible if not disabled)
+                // Actually, logic was: tab.platform === 'tiktok' || ...
+                // Now:
+                const isEnabled = !tab.disabled && (tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p)));
 
                 if (!isEnabled) {
                   return (
                     <span
                       key={tab.href}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
-                      title="Nem konfigurált"
+                      title={tab.disabled ? "Fejlesztés alatt" : "Nem konfigurált"}
                     >
-                      <PlatformIcon platform={tab.platform} className="w-4 h-4" />
+                      <PlatformIcon platform={tab.platform} className="w-4 h-4 grayscale" />
                       {tab.label}
                     </span>
                   );
@@ -68,11 +72,10 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                   <Link
                     key={tab.href}
                     href={tab.href}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                      isActive
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${isActive
                         ? 'text-white'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
-                    }`}
+                      }`}
                     style={isActive ? { backgroundColor: tab.color } : undefined}
                   >
                     <PlatformIcon platform={tab.platform} className="w-4 h-4" />
@@ -160,11 +163,10 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                     key={tab.href}
                     href={tab.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${
-                      isActive
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${isActive
                         ? 'text-white'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
-                    }`}
+                      }`}
                     style={isActive ? { backgroundColor: tab.color } : undefined}
                   >
                     <PlatformIcon platform={tab.platform} className="w-4 h-4" />
