@@ -5,7 +5,10 @@
 const { chartCatalog } = require('../config/chartCatalog');
 
 class ChartGenerator {
-    constructor(windsorData) {
+    constructor(windsorData, startDate = null, endDate = null) {
+        this.startDate = startDate;
+        this.endDate = endDate;
+
         if (Array.isArray(windsorData)) {
             this.data = windsorData;
             this.daily = windsorData;
@@ -159,11 +162,11 @@ class ChartGenerator {
     }
 
     generate_tt_traffic_sources() {
-        return this._aggregateByField(this.data, 'video_impression_sources_impression_source', 'video_impression_sources_percentage', 'Arány %');
+        return this._aggregateByField(this.data, 'video_impression_sources_impression_source', 'video_impression_sources_percentage', 'Arány %', false, 0, 100);
     }
 
     generate_tt_audience_demographics() {
-        return this._aggregateByField(this.data, 'audience_ages_age', 'audience_ages_percentage', 'Arány %', true);
+        return this._aggregateByField(this.data, 'audience_ages_age', 'audience_ages_percentage', 'Arány %', true, 0, 100);
     }
 
     generate_tt_gender_demographics() {
@@ -569,33 +572,54 @@ class ChartGenerator {
 
     // ===== UTILITY METHODS =====
 
+    // ===== UTILITY METHODS =====
+
     /** Aggregate by a categorical field, sum a percentage field */
-    _aggregateByField(source, keyField, valueField, seriesName, sortAlpha = false, limit = 0) {
+    _aggregateByField(source, keyField, valueField, seriesName, sortAlpha = false, limit = 0, multiplier = 1) {
         const map = {};
         source.forEach(item => {
             const key = item[keyField];
             if (!key) return;
-            const pct = parseFloat(item[valueField]) || 0;
+            const val = parseFloat(item[valueField]) || 0;
             if (!map[key]) map[key] = 0;
-            map[key] += pct;
+            map[key] += val;
         });
+
+        // Calculate total for normalization if needed
+        const total = Object.values(map).reduce((a, b) => a + b, 0);
+
         let sorted = Object.entries(map);
         if (sortAlpha) sorted.sort((a, b) => a[0].localeCompare(b[0]));
         else sorted.sort((a, b) => b[1] - a[1]);
+
         if (limit > 0) sorted = sorted.slice(0, limit);
+
         return {
             labels: sorted.map(([k]) => k),
-            series: [{ name: seriesName, data: sorted.map(([, v]) => parseFloat(v.toFixed(2))) }]
+            series: [{ name: seriesName, data: sorted.map(([, v]) => parseFloat((v * multiplier).toFixed(2))) }]
         };
     }
 
     groupByDate(items, dateField) {
         const groups = {};
         if (!Array.isArray(items)) return groups;
+
+        // Use filtered date range if provided in constructor, otherwise default to no filtering
+        const start = this.startDate ? new Date(this.startDate) : null;
+        const end = this.endDate ? new Date(this.endDate) : null;
+
         items.forEach(item => {
-            const date = item[dateField];
-            if (!date) return;
-            const key = date.substring(0, 10);
+            const dateStr = item[dateField];
+            if (!dateStr) return;
+
+            // Validate date range
+            if (start || end) {
+                const d = new Date(dateStr);
+                if (start && d < start) return;
+                if (end && d > end) return;
+            }
+
+            const key = dateStr.substring(0, 10);
             if (!groups[key]) groups[key] = [];
             groups[key].push(item);
         });
@@ -604,7 +628,7 @@ class ChartGenerator {
 
     sumField(items, field) {
         if (!Array.isArray(items)) return 0;
-        return items.reduce((sum, item) => sum + (parseInt(item[field]) || 0), 0);
+        return items.reduce((sum, item) => sum + (parseFloat(item[field]) || 0), 0);
     }
 }
 

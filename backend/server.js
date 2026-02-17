@@ -535,7 +535,7 @@ if (ENABLE_CHART_API) {
             console.log(`Received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows from Windsor`);
 
             // Generate charts
-            const generator = new ChartGenerator(windsorData);
+            const generator = new ChartGenerator(windsorData, startDate, endDate);
             const results = validCharts.map(chartReq => {
                 try {
                     return generator.generate(chartReq.key, chartReq.params || {});
