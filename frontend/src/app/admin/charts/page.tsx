@@ -838,30 +838,31 @@ export default function AdminChartsPage() {
   // Collect all needed chart keys from selections
   const allSelectedChartKeys = useMemo(() => {
     const keys = new Set<string>();
+    const catalogKeys = new Set(catalog.map(c => c.key));
     for (const [platKey, sel] of Object.entries(selections)) {
       const config = PLATFORM_METRICS[platKey];
       if (!config) continue;
       // KPI chart keys
       for (const kpi of config.kpis) {
         if (sel.kpis.has(kpi.key)) {
-          kpi.chartKeys.forEach(k => keys.add(k));
+          kpi.chartKeys.forEach(k => { if (catalogKeys.size === 0 || catalogKeys.has(k)) keys.add(k); });
         }
       }
       // Daily chart keys
       for (const daily of config.daily) {
         if (sel.daily.has(daily.key)) {
-          daily.chartKeys.forEach(k => keys.add(k));
+          daily.chartKeys.forEach(k => { if (catalogKeys.size === 0 || catalogKeys.has(k)) keys.add(k); });
         }
       }
       // Distribution chart keys
       for (const dist of config.distributions) {
         if (sel.dist.has(dist.key)) {
-          dist.chartKeys.forEach(k => keys.add(k));
+          dist.chartKeys.forEach(k => { if (catalogKeys.size === 0 || catalogKeys.has(k)) keys.add(k); });
         }
       }
     }
     return keys;
-  }, [selections]);
+  }, [selections, catalog]);
 
   const totalSelectedCount = useMemo(() => {
     let count = 0;
