@@ -5,24 +5,25 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
-import { LayoutDashboard, Building2, BarChart3, Settings, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Settings, CreditCard, Menu, X } from 'lucide-react';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 import { useState, useEffect } from 'react';
 
-const navItems = [
+const navItems: { href: string; label: string; icon: typeof LayoutDashboard; disabled?: boolean }[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/companies', label: 'Cégek', icon: Building2 },
   { href: '/admin/charts', label: 'Chartok', icon: BarChart3 },
   { href: '/admin/settings', label: 'Beállítások', icon: Settings },
+  { href: '/admin/billing', label: 'Számlázás', icon: CreditCard },
 ];
 
 const platformItems = [
   { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
-  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', disabled: true },
   { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', disabled: true },
   { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', disabled: true },
-  { href: '/admin/reports/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
   { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', disabled: true },
+  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', disabled: true },
+  { href: '/admin/reports/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
 ];
 
 function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
@@ -39,6 +40,20 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
+          if (item.disabled) {
+            return (
+              <span
+                key={item.href}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed group relative"
+                title="Hamarosan érkezik"
+              >
+                <item.icon className="w-4 h-4" strokeWidth={2} />
+                {item.label}
+                <span className="ml-auto text-[9px] uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--text-primary)] text-[var(--surface)] px-1.5 py-0.5 rounded">HAMAROSAN</span>
+              </span>
+            );
+          }
+
           const isActive = item.href === '/admin'
             ? pathname === '/admin'
             : pathname.startsWith(item.href);

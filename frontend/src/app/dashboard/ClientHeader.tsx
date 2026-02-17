@@ -11,11 +11,11 @@ import { Settings, Menu, X } from 'lucide-react';
 
 const platformTabs = [
   { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
-  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'], disabled: true },
   { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'], disabled: true },
   { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'], disabled: true },
-  { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'] },
   { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'], disabled: true },
+  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'], disabled: true },
+  { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'], disabled: true },
 ];
 
 interface Props {
@@ -60,7 +60,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                     <span
                       key={tab.href}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
-                      title={tab.disabled ? "Fejlesztés alatt" : "Nem konfigurált"}
+                      title={tab.disabled ? "Hamarosan érkezik" : "Nem konfigurált"}
                     >
                       <PlatformIcon platform={tab.platform} className="w-4 h-4 grayscale" />
                       {tab.label}
@@ -73,8 +73,8 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                     key={tab.href}
                     href={tab.href}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${isActive
-                        ? 'text-white'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                      ? 'text-white'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                       }`}
                     style={isActive ? { backgroundColor: tab.color } : undefined}
                   >
@@ -164,8 +164,8 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                     href={tab.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all ${isActive
-                        ? 'text-white'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                      ? 'text-white'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                       }`}
                     style={isActive ? { backgroundColor: tab.color } : undefined}
                   >

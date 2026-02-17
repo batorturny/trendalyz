@@ -6,6 +6,9 @@ declare module 'next-auth' {
       id: string;
       role: 'ADMIN' | 'CLIENT';
       companyId: string | null;
+      subscriptionTier: string;
+      subscriptionStatus: string | null;
+      companyLimit: number;
     } & DefaultSession['user'];
   }
 
@@ -19,5 +22,8 @@ declare module 'next-auth/jwt' {
   interface JWT {
     role: 'ADMIN' | 'CLIENT';
     companyId: string | null;
+    subscriptionTier?: string;
+    subscriptionStatus?: string | null;
+    companyLimit?: number;
   }
 }

@@ -16,6 +16,15 @@ export default async function CompaniesPage() {
   });
   const hasWindsorKey = !!adminUser?.windsorApiKeyEnc;
 
+  // Billing: get subscription limit
+  const subscription = process.env.ENABLE_BILLING === 'true'
+    ? await prisma.subscription.findUnique({
+        where: { userId: session.user.id },
+        select: { companyLimit: true, tier: true },
+      })
+    : null;
+  const companyLimit = subscription?.companyLimit || null;
+
   const companies = await prisma.company.findMany({
     where: { adminId: session.user.id },
     include: {
@@ -39,16 +48,27 @@ export default async function CompaniesPage() {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Cégek</h1>
-          <p className="text-[var(--text-secondary)] mt-1">{companies.length} cég</p>
+          <p className="text-[var(--text-secondary)] mt-1">
+            {companies.length}{companyLimit !== null ? ` / ${companyLimit}` : ''} cég
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <SyncAllButton hasWindsorKey={hasWindsorKey} />
-          <Link
-            href="/admin/companies/new"
-            className="px-4 py-2 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
-          >
-            + Új cég
-          </Link>
+          {companyLimit !== null && companies.length >= companyLimit ? (
+            <Link
+              href="/admin/billing"
+              className="px-4 py-2 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 text-sm font-bold rounded-xl hover:brightness-110 transition-all"
+            >
+              Csomag váltás
+            </Link>
+          ) : (
+            <Link
+              href="/admin/companies/new"
+              className="px-4 py-2 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
+            >
+              + Új cég
+            </Link>
+          )}
         </div>
       </header>
 

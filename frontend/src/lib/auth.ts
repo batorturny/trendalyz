@@ -189,15 +189,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as any).role || 'CLIENT';
         token.companyId = (user as any).companyId || null;
       }
-      // Refresh role/companyId from DB on each request
+      // Refresh role/companyId + subscription from DB on each request
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { role: true, companyId: true },
+          select: { role: true, companyId: true, subscription: { select: { tier: true, status: true, companyLimit: true } } },
         });
         if (dbUser) {
           token.role = dbUser.role as 'ADMIN' | 'CLIENT';
           token.companyId = dbUser.companyId;
+          token.subscriptionTier = (dbUser as any).subscription?.tier || 'FREE';
+          token.subscriptionStatus = (dbUser as any).subscription?.status || null;
+          token.companyLimit = (dbUser as any).subscription?.companyLimit || 1;
         }
       }
       return token;
@@ -207,6 +210,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub!;
         session.user.role = token.role as 'ADMIN' | 'CLIENT';
         session.user.companyId = token.companyId as string | null;
+        (session.user as any).subscriptionTier = token.subscriptionTier || 'FREE';
+        (session.user as any).subscriptionStatus = token.subscriptionStatus || null;
+        (session.user as any).companyLimit = token.companyLimit || 1;
       }
       return session;
     },

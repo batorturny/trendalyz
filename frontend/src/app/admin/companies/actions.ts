@@ -33,6 +33,29 @@ async function requireAdmin() {
 export async function createCompany(formData: FormData) {
   const session = await requireAdmin();
 
+  // Billing limit check
+  if (process.env.ENABLE_BILLING === 'true') {
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+      select: { companyLimit: true, status: true },
+    });
+
+    const companyCount = await prisma.company.count({
+      where: { adminId: session.user.id },
+    });
+
+    const limit = subscription?.companyLimit || 1;
+    const status = subscription?.status;
+
+    if (status && !['TRIALING', 'ACTIVE'].includes(status)) {
+      throw new Error('Aktív előfizetés szükséges új cég hozzáadásához');
+    }
+
+    if (companyCount >= limit) {
+      throw new Error(`Elérted a csomagod limitjét (${companyCount}/${limit}). Válts magasabb csomagra a Számlázás oldalon.`);
+    }
+  }
+
   const name = formData.get('name') as string;
   const tiktokAccountId = formData.get('tiktokAccountId') as string;
   const clientEmail = formData.get('clientEmail') as string;
