@@ -38,7 +38,8 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
     platform: 'tiktok',
     kpis: [
       // Alap metrikák
-      { key: 'tt_followers', label: 'Követők', chartKeys: ['followers_growth'] },
+      { key: 'tt_followers', label: 'Össz. követőnövekedés', chartKeys: ['followers_growth'] },
+      { key: 'tt_total_followers', label: 'Összes követő', chartKeys: ['tt_total_followers'] },
       { key: 'tt_profile_views', label: 'Profilnézetek', chartKeys: ['profile_views'] },
       { key: 'tt_likes', label: 'Like-ok', chartKeys: ['daily_likes'] },
       { key: 'tt_comments', label: 'Kommentek', chartKeys: ['daily_comments'] },
@@ -57,26 +58,26 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'tt_avg_comments', label: 'Átl. komment/videó', chartKeys: ['all_videos'] },
       { key: 'tt_avg_shares', label: 'Átl. megosztás/videó', chartKeys: ['all_videos'] },
       { key: 'tt_avg_er', label: 'Átl. ER%/videó', chartKeys: ['all_videos'] },
-      { key: 'tt_avg_watch_time', label: 'Átl. nézési idő', chartKeys: ['all_videos'] },
-      { key: 'tt_avg_full_watch', label: 'Átl. teljes megtekintés%', chartKeys: ['all_videos'] },
+      { key: 'tt_avg_watch_time', label: 'Átl. nézési idő (mp)', chartKeys: ['all_videos'] },
+      { key: 'tt_avg_full_watch', label: 'Átl. végignézés%', chartKeys: ['all_videos'] },
       { key: 'tt_avg_new_followers', label: 'Átl. új követő/videó', chartKeys: ['all_videos'] },
       { key: 'tt_total_reach', label: 'Össz. elérés', chartKeys: ['all_videos'] },
     ],
     daily: [
-      { key: 'followers_growth', label: 'Követők trend', chartKeys: ['followers_growth'] },
+      { key: 'followers_growth', label: 'Napi követők trend', chartKeys: ['followers_growth'] },
+      { key: 'tt_total_followers', label: 'Összes követő trend', chartKeys: ['tt_total_followers'] },
       { key: 'profile_views', label: 'Profilnézetek', chartKeys: ['profile_views'] },
       { key: 'daily_likes', label: 'Napi like-ok', chartKeys: ['daily_likes'] },
       { key: 'daily_comments', label: 'Napi kommentek', chartKeys: ['daily_comments'] },
       { key: 'daily_shares', label: 'Napi megosztások', chartKeys: ['daily_shares'] },
-      { key: 'engagement_rate', label: 'Engagement rate', chartKeys: ['engagement_rate'] },
       { key: 'tt_bio_link_clicks', label: 'Bio link kattintás', chartKeys: ['tt_bio_link_clicks'] },
-      { key: 'tt_video_retention', label: 'Videó megtartás', chartKeys: ['tt_video_retention'] },
     ],
     distributions: [
       { key: 'engagement_by_day', label: 'Engagement napok szerint', chartKeys: ['engagement_by_day'] },
       { key: 'engagement_by_hour', label: 'Engagement órák szerint', chartKeys: ['engagement_by_hour'] },
       { key: 'tt_traffic_sources', label: 'Forgalmi források', chartKeys: ['tt_traffic_sources'] },
-      { key: 'tt_audience_demographics', label: 'Demográfia', chartKeys: ['tt_audience_demographics'] },
+      { key: 'tt_audience_demographics', label: 'Életkori megoszlás', chartKeys: ['tt_audience_demographics'] },
+      { key: 'tt_gender_demographics', label: 'Nemek megoszlása', chartKeys: ['tt_gender_demographics'] },
       { key: 'all_videos', label: 'Összes videó', chartKeys: ['all_videos'] },
       { key: 'top_3_videos', label: 'Top 3 videó', chartKeys: ['top_3_videos'] },
       { key: 'worst_3_videos', label: 'Leggyengébb 3 videó', chartKeys: ['worst_3_videos'] },
@@ -481,17 +482,15 @@ function MultiSelectDropdown({ label, items, selected, onToggle, onSelectAll, on
                   key={item.key}
                   type="button"
                   onClick={() => onToggle(item.key)}
-                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${
-                    isSelected
+                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${isSelected
                       ? 'text-[var(--text-primary)] bg-[var(--accent-subtle)]'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
-                  }`}
+                    }`}
                 >
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                    isSelected
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected
                       ? 'border-transparent text-white'
                       : 'border-[var(--border)]'
-                  }`}
+                    }`}
                     style={isSelected ? { backgroundColor: color || 'var(--accent)' } : undefined}
                   >
                     {isSelected && <Check className="w-3 h-3" />}
@@ -589,33 +588,33 @@ function PlatformSection({
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <MultiSelectDropdown
-            label="KPI-ok"
-            items={config.kpis}
-            selected={selectedKPIs}
-            onToggle={onToggleKPI}
-            onSelectAll={onSelectAllKPI}
-            onClear={onClearKPI}
-            color={config.color}
-          />
-          <MultiSelectDropdown
-            label="Napi diagramok"
-            items={config.daily}
-            selected={selectedDaily}
-            onToggle={onToggleDaily}
-            onSelectAll={onSelectAllDaily}
-            onClear={onClearDaily}
-            color={config.color}
-          />
-          <MultiSelectDropdown
-            label="Megoszlások"
-            items={config.distributions}
-            selected={selectedDist}
-            onToggle={onToggleDist}
-            onSelectAll={onSelectAllDist}
-            onClear={onClearDist}
-            color={config.color}
-          />
+            <MultiSelectDropdown
+              label="KPI-ok"
+              items={config.kpis}
+              selected={selectedKPIs}
+              onToggle={onToggleKPI}
+              onSelectAll={onSelectAllKPI}
+              onClear={onClearKPI}
+              color={config.color}
+            />
+            <MultiSelectDropdown
+              label="Napi diagramok"
+              items={config.daily}
+              selected={selectedDaily}
+              onToggle={onToggleDaily}
+              onSelectAll={onSelectAllDaily}
+              onClear={onClearDaily}
+              color={config.color}
+            />
+            <MultiSelectDropdown
+              label="Megoszlások"
+              items={config.distributions}
+              selected={selectedDist}
+              onToggle={onToggleDist}
+              onSelectAll={onSelectAllDist}
+              onClear={onClearDist}
+              color={config.color}
+            />
           </div>
         </div>
       )}
@@ -1103,237 +1102,236 @@ export default function AdminChartsPage() {
 
   return (
     <WindsorKeyGuard>
-    <div className="p-4 md:p-8">
-      <header className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold">Összesített riport</h1>
-        <p className="text-[var(--text-secondary)] mt-1">Multi-platform chart generálás platformonkénti beállításokkal</p>
-      </header>
+      <div className="p-4 md:p-8">
+        <header className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold">Összesített riport</h1>
+          <p className="text-[var(--text-secondary)] mt-1">Multi-platform chart generálás platformonkénti beállításokkal</p>
+        </header>
 
-      {/* Controls */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-6 items-end mb-5">
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég</label>
-            <CompanyPicker
-              companies={companies}
-              value={selectedCompany}
-              onChange={setSelectedCompany}
-              showAll
-            />
-          </div>
+        {/* Controls */}
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-6 items-end mb-5">
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég</label>
+              <CompanyPicker
+                companies={companies}
+                value={selectedCompany}
+                onChange={setSelectedCompany}
+                showAll
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Időszak</label>
-            <div className="flex items-center gap-2">
-              <select value={startMonth} onChange={e => setStartMonth(e.target.value)} className={selectClass}>
-                {monthOptions.map(m => (
-                  <option key={m} value={m}>{formatMonthLabel(m)}</option>
-                ))}
-              </select>
-              <span className="text-[var(--text-secondary)] font-bold px-1">&mdash;</span>
-              <select value={endMonth} onChange={e => setEndMonth(e.target.value)} className={selectClass}>
-                {monthOptions.filter(m => m >= startMonth).map(m => (
-                  <option key={m} value={m}>{formatMonthLabel(m)}</option>
-                ))}
-              </select>
+            <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Időszak</label>
+              <div className="flex items-center gap-2">
+                <select value={startMonth} onChange={e => setStartMonth(e.target.value)} className={selectClass}>
+                  {monthOptions.map(m => (
+                    <option key={m} value={m}>{formatMonthLabel(m)}</option>
+                  ))}
+                </select>
+                <span className="text-[var(--text-secondary)] font-bold px-1">&mdash;</span>
+                <select value={endMonth} onChange={e => setEndMonth(e.target.value)} className={selectClass}>
+                  {monthOptions.filter(m => m >= startMonth).map(m => (
+                    <option key={m} value={m}>{formatMonthLabel(m)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <button
+                onClick={handleGenerate}
+                disabled={loading || allSelectedChartKeys.size === 0}
+                className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+              >
+                {loading
+                  ? isAllCompanies
+                    ? `Betöltés... (${aggregateProgress.done}/${aggregateProgress.total})`
+                    : 'Generálás...'
+                  : `Generálás (${totalSelectedCount})`
+                }
+              </button>
             </div>
           </div>
 
-          <div>
-            <button
-              onClick={handleGenerate}
-              disabled={loading || allSelectedChartKeys.size === 0}
-              className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
-            >
-              {loading
-                ? isAllCompanies
-                  ? `Betöltés... (${aggregateProgress.done}/${aggregateProgress.total})`
-                  : 'Generálás...'
-                : `Generálás (${totalSelectedCount})`
-              }
-            </button>
+          {/* Presets */}
+          <div className="flex items-center gap-2 mb-6">
+            <CalendarDays className="w-4 h-4 text-[var(--text-secondary)]" />
+            <span className="text-xs font-bold text-[var(--text-secondary)] uppercase mr-1">Gyors:</span>
+            {PRESETS.map(p => (
+              <button
+                key={p.months}
+                onClick={() => applyPreset(p.months)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activePreset === p.months
+                    ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
+                    : 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
+                  }`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
-        </div>
 
-        {/* Presets */}
-        <div className="flex items-center gap-2 mb-6">
-          <CalendarDays className="w-4 h-4 text-[var(--text-secondary)]" />
-          <span className="text-xs font-bold text-[var(--text-secondary)] uppercase mr-1">Gyors:</span>
-          {PRESETS.map(p => (
-            <button
-              key={p.months}
-              onClick={() => applyPreset(p.months)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activePreset === p.months
-                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
-                  : 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Platform Sections */}
-        <div className="border-t border-[var(--border)] pt-6 space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase">Platform beállítások</h3>
+          {/* Platform Sections */}
+          <div className="border-t border-[var(--border)] pt-6 space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase">Platform beállítások</h3>
+            </div>
+            {PLATFORM_ORDER.map(platKey => {
+              const config = PLATFORM_METRICS[platKey];
+              const sel = selections[platKey];
+              if (!config || !sel) return null;
+              return (
+                <PlatformSection
+                  key={platKey}
+                  platformKey={platKey}
+                  config={config}
+                  selectedKPIs={sel.kpis}
+                  selectedDaily={sel.daily}
+                  selectedDist={sel.dist}
+                  onToggleKPI={(key) => toggleInSet(platKey, 'kpis', key)}
+                  onToggleDaily={(key) => toggleInSet(platKey, 'daily', key)}
+                  onToggleDist={(key) => toggleInSet(platKey, 'dist', key)}
+                  onSelectAllKPI={() => selectAllInCategory(platKey, 'kpis')}
+                  onClearKPI={() => clearCategory(platKey, 'kpis')}
+                  onSelectAllDaily={() => selectAllInCategory(platKey, 'daily')}
+                  onClearDaily={() => clearCategory(platKey, 'daily')}
+                  onSelectAllDist={() => selectAllInCategory(platKey, 'dist')}
+                  onClearDist={() => clearCategory(platKey, 'dist')}
+                  onSelectAllPlatform={() => selectAllPlatform(platKey)}
+                  onClearPlatform={() => clearPlatform(platKey)}
+                />
+              );
+            })}
           </div>
-          {PLATFORM_ORDER.map(platKey => {
-            const config = PLATFORM_METRICS[platKey];
-            const sel = selections[platKey];
-            if (!config || !sel) return null;
-            return (
-              <PlatformSection
-                key={platKey}
-                platformKey={platKey}
-                config={config}
-                selectedKPIs={sel.kpis}
-                selectedDaily={sel.daily}
-                selectedDist={sel.dist}
-                onToggleKPI={(key) => toggleInSet(platKey, 'kpis', key)}
-                onToggleDaily={(key) => toggleInSet(platKey, 'daily', key)}
-                onToggleDist={(key) => toggleInSet(platKey, 'dist', key)}
-                onSelectAllKPI={() => selectAllInCategory(platKey, 'kpis')}
-                onClearKPI={() => clearCategory(platKey, 'kpis')}
-                onSelectAllDaily={() => selectAllInCategory(platKey, 'daily')}
-                onClearDaily={() => clearCategory(platKey, 'daily')}
-                onSelectAllDist={() => selectAllInCategory(platKey, 'dist')}
-                onClearDist={() => clearCategory(platKey, 'dist')}
-                onSelectAllPlatform={() => selectAllPlatform(platKey)}
-                onClearPlatform={() => clearPlatform(platKey)}
-              />
-            );
-          })}
+
+          {error && (
+            <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
         </div>
 
-        {error && (
-          <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
-            {error}
+        {/* Aggregate KPI Dashboard (all companies mode) */}
+        {aggregateKPIs && <AggregateKPIDashboard kpis={aggregateKPIs} />}
+
+        {/* Multi-month per-platform KPIs */}
+        {Object.keys(platformKPIs).length > 0 && (
+          <div className="mb-8 space-y-6">
+            <h2 className="text-2xl font-bold border-l-4 border-[var(--accent)] pl-3">
+              Összesített KPI-ok
+              <span className="text-sm font-normal text-[var(--text-secondary)] ml-3">{multiMonthCount} hónap</span>
+            </h2>
+            {PLATFORM_ORDER.map(platKey => {
+              const kpiList = platformKPIs[platKey];
+              if (!kpiList || kpiList.length === 0) return null;
+              const config = PLATFORM_METRICS[platKey];
+              return (
+                <div key={platKey} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
+                    <PlatformIcon platform={config.platform} className="w-4 h-4" />
+                    {config.label}
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {kpiList.map((kpi) => (
+                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {results.length > 0 && (
+              <p className="text-xs font-bold text-[var(--text-secondary)] uppercase">Az utolsó hónap chartjai</p>
+            )}
+          </div>
+        )}
+
+        {/* Single-month per-platform KPIs */}
+        {Object.keys(singleMonthPlatformKPIs).length > 0 && (
+          <div className="mb-8 space-y-4">
+            {PLATFORM_ORDER.map(platKey => {
+              const kpiList = singleMonthPlatformKPIs[platKey];
+              if (!kpiList || kpiList.length === 0) return null;
+              const config = PLATFORM_METRICS[platKey];
+              return (
+                <div key={platKey} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
+                    <PlatformIcon platform={config.platform} className="w-4 h-4" />
+                    {config.label}
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {kpiList.map((kpi) => (
+                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Per-platform chart results */}
+        {Object.keys(resultsByPlatform).length > 0 ? (
+          <div className="space-y-8">
+            {PLATFORM_ORDER.map(platKey => {
+              const group = resultsByPlatform[platKey];
+              if (!group) return null;
+              const config = PLATFORM_METRICS[platKey];
+              return (
+                <div key={platKey}>
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: config.color }} />
+                    <PlatformIcon platform={config.platform} className="w-5 h-5" />
+                    {config.label}
+                  </h2>
+
+                  {/* Daily charts - 2 col grid */}
+                  {group.daily.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase mb-3">Napi diagramok</h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {group.daily.map((chart, i) => (
+                          <div key={`${chart.key}-${i}`}>
+                            <RenderChart chart={chart} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Distribution charts */}
+                  {group.distributions.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase mb-3">Megoszlások</h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {group.distributions.map((chart, i) => (
+                          <div key={`${chart.key}-${i}`} className={chart.type === 'table' ? 'lg:col-span-2' : ''}>
+                            <RenderChart chart={chart} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : !loading && results.length === 0 && !aggregateKPIs && Object.keys(platformKPIs).length === 0 ? (
+          <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
+            <BarChart3 className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Válaszd ki a chartokat</h2>
+            <p className="text-[var(--text-secondary)]">Állítsd be a platformonkénti beállításokat és kattints a Generálás gombra</p>
+          </div>
+        ) : null}
+
+        {loading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-10 h-10 border-3 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
           </div>
         )}
       </div>
-
-      {/* Aggregate KPI Dashboard (all companies mode) */}
-      {aggregateKPIs && <AggregateKPIDashboard kpis={aggregateKPIs} />}
-
-      {/* Multi-month per-platform KPIs */}
-      {Object.keys(platformKPIs).length > 0 && (
-        <div className="mb-8 space-y-6">
-          <h2 className="text-2xl font-bold border-l-4 border-[var(--accent)] pl-3">
-            Összesített KPI-ok
-            <span className="text-sm font-normal text-[var(--text-secondary)] ml-3">{multiMonthCount} hónap</span>
-          </h2>
-          {PLATFORM_ORDER.map(platKey => {
-            const kpiList = platformKPIs[platKey];
-            if (!kpiList || kpiList.length === 0) return null;
-            const config = PLATFORM_METRICS[platKey];
-            return (
-              <div key={platKey} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
-                  <PlatformIcon platform={config.platform} className="w-4 h-4" />
-                  {config.label}
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {kpiList.map((kpi) => (
-                    <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          {results.length > 0 && (
-            <p className="text-xs font-bold text-[var(--text-secondary)] uppercase">Az utolsó hónap chartjai</p>
-          )}
-        </div>
-      )}
-
-      {/* Single-month per-platform KPIs */}
-      {Object.keys(singleMonthPlatformKPIs).length > 0 && (
-        <div className="mb-8 space-y-4">
-          {PLATFORM_ORDER.map(platKey => {
-            const kpiList = singleMonthPlatformKPIs[platKey];
-            if (!kpiList || kpiList.length === 0) return null;
-            const config = PLATFORM_METRICS[platKey];
-            return (
-              <div key={platKey} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
-                  <PlatformIcon platform={config.platform} className="w-4 h-4" />
-                  {config.label}
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {kpiList.map((kpi) => (
-                    <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Per-platform chart results */}
-      {Object.keys(resultsByPlatform).length > 0 ? (
-        <div className="space-y-8">
-          {PLATFORM_ORDER.map(platKey => {
-            const group = resultsByPlatform[platKey];
-            if (!group) return null;
-            const config = PLATFORM_METRICS[platKey];
-            return (
-              <div key={platKey}>
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: config.color }} />
-                  <PlatformIcon platform={config.platform} className="w-5 h-5" />
-                  {config.label}
-                </h2>
-
-                {/* Daily charts - 2 col grid */}
-                {group.daily.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase mb-3">Napi diagramok</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {group.daily.map((chart, i) => (
-                        <div key={`${chart.key}-${i}`}>
-                          <RenderChart chart={chart} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Distribution charts */}
-                {group.distributions.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase mb-3">Megoszlások</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {group.distributions.map((chart, i) => (
-                        <div key={`${chart.key}-${i}`} className={chart.type === 'table' ? 'lg:col-span-2' : ''}>
-                          <RenderChart chart={chart} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : !loading && results.length === 0 && !aggregateKPIs && Object.keys(platformKPIs).length === 0 ? (
-        <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
-          <BarChart3 className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Válaszd ki a chartokat</h2>
-          <p className="text-[var(--text-secondary)]">Állítsd be a platformonkénti beállításokat és kattints a Generálás gombra</p>
-        </div>
-      ) : null}
-
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-10 h-10 border-3 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
-        </div>
-      )}
-    </div>
     </WindsorKeyGuard>
   );
 }

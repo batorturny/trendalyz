@@ -75,6 +75,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const er = findChart(results, 'engagement_rate');
       const videos = findChart(results, 'all_videos');
       const bioClicks = findChart(results, 'tt_bio_link_clicks');
+      const totalFollowersChart = findChart(results, 'tt_total_followers');
 
       const totalLikes = sumSeries(likes);
       const totalComments = sumSeries(comments);
@@ -86,12 +87,13 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
 
       return [
         // Alap metrikák
-        { key: 'tt_followers', label: 'Követők', value: lastValue(followers), agg: 'last' },
+        { key: 'tt_followers', label: 'Össz. követőnövekedés', value: sumSeries(followers) },
+        { key: 'tt_total_followers', label: 'Összes követő', value: lastValue(totalFollowersChart), agg: 'last' },
         { key: 'tt_profile_views', label: 'Profilnézetek', value: sumSeries(profileViews) },
         { key: 'tt_likes', label: 'Like-ok', value: totalLikes },
         { key: 'tt_comments', label: 'Kommentek', value: totalComments },
         { key: 'tt_shares', label: 'Megosztások', value: totalShares },
-        { key: 'tt_er', label: 'ER%', value: fmtPct(avgSeries(er)), agg: 'avg' },
+        { key: 'tt_er', label: 'ER%', value: `${avgSeries(er).toFixed(2)}%`, agg: 'avg' },
         { key: 'tt_videos', label: 'Videók száma', value: vidCount },
         { key: 'tt_bio_clicks', label: 'Bio link kattintás', value: sumSeries(bioClicks) },
         // Arány metrikák
@@ -104,9 +106,9 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'tt_avg_likes', label: 'Átl. like/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount) : 0, agg: 'avg' },
         { key: 'tt_avg_comments', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount) : 0, agg: 'avg' },
         { key: 'tt_avg_shares', label: 'Átl. megosztás/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'shares') / vidCount) : 0, agg: 'avg' },
-        { key: 'tt_avg_er', label: 'Átl. ER%/videó', value: fmtPct(tableAvg(videos, 'engagementRate')), agg: 'avg' },
-        { key: 'tt_avg_watch_time', label: 'Átl. nézési idő', value: fmtDec1(tableAvg(videos, 'avgWatchTime')), agg: 'avg' },
-        { key: 'tt_avg_full_watch', label: 'Átl. teljes megtekintés%', value: fmtPct(tableAvg(videos, 'fullWatchRate')), agg: 'avg' },
+        { key: 'tt_avg_er', label: 'Átl. ER%/videó', value: `${tableAvg(videos, 'engagementRate').toFixed(2)}%`, agg: 'avg' },
+        { key: 'tt_avg_watch_time', label: 'Átl. nézési idő (mp)', value: fmtDec1(tableAvg(videos, 'avgWatchTime')), agg: 'avg' },
+        { key: 'tt_avg_full_watch', label: 'Átl. végignézés%', value: `${tableAvg(videos, 'fullWatchRate').toFixed(2)}%`, agg: 'avg' },
         { key: 'tt_avg_new_followers', label: 'Átl. új követő/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'newFollowers') / vidCount) : 0, agg: 'avg' },
         { key: 'tt_total_reach', label: 'Össz. elérés', value: totalVidReach },
       ];
