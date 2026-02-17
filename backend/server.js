@@ -30,16 +30,16 @@ const app = express();
  * First checks legacy tiktokAccountId field, then falls back to IntegrationConnection.
  */
 async function resolveTiktokAccountId(company) {
-  if (company.tiktokAccountId) return company.tiktokAccountId;
+    if (company.tiktokAccountId) return company.tiktokAccountId;
 
-  const connection = await prisma.integrationConnection.findFirst({
-    where: { companyId: company.id, provider: 'TIKTOK_ORGANIC' },
-    select: { externalAccountId: true },
-  });
+    const connection = await prisma.integrationConnection.findFirst({
+        where: { companyId: company.id, provider: 'TIKTOK_ORGANIC' },
+        select: { externalAccountId: true },
+    });
 
-  if (connection?.externalAccountId) return connection.externalAccountId;
+    if (connection?.externalAccountId) return connection.externalAccountId;
 
-  return null;
+    return null;
 }
 const PORT = process.env.PORT || 4000;
 
@@ -49,11 +49,11 @@ app.use(express.json());
 
 // Per-request Windsor service factory
 function createWindsorServices(apiKey) {
-  return {
-    windsor: new WindsorService(apiKey),
-    windsorMulti: new WindsorMultiPlatform(apiKey),
-    windsorConnector: new WindsorConnectorService(apiKey),
-  };
+    return {
+        windsor: new WindsorService(apiKey),
+        windsorMulti: new WindsorMultiPlatform(apiKey),
+        windsorConnector: new WindsorConnectorService(apiKey),
+    };
 }
 
 /**
@@ -62,14 +62,14 @@ function createWindsorServices(apiKey) {
  * For CLIENT users: resolve via their company's owning admin.
  */
 async function resolveWindsorKey(req) {
-  const { userId, role, companyId } = req.userContext || {};
-  if (role === 'ADMIN') {
-    return getWindsorApiKey(userId);
-  }
-  if (companyId) {
-    return getWindsorApiKeyForCompany(companyId);
-  }
-  return getWindsorApiKey(null); // fallback to global
+    const { userId, role, companyId } = req.userContext || {};
+    if (role === 'ADMIN') {
+        return getWindsorApiKey(userId);
+    }
+    if (companyId) {
+        return getWindsorApiKeyForCompany(companyId);
+    }
+    return getWindsorApiKey(null); // fallback to global
 }
 
 // ============================================
@@ -499,17 +499,21 @@ if (ENABLE_CHART_API) {
                 });
             }
 
-            // Validate chart keys
+            // Validate chart keys — skip any unknown ones instead of rejecting the whole request
             const chartKeys = charts.map(c => c.key);
             const validation = validateChartKeys(chartKeys);
+            let validCharts = charts;
             if (!validation.valid) {
-                console.error('[CHART API] Invalid chart keys:', validation.invalidKeys);
-                console.error('[CHART API] Requested keys:', chartKeys);
-                return res.status(400).json({
-                    error: 'Invalid chart keys',
-                    invalidKeys: validation.invalidKeys,
-                    availableKeys: chartCatalog.map(c => c.key)
-                });
+                console.warn('[CHART API] Skipping invalid chart keys:', validation.invalidKeys);
+                const validKeySet = new Set(chartCatalog.map(c => c.key));
+                validCharts = charts.filter(c => validKeySet.has(c.key));
+                if (validCharts.length === 0) {
+                    return res.status(400).json({
+                        error: 'No valid chart keys provided',
+                        invalidKeys: validation.invalidKeys,
+                        availableKeys: chartCatalog.map(c => c.key)
+                    });
+                }
             }
 
             // Get company
@@ -518,7 +522,7 @@ if (ENABLE_CHART_API) {
                 return res.status(404).json({ error: 'Account not found' });
             }
 
-            console.log(`Generating ${charts.length} charts for ${company.name} (${startDate} - ${endDate})`);
+            console.log(`Generating ${validCharts.length} charts for ${company.name} (${startDate} - ${endDate})`);
 
             // Resolve TikTok account ID (legacy field or IntegrationConnection)
             const tiktokAccountId = await resolveTiktokAccountId(company);
@@ -532,7 +536,7 @@ if (ENABLE_CHART_API) {
 
             // Generate charts
             const generator = new ChartGenerator(windsorData);
-            const results = charts.map(chartReq => {
+            const results = validCharts.map(chartReq => {
                 try {
                     return generator.generate(chartReq.key, chartReq.params || {});
                 } catch (error) {
@@ -547,7 +551,7 @@ if (ENABLE_CHART_API) {
             res.json({
                 account: { id: company.id, name: company.name },
                 dateRange: { from: startDate, to: endDate },
-                chartsRequested: charts.length,
+                chartsRequested: validCharts.length,
                 chartsGenerated: results.filter(r => !r.error).length,
                 charts: results
             });
