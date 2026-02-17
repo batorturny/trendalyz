@@ -495,7 +495,7 @@ export async function addConnection(
 ) {
   await requireAdmin();
 
-  const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
+  const validProviders = ['TIKTOK_ORGANIC', 'TIKTOK_ADS', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'INSTAGRAM_PUBLIC', 'YOUTUBE', 'FACEBOOK'];
   if (!validProviders.includes(provider)) {
     throw new Error('Érvénytelen platform');
   }
@@ -504,7 +504,7 @@ export async function addConnection(
     await prisma.integrationConnection.create({
       data: {
         companyId,
-        provider: provider as 'TIKTOK_ORGANIC' | 'FACEBOOK_ORGANIC' | 'INSTAGRAM_ORGANIC',
+        provider: provider as any,
         externalAccountId,
         externalAccountName,
         status: 'CONNECTED',
