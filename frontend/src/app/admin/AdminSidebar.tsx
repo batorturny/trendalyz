@@ -83,10 +83,11 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
                 <span
                   key={item.href}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed group relative"
-                  title="Hamarosan érkezik"
+                  title="Fejlesztés alatt"
                 >
                   <PlatformIcon platform={item.platform} className="w-4 h-4 grayscale" />
                   {item.label}
+                  <span className="ml-auto text-[8px] uppercase font-bold tracking-wider text-[var(--text-secondary)]">Hamarosan</span>
                 </span>
               );
             }

@@ -279,170 +279,6 @@ const DISABLED_PLATFORMS = new Set(['TIKTOK_ADS', 'INSTAGRAM_ORGANIC']);
 
 // ... (omitted)
 
-// ============================================
-// PLATFORM SECTION COMPONENT
-// ============================================
-
-interface PlatformSectionProps {
-  platformKey: string;
-  config: PlatformMetricConfig;
-  selectedKPIs: Set<string>;
-  selectedDaily: Set<string>;
-  selectedDist: Set<string>;
-  onToggleKPI: (key: string) => void;
-  onToggleDaily: (key: string) => void;
-  onToggleDist: (key: string) => void;
-  onSelectAllKPI: () => void;
-  onClearKPI: () => void;
-  onSelectAllDaily: () => void;
-  onClearDaily: () => void;
-  onSelectAllDist: () => void;
-  onClearDist: () => void;
-  onSelectAllPlatform: () => void;
-  onClearPlatform: () => void;
-  disabled?: boolean;
-}
-
-function PlatformSection({
-  platformKey, config,
-  selectedKPIs, selectedDaily, selectedDist,
-  onToggleKPI, onToggleDaily, onToggleDist,
-  onSelectAllKPI, onClearKPI,
-  onSelectAllDaily, onClearDaily,
-  onSelectAllDist, onClearDist,
-  onSelectAllPlatform, onClearPlatform,
-  disabled
-}: PlatformSectionProps) {
-  const [collapsed, setCollapsed] = useState(true);
-
-  const totalSelected =
-    config.kpis.filter(i => selectedKPIs.has(i.key)).length +
-    config.daily.filter(i => selectedDaily.has(i.key)).length +
-    config.distributions.filter(i => selectedDist.has(i.key)).length;
-
-  const totalItems = config.kpis.length + config.daily.length + config.distributions.length;
-
-  return (
-    <div className={`bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl overflow-hidden transition-opacity ${disabled ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-      <button
-        type="button"
-        onClick={() => !disabled && setCollapsed(!collapsed)}
-        disabled={disabled}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent-subtle)] transition-colors disabled:cursor-not-allowed"
-      >
-        {collapsed
-          ? <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
-          : <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
-        }
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: config.color }} />
-        <PlatformIcon platform={config.platform} className="w-4 h-4" />
-        <span className="font-bold text-sm text-[var(--text-primary)]">{config.label}</span>
-        {disabled && <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded">Hamarosan</span>}
-        <span className="ml-auto flex items-center gap-2">
-          {totalSelected > 0 && !disabled && (
-            <>
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-bold text-white"
-                style={{ backgroundColor: config.color }}
-              >
-                {totalSelected}/{totalItems}
-              </span>
-              <span
-                role="button"
-                onClick={(e) => { e.stopPropagation(); onClearPlatform(); }}
-                className="text-xs w-5 h-5 rounded-full bg-[var(--error)] text-white flex items-center justify-center font-bold hover:brightness-110 transition-all cursor-pointer"
-                title="Összes törlése"
-              >
-                ×
-              </span>
-            </>
-          )}
-        </span>
-      </button>
-
-      {!collapsed && !disabled && (
-        <div className="px-4 pb-4 pt-1 space-y-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={(e) => { e.stopPropagation(); onSelectAllPlatform(); }}
-              className="text-xs font-semibold text-[var(--accent)] hover:underline"
-            >
-              Összes kijelölése
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onClearPlatform(); }}
-              className="text-xs font-semibold text-[var(--error)] hover:underline"
-            >
-              Összes törlése
-            </button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <MultiSelectDropdown
-              label="KPI-ok"
-              items={config.kpis}
-              selected={selectedKPIs}
-              onToggle={onToggleKPI}
-              onSelectAll={onSelectAllKPI}
-              onClear={onClearKPI}
-              color={config.color}
-            />
-            <MultiSelectDropdown
-              label="Napi diagramok"
-              items={config.daily}
-              selected={selectedDaily}
-              onToggle={onToggleDaily}
-              onSelectAll={onSelectAllDaily}
-              onClear={onClearDaily}
-              color={config.color}
-            />
-            <MultiSelectDropdown
-              label="Megoszlások"
-              items={config.distributions}
-              selected={selectedDist}
-              onToggle={onToggleDist}
-              onSelectAll={onSelectAllDist}
-              onClear={onClearDist}
-              color={config.color}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ... existing code ...
-
-{
-  PLATFORM_ORDER.map(platKey => {
-    const config = PLATFORM_METRICS[platKey];
-    const sel = selections[platKey];
-    if (!config || !sel) return null;
-    return (
-      <PlatformSection
-        key={platKey}
-        platformKey={platKey}
-        config={config}
-        selectedKPIs={sel.kpis}
-        selectedDaily={sel.daily}
-        selectedDist={sel.dist}
-        onToggleKPI={(key) => toggleInSet(platKey, 'kpis', key)}
-        onToggleDaily={(key) => toggleInSet(platKey, 'daily', key)}
-        onToggleDist={(key) => toggleInSet(platKey, 'dist', key)}
-        onSelectAllKPI={() => selectAllInCategory(platKey, 'kpis')}
-        onClearKPI={() => clearCategory(platKey, 'kpis')}
-        onSelectAllDaily={() => selectAllInCategory(platKey, 'daily')}
-        onClearDaily={() => clearCategory(platKey, 'daily')}
-        onSelectAllDist={() => selectAllInCategory(platKey, 'dist')}
-        onClearDist={() => clearCategory(platKey, 'dist')}
-        onSelectAllPlatform={() => selectAllPlatform(platKey)}
-        onClearPlatform={() => clearPlatform(platKey)}
-        disabled={DISABLED_PLATFORMS.has(platKey)}
-      />
-    );
-  })
-}
-
 function toMonthStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -740,6 +576,7 @@ interface PlatformSectionProps {
   onClearDist: () => void;
   onSelectAllPlatform: () => void;
   onClearPlatform: () => void;
+  disabled?: boolean;
 }
 
 function PlatformSection({
@@ -750,6 +587,7 @@ function PlatformSection({
   onSelectAllDaily, onClearDaily,
   onSelectAllDist, onClearDist,
   onSelectAllPlatform, onClearPlatform,
+  disabled,
 }: PlatformSectionProps) {
   const [collapsed, setCollapsed] = useState(true);
 
@@ -761,11 +599,12 @@ function PlatformSection({
   const totalItems = config.kpis.length + config.daily.length + config.distributions.length;
 
   return (
-    <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl overflow-hidden">
+    <div className={`bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl overflow-hidden transition-opacity ${disabled ? 'opacity-40 grayscale' : ''}`}>
       <button
         type="button"
-        onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent-subtle)] transition-colors"
+        onClick={() => !disabled && setCollapsed(!collapsed)}
+        disabled={disabled}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent-subtle)] transition-colors disabled:cursor-not-allowed disabled:hover:bg-transparent"
       >
         {collapsed
           ? <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -774,8 +613,9 @@ function PlatformSection({
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: config.color }} />
         <PlatformIcon platform={config.platform} className="w-4 h-4" />
         <span className="font-bold text-sm text-[var(--text-primary)]">{config.label}</span>
+        {disabled && <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded">Fejlesztés alatt</span>}
         <span className="ml-auto flex items-center gap-2">
-          {totalSelected > 0 && (
+          {totalSelected > 0 && !disabled && (
             <>
               <span
                 className="text-xs px-2 py-0.5 rounded-full font-bold text-white"
@@ -796,7 +636,7 @@ function PlatformSection({
         </span>
       </button>
 
-      {!collapsed && (
+      {!collapsed && !disabled && (
         <div className="px-4 pb-4 pt-1 space-y-3">
           <div className="flex items-center gap-3">
             <button
@@ -1026,14 +866,18 @@ export default function AdminChartsPage() {
       setCatalog(catalogData.charts);
       if (companiesData.length > 0) setSelectedCompany(companiesData[0].id);
 
-      // Initialize all platform selections with everything selected
+      // Initialize all platform selections with everything selected (except disabled platforms)
       const initial: Record<string, { kpis: Set<string>; daily: Set<string>; dist: Set<string> }> = {};
       for (const [platKey, config] of Object.entries(PLATFORM_METRICS)) {
-        initial[platKey] = {
-          kpis: new Set(config.kpis.map(i => i.key)),
-          daily: new Set(config.daily.map(i => i.key)),
-          dist: new Set(config.distributions.map(i => i.key)),
-        };
+        if (DISABLED_PLATFORMS.has(platKey)) {
+          initial[platKey] = { kpis: new Set(), daily: new Set(), dist: new Set() };
+        } else {
+          initial[platKey] = {
+            kpis: new Set(config.kpis.map(i => i.key)),
+            daily: new Set(config.daily.map(i => i.key)),
+            dist: new Set(config.distributions.map(i => i.key)),
+          };
+        }
       }
       setSelections(initial);
     } catch {
@@ -1427,6 +1271,7 @@ export default function AdminChartsPage() {
                   onClearDist={() => clearCategory(platKey, 'dist')}
                   onSelectAllPlatform={() => selectAllPlatform(platKey)}
                   onClearPlatform={() => clearPlatform(platKey)}
+                  disabled={DISABLED_PLATFORMS.has(platKey)}
                 />
               );
             })}
