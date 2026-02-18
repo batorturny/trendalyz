@@ -1,31 +1,42 @@
 # Base image
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
+# Install dependencies
 FROM base AS deps
 WORKDIR /app/frontend
 
 COPY frontend/package.json frontend/package-lock.json ./
-# Skip postinstall (prisma generate) - will run in builder stage with schema available
+# --ignore-scripts skips postinstall (prisma generate) — schema not yet available
 RUN npm install --legacy-peer-deps --ignore-scripts
 
-# Rebuild the source code only when needed
+# Build stage
 FROM base AS builder
 WORKDIR /app/frontend
+
 COPY --from=deps /app/frontend/node_modules ./node_modules
 COPY frontend/ ./
 COPY prisma/ /app/prisma/
 
-# Dummy package.json at monorepo root so Prisma doesn't try auto-install there
-RUN echo '{"private":true}' > /app/package.json
-
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Generate Prisma client + build Next.js
-# Use local prisma binary to avoid npx auto-install issues
-RUN ./node_modules/.bin/prisma generate --schema=/app/prisma/schema.prisma && npm run build
+# Remove backendClient and frontendClient generators from schema.
+# In Docker we only need the default generator; the other two point to
+# monorepo-relative paths that don't exist inside the container.
+RUN node -e "\
+const fs = require('fs');\
+let s = fs.readFileSync('/app/prisma/schema.prisma', 'utf8');\
+s = s.replace(/\ngenerator backendClient \{[\s\S]*?\n\}/g, '');\
+s = s.replace(/\ngenerator frontendClient \{[\s\S]*?\n\}/g, '');\
+fs.writeFileSync('/app/prisma/schema.prisma', s);\
+console.log('Stripped extra Prisma generators for Docker build.');\
+"
 
-# Production image, copy all the files and run next
+# Generate Prisma client (default only) + build Next.js
+# npm run build calls: prisma generate && next build
+# prisma generate uses schema path from package.json: ../prisma/schema.prisma
+RUN npm run build
+
+# Production image
 FROM base AS runner
 WORKDIR /app
 
@@ -38,7 +49,6 @@ RUN adduser --system --uid 1001 nextjs
 RUN mkdir .next || true
 RUN chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/frontend/public ./public
