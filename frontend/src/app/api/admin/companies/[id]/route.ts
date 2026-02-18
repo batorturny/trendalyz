@@ -13,7 +13,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     where: { id },
     include: {
       users: { select: { id: true, email: true, name: true, role: true } },
-      integrations: true,
     },
   });
 

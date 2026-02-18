@@ -28,18 +28,6 @@ enum CompanyStatus {
   PENDING
 }
 
-enum IntegrationProvider {
-  WINDSOR
-  TIKTOK_DIRECT
-}
-
-enum IntegrationStatus {
-  CONNECTED
-  DISCONNECTED
-  ERROR
-  PENDING
-}
-
 enum ConnectionProvider {
   TIKTOK_ORGANIC
   TIKTOK_ADS
@@ -101,7 +89,6 @@ model Company {
   id                 String        @id @default(cuid())
   name               String
   tiktokAccountId    String?
-  windsorWorkspaceId String?
   adminId            String?
   admin              User?         @relation("AdminCompanies", fields: [adminId], references: [id], onDelete: SetNull)
   status             CompanyStatus @default(ACTIVE)
@@ -109,29 +96,11 @@ model Company {
   updatedAt          DateTime      @updatedAt
 
   users           User[]
-  integrations    Integration[]
   connections     IntegrationConnection[]
   reportSummaries ReportSummary[]
   reportCaches    ReportCache[]
 
   @@index([adminId])
-}
-
-model Integration {
-  id              String             @id @default(cuid())
-  companyId       String
-  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  provider        IntegrationProvider
-  status          IntegrationStatus  @default(PENDING)
-  accessTokenEnc  String?
-  refreshTokenEnc String?
-  expiresAt       DateTime?
-  errorMessage    String?
-  lastSyncAt      DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-
-  @@unique([companyId, provider])
 }
 
 // NextAuth.js required models

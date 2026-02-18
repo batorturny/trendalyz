@@ -4,6 +4,6 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
-    "bcryptjs": "^3.0.3"
+    "bcryptjs": "^2.4.3"
   }
 }

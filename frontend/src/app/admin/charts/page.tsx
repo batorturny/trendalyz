@@ -130,6 +130,8 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'fb_posts', label: 'Posztok', chartKeys: ['fb_all_posts'] },
       { key: 'fb_new_follows', label: 'Napi új követők', chartKeys: ['fb_follows_trend'] },
       { key: 'fb_video_views', label: 'Videó nézések', chartKeys: ['fb_video_views'] },
+      { key: 'fb_engaged_users', label: 'Elkötelezett felhasználók', chartKeys: ['fb_engaged_users'] },
+      { key: 'fb_page_views', label: 'Oldal megtekintések', chartKeys: ['fb_page_views'] },
       // Arány metrikák
       { key: 'fb_interactions_total', label: 'Összes interakció', chartKeys: ['fb_engagement'] },
       { key: 'fb_reaction_per_reach', label: 'Reakció / elérés', chartKeys: ['fb_engagement', 'fb_page_reach'] },
@@ -139,6 +141,7 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', chartKeys: ['fb_all_posts'] },
       { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', chartKeys: ['fb_all_posts'] },
       { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', chartKeys: ['fb_all_posts'] },
+      { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', chartKeys: ['fb_all_posts'] },
     ],
     daily: [
       { key: 'fb_page_reach', label: 'Oldal elérés', chartKeys: ['fb_page_reach'] },
@@ -148,11 +151,15 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'fb_video_views', label: 'Videó nézések', chartKeys: ['fb_video_views'] },
       { key: 'fb_follows_trend', label: 'Követők változás', chartKeys: ['fb_follows_trend'] },
       { key: 'fb_page_video_time', label: 'Videó nézési idő', chartKeys: ['fb_page_video_time'] },
+      { key: 'fb_engaged_users', label: 'Elkötelezett felhasználók', chartKeys: ['fb_engaged_users'] },
+      { key: 'fb_page_views', label: 'Oldal megtekintések', chartKeys: ['fb_page_views'] },
+      { key: 'fb_engagement_rate', label: 'Engagement rate trend', chartKeys: ['fb_engagement_rate'] },
     ],
     distributions: [
       { key: 'fb_reaction_breakdown', label: 'Reakció megoszlás', chartKeys: ['fb_reaction_breakdown'] },
       { key: 'fb_all_posts', label: 'Összes poszt', chartKeys: ['fb_all_posts'] },
       { key: 'fb_top_3_posts', label: 'Top 3 poszt', chartKeys: ['fb_top_3_posts'] },
+      { key: 'fb_worst_3_posts', label: 'Leggyengébb 3 poszt', chartKeys: ['fb_worst_3_posts'] },
       { key: 'fb_reel_performance', label: 'Reel teljesítmény', chartKeys: ['fb_reel_performance'] },
     ],
   },
@@ -206,6 +213,7 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
     color: 'var(--platform-instagram)',
     platform: 'instagram',
     kpis: [
+      { key: 'igpub_followers', label: 'Követők', chartKeys: ['igpub_followers_trend'] },
       { key: 'igpub_likes', label: 'Like-ok', chartKeys: ['igpub_engagement_overview'] },
       { key: 'igpub_comments', label: 'Kommentek', chartKeys: ['igpub_engagement_overview'] },
       { key: 'igpub_avg_likes', label: 'Átl. like/poszt', chartKeys: ['igpub_avg_engagement'] },
@@ -213,14 +221,18 @@ const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'igpub_media', label: 'Tartalmak', chartKeys: ['igpub_all_media'] },
       { key: 'igpub_interactions', label: 'Összes interakció', chartKeys: ['igpub_engagement_overview'] },
       { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt', chartKeys: ['igpub_avg_engagement'] },
+      { key: 'igpub_er', label: 'Engagement rate%', chartKeys: ['igpub_engagement_overview', 'igpub_followers_trend'] },
     ],
     daily: [
+      { key: 'igpub_followers_trend', label: 'Követők trend', chartKeys: ['igpub_followers_trend'] },
       { key: 'igpub_engagement_overview', label: 'Engagement áttekintés', chartKeys: ['igpub_engagement_overview'] },
       { key: 'igpub_avg_engagement', label: 'Átlag engagement', chartKeys: ['igpub_avg_engagement'] },
+      { key: 'igpub_engagement_rate', label: 'Engagement rate trend', chartKeys: ['igpub_engagement_rate'] },
     ],
     distributions: [
       { key: 'igpub_all_media', label: 'Összes tartalom', chartKeys: ['igpub_all_media'] },
       { key: 'igpub_top_3_media', label: 'Top 3 tartalom', chartKeys: ['igpub_top_3_media'] },
+      { key: 'igpub_worst_3_media', label: 'Leggyengébb 3 tartalom', chartKeys: ['igpub_worst_3_media'] },
     ],
   },
   YOUTUBE: {

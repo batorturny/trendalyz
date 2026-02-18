@@ -6,14 +6,13 @@ import { addConnection } from '../actions';
 import { ChevronRight } from 'lucide-react';
 import { WindsorAccountPicker } from './WindsorAccountPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
+import { BaseModal } from '@/components/BaseModal';
 
 interface Props {
   companyId: string;
   existingProviders: string[];
   existingAccountIds?: string[];
 }
-
-const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
 
 export function AddConnectionWizard({ companyId, existingProviders, existingAccountIds = [] }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -144,8 +143,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)]">
+    <BaseModal open={isOpen} onClose={handleClose} className="max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-[var(--text-primary)]">
             {step === 1 ? 'Platform kiválasztása' : `${selectedMeta?.label} integráció`}
@@ -291,7 +289,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   placeholder={accountId}
-                  className={inputClass}
+                  className="input-field"
                 />
               </div>
             )}
@@ -336,7 +334,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                     value={accountId}
                     onChange={(e) => setAccountId(e.target.value)}
                     placeholder="pl. 123456789"
-                    className={`${inputClass} font-mono`}
+                    className="input-field font-mono"
                   />
                 </div>
 
@@ -348,7 +346,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value)}
                     placeholder={`pl. Cég ${selectedMeta.label} fiók`}
-                    className={inputClass}
+                    className="input-field"
                   />
                 </div>
               </div>
@@ -377,7 +375,6 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </BaseModal>
   );
 }

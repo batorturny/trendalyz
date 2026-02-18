@@ -662,6 +662,82 @@ const chartCatalog = [
         windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
     },
 
+    // ========== FACEBOOK (MORE) ==========
+    {
+        key: 'fb_worst_3_posts',
+        title: 'Facebook leggyengébb 3 poszt',
+        description: 'Legkevesebb elérésű posztok',
+        category: CHART_CATEGORIES.POST,
+        type: 'table',
+        color: '#ff6b6b',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink']
+    },
+    {
+        key: 'fb_engaged_users',
+        title: 'Elkötelezett felhasználók',
+        description: 'Napi elkötelezett felhasználók trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['engaged_users', 'date']
+    },
+    {
+        key: 'fb_page_views',
+        title: 'Oldal megtekintések',
+        description: 'Napi oldal megtekintések trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#9d4edd',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_views_total', 'date']
+    },
+    {
+        key: 'fb_engagement_rate',
+        title: 'Facebook engagement rate',
+        description: '(Reakciók + Kommentek + Megosztások) / Elérés %',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['reactions', 'comments', 'shares', 'reach', 'date'],
+        calculated: true
+    },
+
+    // ========== INSTAGRAM PUBLIC (MORE) ==========
+    {
+        key: 'igpub_worst_3_media',
+        title: 'Leggyengébb 3 tartalom',
+        description: 'Legkevesebb like-ot kapott tartalmak',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'table',
+        color: '#ff6b6b',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
+    },
+    {
+        key: 'igpub_followers_trend',
+        title: 'Követők trend',
+        description: 'Követőszám alakulása az időszakban',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00ff95',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['profile_followers_count', 'date']
+    },
+    {
+        key: 'igpub_engagement_rate',
+        title: 'IG Public engagement rate',
+        description: '(Like-ok + Kommentek) / Követők %',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'INSTAGRAM_PUBLIC',
+        windsorFields: ['media_like_count', 'media_comments_count', 'profile_followers_count', 'date'],
+        calculated: true
+    },
+
     // ========== YOUTUBE (NEW) ==========
     {
         key: 'yt_avg_view_pct',

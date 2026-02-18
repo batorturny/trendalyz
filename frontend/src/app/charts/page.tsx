@@ -18,7 +18,6 @@ export default function ChartsPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-emerald-500 focus:outline-none transition-colors";
 
     useEffect(() => {
         const now = new Date();
@@ -136,7 +135,7 @@ export default function ChartsPage() {
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className={inputClass}
+                                className="input-field"
                             />
                         </div>
 
@@ -146,7 +145,7 @@ export default function ChartsPage() {
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className={inputClass}
+                                className="input-field"
                             />
                         </div>
 

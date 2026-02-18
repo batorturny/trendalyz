@@ -128,8 +128,6 @@ export default function LoginPage() {
     await signIn('google', { callbackUrl: '/admin' });
   }
 
-  const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
-
   return (
     <div className="min-h-screen bg-[var(--surface-raised)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -165,7 +163,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className={inputClass}
+                      className="input-field"
                       placeholder="email@example.com"
                     />
                   </div>
@@ -227,7 +225,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className={inputClass}
+                      className="input-field"
                       placeholder="email@example.com"
                     />
                   </div>
@@ -239,7 +237,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className={`${inputClass} pr-12`}
+                        className="input-field pr-12"
                         placeholder="••••••••"
                       />
                       <button
@@ -277,7 +275,7 @@ export default function LoginPage() {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className={inputClass}
+                      className="input-field"
                       placeholder="Teljes neved"
                     />
                   </div>
@@ -288,7 +286,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className={inputClass}
+                      className="input-field"
                       placeholder="email@example.com"
                     />
                   </div>
@@ -301,7 +299,7 @@ export default function LoginPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={6}
-                        className={`${inputClass} pr-12`}
+                        className="input-field pr-12"
                         placeholder="Min. 6 karakter"
                       />
                       <button

@@ -98,6 +98,9 @@ const KPI_DESC: Record<string, { title: string; text: string; tip: string }> = {
   fb_avg_reactions_post: { title: 'Átl. reakció/poszt', text: 'Egy posztra jutó átlagos reakciószám.', tip: 'A személy-központú posztok több reakciót kapnak.' },
   fb_avg_comments_post: { title: 'Átl. komment/poszt', text: 'Egy posztra jutó átlagos kommentszám.', tip: 'Adj hozzá kérdéseket a posztok végéhez.' },
   fb_avg_shares_post: { title: 'Átl. megosztás/poszt', text: 'Egy posztra jutó átlagos megosztásszám.', tip: 'Listák, infografikák és praktikus tippek kapják a legtöbb megosztást.' },
+  fb_engaged_users: { title: 'Elkötelezett felhasználók', text: 'Az oldalon interakciót végző egyedi felhasználók száma (kattintás, reakció, komment, megosztás).', tip: 'Az engaged users az egyik legfontosabb Facebook metrika — aktív, érdeklődő közönséget jelez.' },
+  fb_page_views: { title: 'Oldal megtekintések', text: 'A Facebook oldal összesen hányszor lett megtekintve.', tip: 'Jól kitöltött „About" szekció és rendszeres posztolás növeli a profilnézéseket.' },
+  fb_avg_clicks_post: { title: 'Átl. kattintás/poszt', text: 'Egy posztra jutó átlagos kattintásszám.', tip: 'Link posztok és CTA-k növelik a kattintást.' },
   // Instagram Organic
   ig_followers: { title: 'Követők', text: 'Az Instagram fiók aktuális követőinek száma.', tip: 'A hiteles tartalom és közösségépítés fenntarthatóbb növekedést eredményez.' },
   ig_reach_kpi: { title: 'Elérés', text: 'Hány egyedi felhasználó látta a tartalmaidat.', tip: 'A Reels formátum általában szélesebb elérést biztosít.' },
@@ -127,6 +130,8 @@ const KPI_DESC: Record<string, { title: string; text: string; tip: string }> = {
   igpub_media: { title: 'Tartalmak', text: 'Az időszak alatt közzétett tartalmak száma.', tip: 'A rendszeresség fontosabb, mint a mennyiség.' },
   igpub_interactions: { title: 'Összes interakció', text: 'Like-ok + kommentek összege.', tip: 'Publikus adatokból elérhető interakciók.' },
   igpub_avg_interaction: { title: 'Átl. interakció/poszt', text: 'Egy posztra jutó átlagos interakciók.', tip: 'Hasonlítsd össze az iparági átlaggal.' },
+  igpub_followers: { title: 'Követők', text: 'A fiók aktuális követőinek száma a publikus adatok alapján.', tip: 'A követőszám csak egy mutató — a valódi érték az elköteleződés.' },
+  igpub_er: { title: 'Engagement rate%', text: 'Az összes interakció (like + komment) aránya a követőszámhoz képest.', tip: '3-6% közötti ER jónak számít Instagramon.' },
   // YouTube
   yt_subs: { title: 'Új feliratkozók', text: 'Az adott időszakban szerzett új feliratkozók száma.', tip: 'A videó végén használj feliratkozási CTA-t és End Screen elemeket.' },
   yt_views_kpi: { title: 'Megtekintések', text: 'Az összes videómegtekintés az adott időszakban.', tip: 'Az optimális cím és thumbnail a megtekintések legfontosabb hajtóereje.' },
@@ -255,6 +260,10 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const follows = findChart(results, 'fb_follows_trend');
       const videoViews = findChart(results, 'fb_video_views');
 
+      const engagedUsers = findChart(results, 'fb_engaged_users');
+      const pageViews = findChart(results, 'fb_page_views');
+      const erChart = findChart(results, 'fb_engagement_rate');
+
       const totalReach = sumSeries(reach, 0);
       const totalReactions = sumSeries(engagement, 0);
       const totalComments = sumSeries(engagement, 1);
@@ -274,6 +283,8 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'fb_posts', label: 'Posztok', value: postCount },
         { key: 'fb_new_follows', label: 'Napi új követők', value: sumSeries(follows, 0) },
         { key: 'fb_video_views', label: 'Videó nézések', value: sumSeries(videoViews) },
+        { key: 'fb_engaged_users', label: 'Elkötelezett felhasználók', value: sumSeries(engagedUsers) },
+        { key: 'fb_page_views', label: 'Oldal megtekintések', value: sumSeries(pageViews) },
         // Arány metrikák
         { key: 'fb_interactions_total', label: 'Összes interakció', value: totalInteractions },
         { key: 'fb_reaction_per_reach', label: 'Reakció / elérés', value: fmtPct(totalReach > 0 ? totalReactions / totalReach * 100 : 0), agg: 'avg' },
@@ -283,6 +294,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reactions') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount) : 0, agg: 'avg' },
+        { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'clicks') / postCount) : 0, agg: 'avg' },
       ]);
     }
     case 'INSTAGRAM_ORGANIC': {
@@ -334,18 +346,24 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const engagement = findChart(results, 'igpub_engagement_overview');
       const avgEng = findChart(results, 'igpub_avg_engagement');
       const allMedia = findChart(results, 'igpub_all_media');
+      const followersTrend = findChart(results, 'igpub_followers_trend');
+      const erChart = findChart(results, 'igpub_engagement_rate');
 
       const totalLikes = sumSeries(engagement, 0);
       const totalComments = sumSeries(engagement, 1);
+      const followers = lastValue(followersTrend);
+      const totalInteractions = totalLikes + totalComments;
 
       return addDescriptions([
+        { key: 'igpub_followers', label: 'Követők', value: followers, agg: 'last' },
         { key: 'igpub_likes', label: 'Like-ok', value: totalLikes },
         { key: 'igpub_comments', label: 'Kommentek', value: totalComments },
         { key: 'igpub_avg_likes', label: 'Átl. like/poszt', value: fmtDec1(avgSeries(avgEng, 0)), agg: 'avg' },
         { key: 'igpub_avg_comments', label: 'Átl. komment/poszt', value: fmtDec1(avgSeries(avgEng, 1)), agg: 'avg' },
         { key: 'igpub_media', label: 'Tartalmak', value: tableCount(allMedia) },
-        { key: 'igpub_interactions', label: 'Összes interakció', value: totalLikes + totalComments },
+        { key: 'igpub_interactions', label: 'Összes interakció', value: totalInteractions },
         { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt', value: fmtDec1(avgSeries(avgEng, 0) + avgSeries(avgEng, 1)), agg: 'avg' },
+        { key: 'igpub_er', label: 'Engagement rate%', value: fmtPct(followers > 0 ? totalInteractions / followers * 100 : 0), agg: 'avg' },
       ]);
     }
     case 'YOUTUBE': {

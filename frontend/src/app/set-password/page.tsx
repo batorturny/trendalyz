@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { LinkIcon } from 'lucide-react';
 
-const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
 
 export default function SetPasswordPage() {
   const searchParams = useSearchParams();
@@ -103,7 +102,7 @@ export default function SetPasswordPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className={inputClass}
+                className="input-field"
                 placeholder="Min. 6 karakter"
               />
             </div>
@@ -118,7 +117,7 @@ export default function SetPasswordPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className={inputClass}
+                className="input-field"
                 placeholder="Jelszó újra"
               />
             </div>

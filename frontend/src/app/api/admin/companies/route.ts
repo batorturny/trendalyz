@@ -10,7 +10,7 @@ export async function GET() {
 
   const companies = await prisma.company.findMany({
     where: { adminId: session.user.id },
-    include: { _count: { select: { users: true, integrations: true } } },
+    include: { _count: { select: { users: true } } },
     orderBy: { name: 'asc' },
   });
 

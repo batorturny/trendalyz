@@ -13,6 +13,7 @@ const { processReport } = require('./services/report');
 const { getAllCompanies, getCompanyById, addCompany, removeCompany } = require('./config/companies');
 const { chartCatalog, validateChartKeys, getCatalogByCategory } = require('./config/chartCatalog');
 const { ENABLE_CHART_API, ENABLE_ACCOUNT_MANAGEMENT, ENABLE_MULTI_PLATFORM, ENABLE_BILLING } = require('./config/featureFlags');
+const { VALID_PROVIDERS } = require('./config/constants');
 const { parseUserContext, requireAdmin, requireCompanyAccess } = require('./middleware/authContext');
 const { WindsorMultiPlatform } = require('./services/windsorMultiPlatform');
 const connectionService = require('./services/connectionService');
@@ -315,9 +316,8 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(400).json({ error: 'companyId, provider, and externalAccountId are required' });
             }
 
-            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
-            if (!validProviders.includes(provider)) {
-                return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
+            if (!VALID_PROVIDERS.includes(provider)) {
+                return res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` });
             }
 
             const connection = await connectionService.createConnection({
@@ -383,9 +383,8 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(400).json({ error: 'provider query parameter is required' });
             }
 
-            const validProviders = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
-            if (!validProviders.includes(provider)) {
-                return res.status(400).json({ error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` });
+            if (!VALID_PROVIDERS.includes(provider)) {
+                return res.status(400).json({ error: `Invalid provider. Must be one of: ${VALID_PROVIDERS.join(', ')}` });
             }
 
             const apiKey = await resolveWindsorKey(req);

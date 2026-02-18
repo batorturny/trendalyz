@@ -16,8 +16,6 @@ interface Props {
   companyName?: string;
 }
 
-const inputClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors";
-
 export function ReportForm({
   companies,
   selectedCompany,

@@ -55,6 +55,7 @@ const PLATFORM_CONFIG = {
       'page_video_views', 'page_video_view_time',
       'post_video_views', 'post_reactions_like_total', 'post_reactions_love_total',
       'post_reactions_wow_total', 'post_reactions_haha_total',
+      'post_reactions_sad_total', 'post_reactions_angry_total',
     ],
   },
   INSTAGRAM_ORGANIC: {

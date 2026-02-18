@@ -135,7 +135,7 @@ class ChartGenerator {
             const comments = this.sumField(items, 'video_comments') || this.sumField(items, 'comments');
             const shares = this.sumField(items, 'video_shares') || this.sumField(items, 'shares');
             const views = this.sumField(items, 'video_views_count') || 1;
-            return parseFloat(((likes + comments + shares) / views * 100).toFixed(2));
+            return this.engagementRate(likes, comments, shares, views);
         });
         return { labels, series: [{ name: 'ER %', data }] };
     }
@@ -292,7 +292,7 @@ class ChartGenerator {
             const newFollowers = v._maxNewFollowers;
             const fullWatchRate = v._avgFullWatchRate;
             const avgWatchTime = v._avgWatchTime;
-            const er = reach > 0 ? parseFloat(((likes + comments + shares) / reach * 100).toFixed(2)) : 0;
+            const er = this.engagementRate(likes, comments, shares, reach);
             return {
                 id: v.video_id, caption: v.video_caption || '-',
                 date: v.video_create_datetime ? v.video_create_datetime.substring(0, 10) : '-',
@@ -338,6 +338,30 @@ class ChartGenerator {
             link: p.post_permalink || '#'
         }));
         return { labels: ['Dátum', 'Üzenet', 'Impressziók', 'Elérés', 'Reakciók', 'Kommentek', 'Megosztások', 'Kattintások', 'Link'], series: [{ name: 'Posts', data: tableData }] };
+    }
+
+    generate_fb_worst_3_posts() {
+        const sorted = [...this.video].filter(p => parseInt(p.post_reach) > 0)
+            .sort((a, b) => (parseInt(a.post_reach) || 0) - (parseInt(b.post_reach) || 0));
+        return this.generateFacebookPostTable(sorted.slice(0, 3));
+    }
+
+    generate_fb_engaged_users() { return this.dailyMetric(this.daily, 'engaged_users', 'Elkötelezett felhasználók'); }
+    generate_fb_page_views() { return this.dailyMetric(this.daily, 'page_views_total', 'Oldal megtekintések'); }
+
+    generate_fb_engagement_rate() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            return this.engagementRate(
+                this.sumField(items, 'reactions'),
+                this.sumField(items, 'comments'),
+                this.sumField(items, 'shares'),
+                this.sumField(items, 'reach') || 1
+            );
+        });
+        return { labels, series: [{ name: 'ER %', data }] };
     }
 
     generate_fb_reel_performance() {
@@ -445,9 +469,29 @@ class ChartGenerator {
         };
     }
 
+    generate_igpub_followers_trend() { return this.dailyMax(this.daily, 'profile_followers_count', 'Követők'); }
+
+    generate_igpub_engagement_rate() {
+        const grouped = this.groupByDate(this.data, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(date => {
+            const items = grouped[date];
+            const likes = this.sumField(items, 'media_like_count');
+            const comments = this.sumField(items, 'media_comments_count');
+            const followers = Math.max(...items.map(i => parseInt(i.profile_followers_count) || 0)) || 1;
+            return parseFloat(((likes + comments) / followers * 100).toFixed(2));
+        });
+        return { labels, series: [{ name: 'ER %', data }] };
+    }
+
     generate_igpub_all_media() { return this.generateIGPublicMediaTable(this.video); }
     generate_igpub_top_3_media() {
         const sorted = [...this.video].sort((a, b) => (parseInt(b.media_like_count) || 0) - (parseInt(a.media_like_count) || 0));
+        return this.generateIGPublicMediaTable(sorted.slice(0, 3));
+    }
+    generate_igpub_worst_3_media() {
+        const sorted = [...this.video].filter(m => parseInt(m.media_like_count) > 0)
+            .sort((a, b) => (parseInt(a.media_like_count) || 0) - (parseInt(b.media_like_count) || 0));
         return this.generateIGPublicMediaTable(sorted.slice(0, 3));
     }
 
@@ -482,7 +526,7 @@ class ChartGenerator {
             const likes = this.sumField(items, 'likes');
             const comments = this.sumField(items, 'comments');
             const views = this.sumField(items, 'views') || 1;
-            return parseFloat(((likes + comments) / views * 100).toFixed(2));
+            return this.engagementRate(likes, comments, 0, views);
         });
         return { labels, series: [{ name: 'ER %', data }] };
     }
@@ -520,7 +564,7 @@ class ChartGenerator {
             const likes = parseInt(v.likes) || 0;
             const comments = parseInt(v.comments) || 0;
             const shares = parseInt(v.shares) || 0;
-            const er = views > 0 ? parseFloat(((likes + comments + shares) / views * 100).toFixed(2)) : 0;
+            const er = this.engagementRate(likes, comments, shares, views);
             return {
                 id: v.video_id, title: v.video_title || '-',
                 date: v.video_published_at ? v.video_published_at.substring(0, 10) : '-',
@@ -646,6 +690,12 @@ class ChartGenerator {
     sumField(items, field) {
         if (!Array.isArray(items)) return 0;
         return items.reduce((sum, item) => sum + (parseFloat(item[field]) || 0), 0);
+    }
+
+    /** Calculate engagement rate: (likes + comments + shares) / divisor * 100 */
+    engagementRate(likes, comments, shares, divisor) {
+        if (!divisor) return 0;
+        return parseFloat(((likes + comments + shares) / divisor * 100).toFixed(2));
     }
 }
 

@@ -24,7 +24,6 @@ export default async function CompanyDetailPage({
     where: { id },
     include: {
       users: { select: { id: true, email: true, name: true, role: true, createdAt: true, passwordHash: true } },
-      integrations: true,
       connections: { orderBy: [{ provider: 'asc' }, { createdAt: 'asc' }] },
     },
   });
