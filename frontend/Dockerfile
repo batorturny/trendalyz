@@ -1,25 +1,26 @@
 
 # Base image
-FROM node:18-alpine AS base
+FROM node:18-bullseye-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY frontend/ ./
+COPY prisma/ ./prisma/
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Build the project
-RUN npm run build
+RUN npx prisma generate --schema=./prisma/schema.prisma && npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -32,7 +33,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
+RUN mkdir .next || true
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
