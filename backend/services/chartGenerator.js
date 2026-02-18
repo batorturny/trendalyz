@@ -10,10 +10,20 @@ class ChartGenerator {
         this.endDate = endDate;
 
         if (Array.isArray(windsorData)) {
-            this.data = windsorData;
-            this.daily = windsorData;
-            this.video = windsorData;
+            // Separate daily aggregate rows from per-content rows to avoid double-counting
+            const daily = [];
+            const video = [];
+            for (const row of windsorData) {
+                if (row.video_id || row.post_id || row.media_id) {
+                    video.push(row);
+                } else {
+                    daily.push(row);
+                }
+            }
+            this.daily = daily;
+            this.video = video;
             this.activity = windsorData;
+            this.data = windsorData;
         } else {
             this.daily = windsorData.daily || [];
             this.video = windsorData.video || [];
@@ -127,15 +137,15 @@ class ChartGenerator {
     generate_daily_shares() { return this.dailyMetric(this.daily, 'shares', 'Megosztások'); }
 
     generate_engagement_rate() {
-        const grouped = this.groupByDate(this.data, 'date');
+        const grouped = this.groupByDate(this.video.length > 0 ? this.video : this.data, 'date');
         const labels = Object.keys(grouped).sort();
         const data = labels.map(date => {
             const items = grouped[date];
             const likes = this.sumField(items, 'video_likes') || this.sumField(items, 'likes');
             const comments = this.sumField(items, 'video_comments') || this.sumField(items, 'comments');
             const shares = this.sumField(items, 'video_shares') || this.sumField(items, 'shares');
-            const views = this.sumField(items, 'video_views_count') || 1;
-            return this.engagementRate(likes, comments, shares, views);
+            const views = this.sumField(items, 'video_views_count');
+            return views > 0 ? this.engagementRate(likes, comments, shares, views) : 0;
         });
         return { labels, series: [{ name: 'ER %', data }] };
     }
@@ -391,8 +401,8 @@ class ChartGenerator {
         const data = labels.map(date => {
             const items = grouped[date];
             const saved = this.sumField(items, 'media_saved');
-            const reach = this.sumField(items, 'media_reach') || 1;
-            return parseFloat(((saved / reach) * 100).toFixed(2));
+            const reach = this.sumField(items, 'media_reach');
+            return reach > 0 ? parseFloat(((saved / reach) * 100).toFixed(2)) : 0;
         });
         return { labels, series: [{ name: 'Mentési arány %', data }] };
     }
@@ -478,8 +488,8 @@ class ChartGenerator {
             const items = grouped[date];
             const likes = this.sumField(items, 'media_like_count');
             const comments = this.sumField(items, 'media_comments_count');
-            const followers = Math.max(...items.map(i => parseInt(i.profile_followers_count) || 0)) || 1;
-            return parseFloat(((likes + comments) / followers * 100).toFixed(2));
+            const followers = Math.max(...items.map(i => parseInt(i.profile_followers_count) || 0));
+            return followers > 0 ? parseFloat(((likes + comments) / followers * 100).toFixed(2)) : 0;
         });
         return { labels, series: [{ name: 'ER %', data }] };
     }
@@ -519,14 +529,14 @@ class ChartGenerator {
     generate_yt_daily_engagement() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['comments', 'Kommentek'], ['shares', 'Megosztások']]); }
 
     generate_yt_engagement_rate() {
-        const grouped = this.groupByDate(this.data, 'date');
+        const grouped = this.groupByDate(this.daily, 'date');
         const labels = Object.keys(grouped).sort();
         const data = labels.map(date => {
             const items = grouped[date];
             const likes = this.sumField(items, 'likes');
             const comments = this.sumField(items, 'comments');
-            const views = this.sumField(items, 'views') || 1;
-            return this.engagementRate(likes, comments, 0, views);
+            const views = this.sumField(items, 'views');
+            return views > 0 ? this.engagementRate(likes, comments, 0, views) : 0;
         });
         return { labels, series: [{ name: 'ER %', data }] };
     }
