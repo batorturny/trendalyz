@@ -1103,7 +1103,13 @@ export default function AdminChartsPage() {
             const allAgg = aggregateMonthlyKPIs(monthKpis);
             // Filter to only selected KPIs
             const sel = selections[plat];
-            aggregated[plat] = sel ? allAgg.filter(k => sel.kpis.has(k.key)) : allAgg;
+            const selected = sel ? allAgg.filter(k => sel.kpis.has(k.key)) : allAgg;
+            aggregated[plat] = selected.map(k => {
+              const v = k.value;
+              const isZero = (typeof v === 'number' && v === 0)
+                || (typeof v === 'string' && ['0', '0.00%', '0.0', '0%'].includes(v));
+              return isZero ? { ...k, value: 'N/A' } : k;
+            });
           }
           setPlatformKPIs(aggregated);
           setMultiMonthCount(successCount);
@@ -1142,11 +1148,11 @@ export default function AdminChartsPage() {
         // Filter to only show KPIs selected by user
         const filtered = allKpis
           .filter(k => sel.kpis.has(k.key))
-          .filter(k => {
+          .map(k => {
             const v = k.value;
-            if (typeof v === 'number') return v !== 0;
-            if (typeof v === 'string') return v !== '0' && v !== '0.00%' && v !== '0.0' && v !== '0%';
-            return true;
+            const isZero = (typeof v === 'number' && v === 0)
+              || (typeof v === 'string' && ['0', '0.00%', '0.0', '0%'].includes(v));
+            return isZero ? { ...k, value: 'N/A' } : k;
           });
         if (filtered.length > 0) {
           kpiMap[platKey] = filtered;

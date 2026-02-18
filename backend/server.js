@@ -112,6 +112,43 @@ async function resolveTiktokAccountId(company) {
 
     return value;
 }
+
+/**
+ * In-memory cache for resolvePlatformAccounts (5-minute TTL).
+ */
+const platformAccountsCache = new Map();
+
+/**
+ * Resolve all platform account IDs for a company.
+ * Returns Map<provider, externalAccountId>.
+ * TikTok falls back to legacy company.tiktokAccountId.
+ * Results are cached in-memory for 5 minutes.
+ */
+async function resolvePlatformAccounts(company) {
+    const cacheKey = company.id;
+    const cached = platformAccountsCache.get(cacheKey);
+    if (cached && (Date.now() - cached.time) < TIKTOK_ID_CACHE_TTL) {
+        return cached.value;
+    }
+
+    const connections = await prisma.integrationConnection.findMany({
+        where: { companyId: company.id },
+        select: { provider: true, externalAccountId: true },
+    });
+
+    const accounts = new Map();
+    for (const conn of connections) {
+        accounts.set(conn.provider, conn.externalAccountId);
+    }
+
+    // Legacy TikTok fallback
+    if (!accounts.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
+        accounts.set('TIKTOK_ORGANIC', company.tiktokAccountId);
+    }
+
+    platformAccountsCache.set(cacheKey, { value: accounts, time: Date.now() });
+    return accounts;
+}
 const PORT = process.env.PORT || 4000;
 
 // Middleware
@@ -639,29 +676,64 @@ if (ENABLE_CHART_API) {
 
             console.log(`Generating ${validCharts.length} charts for ${company.name} (${startDate} - ${endDate})`);
 
-            // Resolve TikTok account ID (legacy field or IntegrationConnection)
-            const tiktokAccountId = await resolveTiktokAccountId(company);
+            // Resolve all platform accounts for this company
+            const platformAccounts = await resolvePlatformAccounts(company);
 
-            // Fetch Windsor data
+            // Group requested charts by platform
+            const chartsByPlatform = new Map();
+            for (const chartReq of validCharts) {
+                const def = chartCatalog.find(c => c.key === chartReq.key);
+                const platform = def?.platform || 'TIKTOK_ORGANIC';
+                if (!chartsByPlatform.has(platform)) chartsByPlatform.set(platform, []);
+                chartsByPlatform.get(platform).push(chartReq);
+            }
+
+            // Fetch data and generate charts per platform in parallel
             const chartApiKey = await resolveWindsorKey(req);
-            const { windsor: windsorChart } = createWindsorServices(chartApiKey);
-            const windsorData = await windsorChart.fetchAllChartData(tiktokAccountId, startDate, endDate);
+            const { windsorMulti } = createWindsorServices(chartApiKey);
 
-            console.log(`Received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows from Windsor`);
+            const platformPromises = Array.from(chartsByPlatform.entries()).map(async ([platform, platformCharts]) => {
+                const platformAccountId = platformAccounts.get(platform);
 
-            // Generate charts
-            const generator = new ChartGenerator(windsorData, startDate, endDate);
-            const results = validCharts.map(chartReq => {
-                try {
-                    return generator.generate(chartReq.key, chartReq.params || {});
-                } catch (error) {
-                    return {
+                // No connection for this platform → return empty results
+                if (!platformAccountId) {
+                    console.log(`[CHART API] No connection for ${platform}, returning empty for ${platformCharts.length} charts`);
+                    return platformCharts.map(chartReq => ({
                         key: chartReq.key,
-                        error: error.message,
+                        empty: true,
+                        error: 'Nincs kapcsolat ehhez a platformhoz'
+                    }));
+                }
+
+                try {
+                    console.log(`[CHART API] Fetching ${platform} data for account ${platformAccountId}`);
+                    const windsorData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
+                    console.log(`[CHART API] ${platform}: received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows`);
+
+                    const generator = new ChartGenerator(windsorData, startDate, endDate);
+                    return platformCharts.map(chartReq => {
+                        try {
+                            return generator.generate(chartReq.key, chartReq.params || {});
+                        } catch (error) {
+                            return {
+                                key: chartReq.key,
+                                error: error.message,
+                                empty: true
+                            };
+                        }
+                    });
+                } catch (error) {
+                    console.error(`[CHART API] ${platform} fetch error:`, error.message);
+                    return platformCharts.map(chartReq => ({
+                        key: chartReq.key,
+                        error: `Platform data fetch failed: ${error.message}`,
                         empty: true
-                    };
+                    }));
                 }
             });
+
+            const platformResults = await Promise.all(platformPromises);
+            const results = platformResults.flat();
 
             res.json({
                 account: { id: company.id, name: company.name },

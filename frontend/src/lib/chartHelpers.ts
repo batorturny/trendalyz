@@ -392,7 +392,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'yt_likes_kpi', label: 'Like-ok', value: totalLikes },
         { key: 'yt_comments_kpi', label: 'Kommentek', value: totalComments },
         { key: 'yt_shares_kpi', label: 'Megosztások', value: totalShares },
-        { key: 'yt_er', label: 'ER%', value: fmtPct(avgSeries(er)), agg: 'avg' },
+        { key: 'yt_er', label: 'ER%', value: fmtPct(totalViews > 0 ? totalInteractions / totalViews * 100 : 0), agg: 'avg' },
         { key: 'yt_video_count', label: 'Videók', value: vidCount },
         { key: 'yt_avg_view', label: 'Átl. nézési %', value: `${avgSeries(avgViewPct).toFixed(1)}%`, agg: 'avg' },
         { key: 'yt_playlist', label: 'Playlist hozzáadás', value: sumSeries(playlistAdds) },
