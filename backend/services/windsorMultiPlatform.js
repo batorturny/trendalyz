@@ -18,7 +18,7 @@ const PLATFORM_CONFIG = {
       gender: ['video_audience_genders_gender', 'video_audience_genders_percentage', 'date'],
     },
     allChartFields: [
-      'date', 'followers_count', 'profile_views', 'likes', 'comments', 'shares',
+      'date', 'followers_count', 'total_followers_count', 'profile_views', 'likes', 'comments', 'shares',
       'video_id', 'video_caption', 'video_create_datetime', 'video_embed_url',
       'video_views_count', 'video_reach', 'video_likes', 'video_comments',
       'video_shares', 'video_new_followers', 'video_full_watched_rate',
