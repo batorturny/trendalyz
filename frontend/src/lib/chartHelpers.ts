@@ -90,7 +90,7 @@ const KPI_DESC: Record<string, { title: string; text: string; tip: string }> = {
   fb_shares: { title: 'Megosztások', text: 'Hányszor osztották meg a tartalmaidat.', tip: 'Érzelmi, vicces vagy hasznos tartalmak kapják a legtöbb megosztást.' },
   fb_posts: { title: 'Posztok', text: 'Az adott időszakban közzétett posztok száma.', tip: 'Heti 3-5 poszt az optimális Facebook-on.' },
   fb_new_follows: { title: 'Napi új követők', text: 'Az adott időszakban szerzett napi új követők.', tip: 'A megosztható tartalmak jó forrásai az új követőknek.' },
-  fb_video_views: { title: 'Videó nézések', text: 'A videó tartalmak összes megtekintési száma.', tip: 'A Facebook algoritmusa előnyben részesíti a natív videókat.' },
+  fb_video_views: { title: 'Videó nézések', text: 'A videó tartalmak összes megtekintési száma   .', tip: 'A Facebook algoritmusa előnyben részesíti a natív videókat.' },
   fb_interactions_total: { title: 'Összes interakció', text: 'Reakciók + kommentek + megosztások összege.', tip: 'Az interakciók növekedése jelzi a tartalomstratégia hatékonyságát.' },
   fb_reaction_per_reach: { title: 'Reakció / elérés', text: 'A reakciók aránya az eléréshez képest százalékban.', tip: '1% feletti reakció/elérés arány jó organikus teljesítményt jelez.' },
   fb_er: { title: 'Engagement Rate', text: 'Az összes interakció aránya az eléréshez képest.', tip: 'Facebookon az 1-3% közötti ER normális, 3% felett kiváló.' },
