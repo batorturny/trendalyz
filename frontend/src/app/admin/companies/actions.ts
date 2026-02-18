@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
@@ -127,6 +127,7 @@ export async function createCompany(formData: FormData) {
   }
 
   revalidatePath('/admin/companies');
+  revalidateTag('admin-stats', 'default');
   redirect('/admin/companies');
 }
 
@@ -174,6 +175,7 @@ export async function deleteCompany(companyId: string) {
   await prisma.company.delete({ where: { id: companyId } });
 
   revalidatePath('/admin/companies');
+  revalidateTag('admin-stats', 'default');
   redirect('/admin/companies');
 }
 
@@ -503,6 +505,7 @@ export async function executeSyncPlan(groups: SyncPlanGroup[]): Promise<{
   }
 
   revalidatePath('/admin/companies');
+  revalidateTag('admin-stats', 'default');
   return { created, updated, skipped, details };
 }
 

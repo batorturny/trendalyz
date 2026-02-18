@@ -3,6 +3,20 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { Building2, Users, Plug } from 'lucide-react';
+import { unstable_cache } from 'next/cache';
+
+const getAdminStats = unstable_cache(
+  async (adminId: string) => {
+    const [companyCount, userCount, activeIntegrations] = await Promise.all([
+      prisma.company.count({ where: { status: 'ACTIVE', adminId } }),
+      prisma.user.count({ where: { role: 'CLIENT', company: { adminId } } }),
+      prisma.integrationConnection.count({ where: { status: 'CONNECTED', company: { adminId } } }),
+    ]);
+    return { companyCount, userCount, activeIntegrations };
+  },
+  ['admin-stats'],
+  { revalidate: 60, tags: ['admin-stats'] }
+);
 
 export default async function AdminDashboard() {
   const session = await auth();
@@ -10,11 +24,7 @@ export default async function AdminDashboard() {
 
   const adminId = session.user.id;
 
-  const [companyCount, userCount, activeIntegrations] = await Promise.all([
-    prisma.company.count({ where: { status: 'ACTIVE', adminId } }),
-    prisma.user.count({ where: { role: 'CLIENT', company: { adminId } } }),
-    prisma.integrationConnection.count({ where: { status: 'CONNECTED', company: { adminId } } }),
-  ]);
+  const { companyCount, userCount, activeIntegrations } = await getAdminStats(adminId);
 
   const stats = [
     { label: 'Aktív cégek', value: companyCount, icon: Building2, href: '/admin/companies' },

@@ -112,6 +112,7 @@ model Company {
   integrations    Integration[]
   connections     IntegrationConnection[]
   reportSummaries ReportSummary[]
+  reportCaches    ReportCache[]
 
   @@index([adminId])
 }
@@ -204,6 +205,20 @@ model ReportSummary {
   @@unique([companyId, month])
 }
 
+
+model ReportCache {
+  id        String   @id @default(cuid())
+  companyId String
+  provider  String   @default("TIKTOK_ORGANIC")
+  month     String   // YYYY-MM format
+  jsonData  Json
+  cachedAt  DateTime @default(now())
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, provider, month])
+  @@index([cachedAt])
+}
 
 model Subscription {
   id                   String             @id @default(cuid())

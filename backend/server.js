@@ -6,6 +6,7 @@ require('dotenv').config();
 // Force rebuild for deployment sync
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const WindsorService = require('./services/windsor');
 const ChartGenerator = require('./services/chartGenerator');
 const { processReport } = require('./services/report');
@@ -81,25 +82,40 @@ if (ENABLE_BILLING) {
 }
 
 /**
+ * In-memory cache for resolveTiktokAccountId (5-minute TTL).
+ */
+const tiktokIdCache = new Map();
+const TIKTOK_ID_CACHE_TTL = 5 * 60 * 1000;
+
+/**
  * Resolve TikTok account ID for a company.
  * First checks legacy tiktokAccountId field, then falls back to IntegrationConnection.
+ * Results are cached in-memory for 5 minutes.
  */
 async function resolveTiktokAccountId(company) {
     if (company.tiktokAccountId) return company.tiktokAccountId;
+
+    const cacheKey = company.id;
+    const cached = tiktokIdCache.get(cacheKey);
+    if (cached && (Date.now() - cached.time) < TIKTOK_ID_CACHE_TTL) {
+        return cached.value;
+    }
 
     const connection = await prisma.integrationConnection.findFirst({
         where: { companyId: company.id, provider: 'TIKTOK_ORGANIC' },
         select: { externalAccountId: true },
     });
 
-    if (connection?.externalAccountId) return connection.externalAccountId;
+    const value = connection?.externalAccountId || null;
+    tiktokIdCache.set(cacheKey, { value, time: Date.now() });
 
-    return null;
+    return value;
 }
 const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 
 // Per-request Windsor service factory
@@ -171,10 +187,13 @@ app.get('/api/companies', async (req, res) => {
     }
 });
 
+// Report cache: max age 24 hours
+const REPORT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
 // Generate report
 app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (req, res) => {
     try {
-        const { companyId, month } = req.body;
+        const { companyId, month, forceRefresh } = req.body;
 
         if (!companyId || !month) {
             return res.status(400).json({ error: 'companyId and month are required' });
@@ -183,6 +202,28 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
         const company = await getCompanyById(companyId);
         if (!company) {
             return res.status(404).json({ error: 'Company not found' });
+        }
+
+        // Check DB cache first (unless forceRefresh)
+        if (!forceRefresh) {
+            const cached = await prisma.reportCache.findUnique({
+                where: {
+                    companyId_provider_month: {
+                        companyId,
+                        provider: 'TIKTOK_ORGANIC',
+                        month,
+                    },
+                },
+            });
+
+            if (cached && (Date.now() - cached.cachedAt.getTime()) < REPORT_CACHE_MAX_AGE_MS) {
+                console.log(`[Cache HIT] Report for ${company.name} / ${month}`);
+                return res.json({
+                    ...cached.jsonData,
+                    cached: true,
+                    cachedAt: cached.cachedAt.toISOString(),
+                });
+            }
         }
 
         // Parse month (YYYY-MM format)
@@ -198,7 +239,7 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
         const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
         const prevDateTo = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${prevLastDay}`;
 
-        console.log(`Fetching data for ${company.name} (${dateFrom} to ${dateTo})`);
+        console.log(`[Cache MISS] Fetching data for ${company.name} (${dateFrom} to ${dateTo})`);
 
         // Resolve TikTok account ID (legacy field or IntegrationConnection)
         const tiktokAccountId = await resolveTiktokAccountId(company);
@@ -216,12 +257,32 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
         // Process report
         const reportData = processReport(currentData, prevData);
 
-        res.json({
+        const responseData = {
             company: { id: company.id, name: company.name },
             month: { year, month: monthNum, label: `${year}. ${String(monthNum).padStart(2, '0')}.` },
             dateRange: { from: dateFrom, to: dateTo },
             data: reportData
-        });
+        };
+
+        // Store in DB cache (fire-and-forget)
+        prisma.reportCache.upsert({
+            where: {
+                companyId_provider_month: {
+                    companyId,
+                    provider: 'TIKTOK_ORGANIC',
+                    month,
+                },
+            },
+            update: { jsonData: responseData, cachedAt: new Date() },
+            create: {
+                companyId,
+                provider: 'TIKTOK_ORGANIC',
+                month,
+                jsonData: responseData,
+            },
+        }).catch(err => console.error('[Cache] Failed to store report cache:', err.message));
+
+        res.json({ ...responseData, cached: false });
 
     } catch (error) {
         console.error('Report generation error:', error);
