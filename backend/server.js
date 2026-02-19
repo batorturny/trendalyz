@@ -119,11 +119,12 @@ async function resolveTiktokAccountId(company) {
 const platformAccountsCache = new Map();
 
 /**
- * In-memory cache for Windsor chart data (1-hour TTL).
- * Key: "platform:accountId:startDate:endDate"
+ * In-memory cache for ALL Windsor data (1-hour TTL).
+ * Key: "type:platform:accountId:startDate:endDate"
+ * Used by both /api/charts and /api/report to avoid redundant Windsor calls.
  */
-const chartDataCache = new Map();
-const CHART_DATA_CACHE_TTL = 60 * 60 * 1000;
+const windsorDataCache = new Map();
+const WINDSOR_DATA_CACHE_TTL = 60 * 60 * 1000;
 
 /**
  * Resolve all platform account IDs for a company.
@@ -293,10 +294,21 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
         const apiKey = await resolveWindsorKey(req);
         const { windsor: windsorSvc } = createWindsorServices(apiKey);
 
-        // Fetch current and previous month data
+        // Fetch current and previous month data (with in-memory cache)
+        async function fetchWithCache(accountId, from, to) {
+            const key = `report:TIKTOK_ORGANIC:${accountId}:${from}:${to}`;
+            const hit = windsorDataCache.get(key);
+            if (hit && (Date.now() - hit.ts) < WINDSOR_DATA_CACHE_TTL) {
+                console.log(`[Windsor Cache HIT] report ${from}..${to}`);
+                return hit.data;
+            }
+            const data = await windsorSvc.fetchAllData(accountId, from, to);
+            windsorDataCache.set(key, { data, ts: Date.now() });
+            return data;
+        }
         const [currentData, prevData] = await Promise.all([
-            windsorSvc.fetchAllData(tiktokAccountId, dateFrom, dateTo),
-            windsorSvc.fetchAllData(tiktokAccountId, prevDateFrom, prevDateTo)
+            fetchWithCache(tiktokAccountId, dateFrom, dateTo),
+            fetchWithCache(tiktokAccountId, prevDateFrom, prevDateTo)
         ]);
 
         // Process report
@@ -714,16 +726,16 @@ if (ENABLE_CHART_API) {
 
                 try {
                     // Check in-memory cache first
-                    const cacheKey = `${platform}:${platformAccountId}:${startDate}:${endDate}`;
+                    const cacheKey = `chart:${platform}:${platformAccountId}:${startDate}:${endDate}`;
                     let windsorData;
-                    const cached = !forceRefresh && chartDataCache.get(cacheKey);
-                    if (cached && (Date.now() - cached.ts) < CHART_DATA_CACHE_TTL) {
+                    const cached = !forceRefresh && windsorDataCache.get(cacheKey);
+                    if (cached && (Date.now() - cached.ts) < WINDSOR_DATA_CACHE_TTL) {
                         windsorData = cached.data;
                         console.log(`[CHART API] Cache HIT for ${platform} (${Array.isArray(windsorData) ? windsorData.length : 0} rows)`);
                     } else {
                         console.log(`[CHART API] Cache MISS — fetching ${platform} data for account ${platformAccountId}`);
                         windsorData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
-                        chartDataCache.set(cacheKey, { data: windsorData, ts: Date.now() });
+                        windsorDataCache.set(cacheKey, { data: windsorData, ts: Date.now() });
                         console.log(`[CHART API] ${platform}: received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows, cached`);
                     }
 
