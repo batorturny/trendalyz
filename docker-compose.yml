@@ -12,6 +12,7 @@ services:
       - PDF_API_KEY=${PDF_API_KEY:-bator@capmarketing.hu_J6wye402YArBZE40tpawANZVQjbakvEKkZxkvREHh8IVnD3OgcPskFityrBVfYBe}
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:trendalyz_secret_password@db:5432/tiktok_report}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
       - PORT=4000
     depends_on:
       - db
@@ -32,6 +33,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - RESEND_API_KEY=${RESEND_API_KEY}
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
     depends_on:
       - backend
     restart: unless-stopped
