@@ -15,7 +15,7 @@ class WindsorService {
         const url = `${BASE_URL}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}&select_accounts=${tiktokAccountId}`;
 
         try {
-            const response = await axios.get(url, { timeout: 30000 });
+            const response = await axios.get(url, { timeout: 120000 });
             const data = response.data;
 
             // Handle wrapped response [{ data: [] }]

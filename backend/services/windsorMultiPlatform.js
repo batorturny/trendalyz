@@ -145,7 +145,7 @@ class WindsorMultiPlatform {
     const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fieldStr}&select_accounts=${accountId}`;
 
     try {
-      const response = await axios.get(url, { timeout: 30000 });
+      const response = await axios.get(url, { timeout: 120000 });
       const data = response.data;
 
       if (Array.isArray(data)) {
@@ -232,7 +232,7 @@ class WindsorMultiPlatform {
     const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields.join(',')}`;
 
     try {
-      const response = await axios.get(url, { timeout: 30000 });
+      const response = await axios.get(url, { timeout: 120000 });
       const rawData = response.data;
       const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
 
