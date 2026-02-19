@@ -6,10 +6,13 @@ import { DeleteCompanyButton } from './DeleteCompanyButton';
 import { SyncAllButton } from './SyncAllButton';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { CompanyLimitToast } from './CompanyLimitToast';
+import { SubscriptionOverlay } from './SubscriptionOverlay';
 
 export default async function CompaniesPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') redirect('/login');
+
+  const billingEnabled = process.env.ENABLE_BILLING === 'true';
 
   // Run all independent queries in parallel
   const [adminUser, subscription, companies] = await Promise.all([
@@ -17,10 +20,10 @@ export default async function CompaniesPage() {
       where: { id: session.user.id },
       select: { windsorApiKeyEnc: true },
     }),
-    process.env.ENABLE_BILLING === 'true'
+    billingEnabled
       ? prisma.subscription.findUnique({
           where: { userId: session.user.id },
-          select: { companyLimit: true, tier: true },
+          select: { companyLimit: true, tier: true, status: true },
         })
       : Promise.resolve(null),
     prisma.company.findMany({
@@ -35,7 +38,12 @@ export default async function CompaniesPage() {
     }),
   ]);
   const hasWindsorKey = !!adminUser?.windsorApiKeyEnc;
-  const companyLimit = subscription?.companyLimit || null;
+  const companyLimit = billingEnabled ? (subscription?.companyLimit ?? 1) : null;
+  const subscriptionStatus = subscription?.status || null;
+  const subscriptionTier = subscription?.tier || 'FREE';
+  const isOverLimit = companyLimit !== null && companies.length > companyLimit;
+  const isAtLimit = companyLimit !== null && companies.length >= companyLimit;
+  const hasInactiveSubscription = billingEnabled && subscriptionStatus && !['TRIALING', 'ACTIVE'].includes(subscriptionStatus);
 
   const PLATFORM_COLORS: Record<string, string> = {
     tiktok: 'text-[var(--platform-tiktok)]',
@@ -45,12 +53,23 @@ export default async function CompaniesPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 relative">
+      {/* Subscription limit overlay */}
+      {(isOverLimit || hasInactiveSubscription) && (
+        <SubscriptionOverlay
+          companyCount={companies.length}
+          companyLimit={companyLimit ?? 1}
+          tier={subscriptionTier}
+          isOverLimit={!!isOverLimit}
+          hasInactiveSubscription={!!hasInactiveSubscription}
+        />
+      )}
+
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Cégek</h1>
           <p className={`mt-1 font-medium ${
-            companyLimit !== null && companies.length >= companyLimit
+            isOverLimit || isAtLimit
               ? 'text-red-500 dark:text-red-400'
               : companyLimit !== null && companies.length >= companyLimit * 0.8
                 ? 'text-yellow-600 dark:text-yellow-400'
@@ -61,7 +80,7 @@ export default async function CompaniesPage() {
         </div>
         <div className="flex items-center gap-3">
           <SyncAllButton hasWindsorKey={hasWindsorKey} />
-          {companyLimit !== null && companies.length >= companyLimit ? (
+          {isAtLimit ? (
             <Link
               href="/admin/billing"
               className="px-4 py-2 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 text-sm font-bold rounded-xl hover:brightness-110 transition-all"

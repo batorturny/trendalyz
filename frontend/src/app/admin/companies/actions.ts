@@ -427,6 +427,17 @@ export async function executeSyncPlan(groups: SyncPlanGroup[]): Promise<{
   let skipped = 0;
   const details: string[] = [];
 
+  // Check billing limit for new companies
+  let companyLimit = Infinity;
+  if (process.env.ENABLE_BILLING === 'true') {
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+      select: { companyLimit: true },
+    });
+    companyLimit = subscription?.companyLimit ?? 1;
+  }
+  let currentCount = await prisma.company.count({ where: { adminId: session.user.id } });
+
   for (const group of groups) {
     if (group.skip) {
       skipped++;
@@ -459,6 +470,13 @@ export async function executeSyncPlan(groups: SyncPlanGroup[]): Promise<{
       updated++;
       details.push(`${group.companyName}: frissítve`);
     } else {
+      // Check billing limit before creating
+      if (currentCount >= companyLimit) {
+        skipped++;
+        details.push(`${group.companyName}: kihagyva (elérted a cég limitet: ${currentCount}/${companyLimit})`);
+        continue;
+      }
+
       // Create new company
       const company = await prisma.company.create({
         data: {
@@ -468,6 +486,7 @@ export async function executeSyncPlan(groups: SyncPlanGroup[]): Promise<{
         },
       });
       companyId = company.id;
+      currentCount++;
       created++;
       details.push(`${group.companyName}: létrehozva`);
     }

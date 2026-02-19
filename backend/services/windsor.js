@@ -5,11 +5,9 @@
 const axios = require('axios');
 const https = require('https');
 
-// Use Vercel proxy to avoid Hetzner→Windsor timeout, fallback to direct
-const WINDSOR_PROXY = process.env.WINDSOR_PROXY_URL || 'https://connectors.windsor.ai';
-const BASE_URL = `${WINDSOR_PROXY}/tiktok_organic`;
+const BASE_URL = 'https://connectors.windsor.ai/tiktok_organic';
 
-// Force IPv4 + keep-alive (used when calling directly, not via proxy)
+// Force IPv4 + keep-alive to avoid Hetzner dual-stack routing issues
 const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
 class WindsorService {
