@@ -4,8 +4,12 @@
 // ============================================
 
 const axios = require('axios');
+const https = require('https');
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
+
+// Force IPv4 + keep-alive to avoid Hetzner→Hetzner routing issues
+const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
 const PLATFORM_CONFIG = {
   TIKTOK_ORGANIC: {
@@ -145,7 +149,7 @@ class WindsorMultiPlatform {
     const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fieldStr}&select_accounts=${accountId}`;
 
     try {
-      const response = await axios.get(url, { timeout: 120000 });
+      const response = await axios.get(url, { timeout: 120000, httpsAgent });
       const data = response.data;
 
       if (Array.isArray(data)) {
@@ -232,7 +236,7 @@ class WindsorMultiPlatform {
     const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields.join(',')}`;
 
     try {
-      const response = await axios.get(url, { timeout: 120000 });
+      const response = await axios.get(url, { timeout: 120000, httpsAgent });
       const rawData = response.data;
       const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
 
@@ -268,7 +272,7 @@ class WindsorMultiPlatform {
     const url = `${WINDSOR_BASE}/api/v1/datasources?api_key=${this.apiKey}`;
 
     try {
-      const response = await axios.get(url, { timeout: 15000 });
+      const response = await axios.get(url, { timeout: 15000, httpsAgent });
       const sources = response.data;
 
       if (Array.isArray(sources)) {

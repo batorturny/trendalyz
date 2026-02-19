@@ -4,8 +4,12 @@
 // ============================================
 
 const axios = require('axios');
+const https = require('https');
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
+
+// Force IPv4 + keep-alive to avoid Hetzner→Hetzner routing issues
+const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
 class WindsorConnectorService {
   constructor(apiKey) {
@@ -27,6 +31,7 @@ class WindsorConnectorService {
       }, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 120000,
+        httpsAgent,
       });
 
       return {

@@ -3,8 +3,12 @@
 // ============================================
 
 const axios = require('axios');
+const https = require('https');
 
 const BASE_URL = 'https://connectors.windsor.ai/tiktok_organic';
+
+// Force IPv4 + keep-alive to avoid Hetzner→Hetzner routing issues
+const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
 class WindsorService {
     constructor(apiKey) {
@@ -15,7 +19,7 @@ class WindsorService {
         const url = `${BASE_URL}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}&select_accounts=${tiktokAccountId}`;
 
         try {
-            const response = await axios.get(url, { timeout: 120000 });
+            const response = await axios.get(url, { timeout: 120000, httpsAgent });
             const data = response.data;
 
             // Handle wrapped response [{ data: [] }]
