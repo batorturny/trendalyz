@@ -10,6 +10,10 @@ const { canUseFeature } = require('../config/plans');
 const { generateReportPdf } = require('./pdfService');
 const { buildReportHtml } = require('./reportTemplate');
 const { sendEmailWithAttachment } = require('./emailService');
+const { getWindsorApiKey } = require('./adminKeyService');
+const WindsorService = require('./windsor');
+const { WindsorMultiPlatform } = require('./windsorMultiPlatform');
+const { processReport } = require('./report');
 
 /**
  * Get previous month in YYYY-MM format.
@@ -53,6 +57,117 @@ const MONTH_NAMES = [
 ];
 
 /**
+ * Calculate date range for a given YYYY-MM month string.
+ */
+function getMonthDateRange(month) {
+  const [year, monthNum] = month.split('-').map(Number);
+  const dateFrom = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+  const lastDay = new Date(year, monthNum, 0).getDate();
+  const dateTo = `${year}-${String(monthNum).padStart(2, '0')}-${lastDay}`;
+  return { dateFrom, dateTo, year, monthNum };
+}
+
+/**
+ * Fetch Windsor data live and build KPIs for TikTok Organic.
+ * Mirrors the logic in scripts/sendRealReport.js.
+ */
+async function fetchTikTokKpis(windsorApiKey, accountId, month) {
+  const { dateFrom, dateTo, year, monthNum } = getMonthDateRange(month);
+
+  // Previous month range
+  const prevMonth = monthNum === 1 ? 12 : monthNum - 1;
+  const prevYear = monthNum === 1 ? year - 1 : year;
+  const prevDateFrom = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
+  const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
+  const prevDateTo = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${prevLastDay}`;
+
+  const windsor = new WindsorService(windsorApiKey);
+  const [currentData, prevData] = await Promise.all([
+    windsor.fetchAllData(accountId, dateFrom, dateTo),
+    windsor.fetchAllData(accountId, prevDateFrom, prevDateTo),
+  ]);
+
+  const reportData = processReport(currentData, prevData);
+  const dt = reportData.daily.totals;
+  const vt = reportData.video.totals;
+
+  const kpis = [
+    { label: 'Követők', value: dt.currentFollowers },
+    { label: 'Új követők', value: dt.totalNewFollowers },
+    { label: 'Megtekintések', value: vt.totalViews },
+    { label: 'Elérés', value: vt.totalReach },
+    { label: 'Like-ok', value: dt.totalLikes },
+    { label: 'Kommentek', value: dt.totalComments },
+    { label: 'Megosztások', value: dt.totalShares },
+    { label: 'Profilnézetek', value: dt.totalProfileViews },
+    { label: 'Videók száma', value: vt.videoCount },
+    { label: 'Átl. ER%', value: `${vt.avgEngagement.toFixed(2)}%` },
+    { label: 'Átl. teljes nézés%', value: `${vt.avgFullWatchRate.toFixed(1)}%` },
+    { label: 'Össz. nézési idő', value: vt.totalWatchTimeFormatted },
+  ];
+
+  const topVideos = reportData.video.videos
+    .slice()
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10)
+    .map(v => ({
+      title: v.embedUrl ? v.embedUrl.split('/').pop()?.split('?')[0] || 'Videó' : 'Videó',
+      views: v.views,
+      likes: v.likes,
+    }));
+
+  const dailyMetrics = reportData.daily.chartLabels.map((label, i) => ({
+    date: label,
+    'Like': reportData.daily.likesData[i] || 0,
+    'Komment': reportData.daily.commentsData[i] || 0,
+    'Megosztás': reportData.daily.sharesData[i] || 0,
+    'Profilnézet': reportData.daily.profileViewsData[i] || 0,
+  }));
+
+  return { kpis, topVideos, dailyMetrics };
+}
+
+/**
+ * Fetch Windsor data live and build generic KPIs for non-TikTok platforms.
+ */
+async function fetchGenericKpis(windsorApiKey, provider, accountId, month) {
+  const { dateFrom, dateTo } = getMonthDateRange(month);
+  const multi = new WindsorMultiPlatform(windsorApiKey);
+  const daily = await multi.fetchDailyMetrics(provider, accountId, dateFrom, dateTo);
+
+  if (!daily || daily.length === 0) return { kpis: [], topVideos: [], dailyMetrics: [] };
+
+  // Sum up all numeric fields from the daily data as KPIs
+  const sums = {};
+  for (const row of daily) {
+    for (const [key, val] of Object.entries(row)) {
+      if (key === 'date') continue;
+      const n = Number(val);
+      if (Number.isFinite(n)) {
+        sums[key] = (sums[key] || 0) + n;
+      }
+    }
+  }
+
+  const FIELD_LABELS = {
+    impressions: 'Megjelenítések', reach: 'Elérés', engaged_users: 'Aktív felhasználók',
+    page_fans: 'Oldal kedvelők', page_views_total: 'Oldal nézetek', reactions: 'Reakciók',
+    comments: 'Kommentek', shares: 'Megosztások', follower_count: 'Követők',
+    profile_views: 'Profilnézetek', website_clicks: 'Weboldal kattintások',
+    views: 'Megtekintések', likes: 'Like-ok', subscribers_gained: 'Új feliratkozók',
+    subscribers_lost: 'Feliratkozás lemondás', estimated_minutes_watched: 'Nézési idő (perc)',
+    spend: 'Költés', clicks: 'Kattintások', conversions: 'Konverziók',
+    profile_followers_count: 'Követők', profile_media_count: 'Posztok száma',
+  };
+
+  const kpis = Object.entries(sums)
+    .filter(([key]) => FIELD_LABELS[key])
+    .map(([key, value]) => ({ label: FIELD_LABELS[key], value: Math.round(value) }));
+
+  return { kpis, topVideos: [], dailyMetrics: [] };
+}
+
+/**
  * Run the monthly report job for all eligible users.
  */
 async function runMonthlyReports() {
@@ -80,9 +195,8 @@ async function runMonthlyReports() {
               id: true,
               name: true,
               connections: {
-                select: { provider: true },
+                select: { provider: true, externalAccountId: true },
               },
-              // Users assigned to this company — they get the emails
               users: {
                 select: { email: true, name: true },
               },
@@ -112,23 +226,36 @@ async function runMonthlyReports() {
 
     if (!canUseFeature(sub.tier, 'monthly_email_reports')) continue;
 
+    // Resolve Windsor API key for this admin (once per admin)
+    let windsorApiKey;
+    try {
+      windsorApiKey = await getWindsorApiKey(admin.id);
+    } catch (keyErr) {
+      console.warn(`[MonthlyReport] No Windsor API key for admin ${admin.email}, skipping`);
+      continue;
+    }
+
     for (const company of admin.ownedCompanies) {
-      const providers = company.connections.map(c => c.provider);
-      if (providers.length === 0) continue;
+      if (company.connections.length === 0) continue;
 
       // Collect all recipients: company users + admin
       const recipientEmails = new Set();
       for (const user of company.users) {
         if (user.email) recipientEmails.add(user.email);
       }
-      // Always include the admin too
       recipientEmails.add(admin.email);
 
       if (recipientEmails.size === 0) continue;
 
-      for (const provider of providers) {
+      for (const conn of company.connections) {
+        const provider = conn.provider;
+        const accountId = conn.externalAccountId;
+        if (!accountId) continue;
+
         try {
-          // Try to get cached report data
+          const platformLabel = PLATFORM_LABELS[provider] || provider;
+
+          // 1. Try cache first
           const cached = await prisma.reportCache.findUnique({
             where: {
               companyId_provider_month: {
@@ -139,22 +266,48 @@ async function runMonthlyReports() {
             },
           });
 
-          // Extract KPIs from cached data if available
-          const kpis = [];
+          let kpis = [];
+          let topVideos = [];
+          let dailyMetrics = [];
+
           if (cached?.jsonData?.data?.kpis) {
+            // Use cached KPIs
             for (const [label, value] of Object.entries(cached.jsonData.data.kpis)) {
               kpis.push({ label, value });
             }
+            console.log(`[MonthlyReport] Using cache for ${company.name} / ${platformLabel}`);
+          } else {
+            // 2. No cache — fetch live from Windsor
+            console.log(`[MonthlyReport] No cache, fetching live: ${company.name} / ${platformLabel} / ${accountId}`);
+            try {
+              if (provider === 'TIKTOK_ORGANIC') {
+                const result = await fetchTikTokKpis(windsorApiKey, accountId, month);
+                kpis = result.kpis;
+                topVideos = result.topVideos;
+                dailyMetrics = result.dailyMetrics;
+              } else {
+                const result = await fetchGenericKpis(windsorApiKey, provider, accountId, month);
+                kpis = result.kpis;
+              }
+            } catch (fetchErr) {
+              console.error(`[MonthlyReport] Windsor fetch failed for ${company.name} (${platformLabel}):`, fetchErr.message);
+              // Continue with empty KPIs — still send email with what we have
+            }
           }
 
-          const platformLabel = PLATFORM_LABELS[provider] || provider;
+          if (kpis.length === 0) {
+            console.warn(`[MonthlyReport] No data for ${company.name} / ${platformLabel}, skipping`);
+            continue;
+          }
 
-          // Build HTML and generate PDF (once per company/platform)
+          // Build HTML and generate PDF
           const html = buildReportHtml({
             companyName: company.name,
             month,
             platformLabel,
             kpis,
+            dailyMetrics: dailyMetrics.length > 0 ? dailyMetrics : undefined,
+            topVideos: topVideos.length > 0 ? topVideos : undefined,
           });
 
           const pdfBuffer = await generateReportPdf(html);
