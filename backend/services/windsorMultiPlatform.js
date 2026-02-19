@@ -6,9 +6,10 @@
 const axios = require('axios');
 const https = require('https');
 
-const WINDSOR_BASE = 'https://connectors.windsor.ai';
+// Use Vercel proxy to avoid Hetzner→Windsor timeout, fallback to direct
+const WINDSOR_BASE = process.env.WINDSOR_PROXY_URL || 'https://connectors.windsor.ai';
 
-// Force IPv4 + keep-alive to avoid Hetzner→Hetzner routing issues
+// Force IPv4 + keep-alive (used when calling directly, not via proxy)
 const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
 const PLATFORM_CONFIG = {
