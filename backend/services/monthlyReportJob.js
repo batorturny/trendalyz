@@ -1,7 +1,7 @@
 // ============================================
 // MONTHLY REPORT EMAIL JOB
 // Sends PDF report emails to GROWTH+ users
-// Runs on the 3rd of every month at 8:00 AM
+// Runs hourly, checks each company's emailDay/emailHour
 // ============================================
 
 const cron = require('node-cron');
@@ -169,13 +169,15 @@ async function fetchGenericKpis(windsorApiKey, provider, accountId, month) {
 
 /**
  * Run the monthly report job for all eligible users.
+ * When currentDay/currentHour are provided, only sends to companies
+ * whose emailDay/emailHour match. Otherwise sends to all (legacy / manual trigger).
  */
-async function runMonthlyReports() {
+async function runMonthlyReports({ currentDay, currentHour } = {}) {
   const month = getPreviousMonth();
   const [year, monthNum] = month.split('-');
   const monthLabel = `${year}. ${MONTH_NAMES[parseInt(monthNum) - 1]}`;
 
-  console.log(`[MonthlyReport] Starting for month: ${month}`);
+  console.log(`[MonthlyReport] Starting for month: ${month}${currentDay ? ` (day=${currentDay}, hour=${currentHour})` : ' (manual)'}`);
 
   // Find all admins with GROWTH+ subscriptions that are active
   const subscriptions = await prisma.subscription.findMany({
@@ -194,6 +196,8 @@ async function runMonthlyReports() {
             select: {
               id: true,
               name: true,
+              emailDay: true,
+              emailHour: true,
               connections: {
                 select: { provider: true, externalAccountId: true },
               },
@@ -237,6 +241,11 @@ async function runMonthlyReports() {
 
     for (const company of admin.ownedCompanies) {
       if (company.connections.length === 0) continue;
+
+      // If running from cron (scheduled), skip companies whose schedule doesn't match
+      if (currentDay !== undefined && currentHour !== undefined) {
+        if (company.emailDay !== currentDay || company.emailHour !== currentHour) continue;
+      }
 
       // Collect all recipients: company users + admin
       const recipientEmails = new Set();
@@ -350,19 +359,22 @@ async function runMonthlyReports() {
 }
 
 /**
- * Start the cron job: 3rd of every month at 8:00 AM.
+ * Start the cron job: runs every hour, checks each company's emailDay/emailHour.
  */
 function startMonthlyReportJob() {
-  cron.schedule('0 8 3 * *', async () => {
-    console.log('[MonthlyReport] Cron triggered');
+  cron.schedule('0 * * * *', async () => {
+    const now = new Date();
+    const currentDay = now.getUTCDate();
+    const currentHour = now.getUTCHours();
+    console.log(`[MonthlyReport] Cron triggered (day=${currentDay}, hour=${currentHour})`);
     try {
-      await runMonthlyReports();
+      await runMonthlyReports({ currentDay, currentHour });
     } catch (err) {
       console.error('[MonthlyReport] Job failed:', err);
     }
   });
 
-  console.log('Monthly report cron job registered (3rd of month, 8:00 AM)');
+  console.log('Monthly report cron job registered (hourly check, per-company schedule)');
 }
 
 module.exports = { startMonthlyReportJob, runMonthlyReports };

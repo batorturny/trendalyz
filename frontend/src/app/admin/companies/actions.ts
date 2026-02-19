@@ -163,6 +163,20 @@ export async function toggleCompanyStatus(companyId: string, status: 'ACTIVE' | 
   revalidatePath(`/admin/companies/${companyId}`);
 }
 
+export async function updateEmailSchedule(companyId: string, emailDay: number, emailHour: number) {
+  await requireAdmin();
+
+  if (emailDay < 1 || emailDay > 28) throw new Error('A nap 1 és 28 között kell legyen');
+  if (emailHour < 0 || emailHour > 23) throw new Error('Az óra 0 és 23 között kell legyen');
+
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { emailDay, emailHour },
+  });
+
+  revalidatePath(`/admin/companies/${companyId}`);
+}
+
 export async function deleteCompany(companyId: string) {
   await requireAdmin();
 

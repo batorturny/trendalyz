@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Company" ADD COLUMN     "emailDay" INTEGER NOT NULL DEFAULT 3,
+ADD COLUMN     "emailHour" INTEGER NOT NULL DEFAULT 8;

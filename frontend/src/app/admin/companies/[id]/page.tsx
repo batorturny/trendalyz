@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { CompanyUsers } from './CompanyUsers';
+import { EmailSchedule } from './EmailSchedule';
 import { IntegrationConnections } from './IntegrationConnections';
 import { OAuthFeedback } from './OAuthFeedback';
 import { StatusToggle } from './StatusToggle';
@@ -64,6 +65,15 @@ export default async function CompanyDetailPage({
             createdAt: c.createdAt.toISOString(),
             updatedAt: c.updatedAt.toISOString(),
           }))}
+        />
+      </div>
+
+      {/* Email schedule */}
+      <div className="mb-6">
+        <EmailSchedule
+          companyId={company.id}
+          initialDay={company.emailDay}
+          initialHour={company.emailHour}
         />
       </div>
 
