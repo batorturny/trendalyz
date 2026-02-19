@@ -10,7 +10,7 @@ interface SubscriptionData {
   currentPeriodEnd: string | null;
   trialEndsAt: string | null;
   cancelAtPeriodEnd: boolean;
-  stripeCustomerId: string;
+  stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
 }
 

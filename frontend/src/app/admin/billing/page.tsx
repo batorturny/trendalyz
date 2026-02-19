@@ -4,18 +4,20 @@ import { prisma } from '@/lib/prisma';
 import { BillingOverview } from './BillingOverview';
 import { PlanSelector } from './PlanSelector';
 import { BillingHistory } from './BillingHistory';
+import { CouponCode } from './CouponCode';
 
 export default async function BillingPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') redirect('/login');
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
-
-  const companyCount = await prisma.company.count({
-    where: { adminId: session.user.id },
-  });
+  const [subscription, companyCount] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+    }),
+    prisma.company.count({
+      where: { adminId: session.user.id },
+    }),
+  ]);
 
   const subData = subscription
     ? {
@@ -52,6 +54,8 @@ export default async function BillingPage() {
       <BillingHistory
         hasCustomer={!!subData?.stripeCustomerId}
       />
+
+      <CouponCode />
     </div>
   );
 }

@@ -184,13 +184,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = (user as any).role || 'CLIENT';
         token.companyId = (user as any).companyId || null;
       }
-      // Refresh role/companyId + subscription from DB on each request
-      if (token.sub) {
+      // Refresh role/companyId + subscription from DB — but only every 5 minutes, not every request
+      const now = Math.floor(Date.now() / 1000);
+      const lastRefresh = (token.lastRefresh as number) || 0;
+      const shouldRefresh = trigger === 'update' || (now - lastRefresh > 300);
+      if (token.sub && shouldRefresh) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
           select: { role: true, companyId: true, subscription: { select: { tier: true, status: true, companyLimit: true } } },
@@ -202,6 +205,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.subscriptionStatus = (dbUser as any).subscription?.status || null;
           token.companyLimit = (dbUser as any).subscription?.companyLimit || 1;
         }
+        token.lastRefresh = now;
       }
       return token;
     },

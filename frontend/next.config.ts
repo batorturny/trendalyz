@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'chart.js', 'react-chartjs-2'],
+  },
   async headers() {
     return [
       {

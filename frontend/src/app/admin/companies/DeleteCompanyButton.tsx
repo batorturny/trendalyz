@@ -18,7 +18,7 @@ export function DeleteCompanyButton({ companyId, companyName }: { companyId: str
     <>
       <button
         onClick={() => setOpen(true)}
-        className="btn-press px-3 py-1 bg-transparent text-red-300/50 dark:text-red-400/30 text-xs font-semibold rounded-lg hover:bg-red-500/10 hover:text-red-400 dark:hover:text-red-400/60"
+        className="btn-press px-3 py-1 bg-transparent text-red-400/60 dark:text-red-400/50 text-xs font-semibold rounded-lg hover:bg-red-500/15 hover:text-red-500 dark:hover:text-red-400 transition-colors"
       >
         Törlés
       </button>

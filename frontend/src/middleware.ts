@@ -5,12 +5,14 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Public routes
-  const isPublic =
-    pathname === '/login' ||
+  // Fast path: skip token check entirely for public routes that don't need redirect
+  if (
     pathname === '/set-password' ||
     pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/api/oauth/callback');
+    pathname.startsWith('/api/oauth/callback')
+  ) {
+    return NextResponse.next();
+  }
 
   const useSecureCookie = req.url.startsWith('https://');
   const token = await getToken({
@@ -24,9 +26,9 @@ export async function middleware(req: NextRequest) {
   const isLoggedIn = !!token;
   const role = token?.role as string | undefined;
 
-  if (isPublic) {
-    // Redirect logged-in users away from login
-    if (isLoggedIn && pathname === '/login') {
+  // Redirect logged-in users away from login
+  if (pathname === '/login') {
+    if (isLoggedIn) {
       const dest = role === 'ADMIN' ? '/admin' : '/dashboard';
       return NextResponse.redirect(new URL(dest, req.url));
     }

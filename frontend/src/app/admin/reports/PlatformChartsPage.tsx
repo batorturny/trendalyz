@@ -9,9 +9,11 @@ import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
-import { Loader2, Mail, AlertTriangle } from 'lucide-react';
+import { Loader2, Mail, AlertTriangle, FileDown } from 'lucide-react';
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 import { SendReportModal } from '@/components/SendReportModal';
+import { FeatureGate } from '@/components/FeatureGate';
+import { canUseFeature } from '@/lib/featureGate';
 
 export interface PlatformConfig {
   platformKey: string;
@@ -39,6 +41,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [companyConnections, setCompanyConnections] = useState<string[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [userTier, setUserTier] = useState<string>('FREE');
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
 
@@ -74,6 +78,12 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         setAllCatalog(catalogData.charts);
       })
       .catch(() => setError('Nem sikerült betölteni az adatokat'));
+
+    // Fetch user tier for feature gating
+    fetch('/api/billing/subscription', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setUserTier(data?.tier || 'FREE'))
+      .catch(() => {});
   }, [platform.platformKey]);
 
   // Fetch connections when company changes
@@ -274,13 +284,42 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generálás...</> : 'Riport generálása'}
               </button>
               {hasResults && !isAllCompanies && periodMonths === 1 && (
-                <button
-                  onClick={() => setShowEmailModal(true)}
-                  className="btn-press py-3 px-4 rounded-xl bg-[var(--accent)] text-white hover:brightness-110 flex items-center gap-2 font-bold"
-                  title="Riport küldés emailben"
-                >
-                  <Mail className="w-4 h-4" />
-                </button>
+                <>
+                  <FeatureGate feature="email_reports" tier={userTier}>
+                    <button
+                      onClick={() => setShowEmailModal(true)}
+                      className="btn-press py-3 px-4 rounded-xl bg-[var(--accent)] text-white dark:text-[var(--surface)] hover:brightness-110 flex items-center gap-2 font-bold"
+                      title="Riport küldés emailben"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </button>
+                  </FeatureGate>
+                  <FeatureGate feature="pdf_export" tier={userTier}>
+                    <button
+                      onClick={async () => {
+                        if (!canUseFeature(userTier, 'pdf_export')) return;
+                        setPdfExporting(true);
+                        try {
+                          const { exportPdf } = await import('@/lib/exportPdf');
+                          const container = document.getElementById('report-results');
+                          if (container) {
+                            const companyName = companies.find(c => c.id === selectedCompany)?.name || 'riport';
+                            await exportPdf(container, `${companyName}-${platform.label}-${selectedMonth}`);
+                          }
+                        } catch (err) {
+                          console.error('PDF export failed:', err);
+                        } finally {
+                          setPdfExporting(false);
+                        }
+                      }}
+                      disabled={pdfExporting}
+                      className="btn-press py-3 px-4 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] hover:brightness-110 flex items-center gap-2 font-bold disabled:opacity-50"
+                      title="PDF exportálás"
+                    >
+                      {pdfExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                    </button>
+                  </FeatureGate>
+                </>
               )}
             </div>
           </div>
@@ -305,7 +344,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
         {/* Results */}
         {hasResults && (
-          <div className="space-y-8">
+          <div id="report-results" className="space-y-8">
             {/* KPI Header */}
             <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
               {isAllCompanies && (

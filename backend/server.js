@@ -982,6 +982,49 @@ if (ENABLE_BILLING) {
         }
     });
 
+    // Redeem coupon code
+    app.post('/api/billing/redeem-coupon', requireAdmin, async (req, res) => {
+        try {
+            const { code } = req.body;
+            if (!code) {
+                return res.status(400).json({ error: 'Kuponkód megadása kötelező' });
+            }
+
+            // Hardcoded coupon: full ENTERPRISE access
+            if (code !== '22445599') {
+                return res.status(400).json({ error: 'Érvénytelen kuponkód' });
+            }
+
+            const userId = req.userContext.userId;
+
+            const subscription = await prisma.subscription.upsert({
+                where: { userId },
+                update: {
+                    tier: 'ENTERPRISE',
+                    status: 'ACTIVE',
+                    companyLimit: 999,
+                },
+                create: {
+                    userId,
+                    tier: 'ENTERPRISE',
+                    status: 'ACTIVE',
+                    companyLimit: 999,
+                    stripeCustomerId: null,
+                },
+            });
+
+            console.log(`[Coupon] User ${userId} redeemed coupon → ENTERPRISE`);
+            res.json({
+                success: true,
+                tier: subscription.tier,
+                companyLimit: subscription.companyLimit,
+            });
+        } catch (error) {
+            console.error('Error redeeming coupon:', error);
+            res.status(500).json({ error: 'Hiba a kupon beváltásnál' });
+        }
+    });
+
     // Get plans config (public within auth)
     app.get('/api/billing/plans', (req, res) => {
         const plans = Object.values(PLANS).map(p => ({
@@ -999,6 +1042,72 @@ if (ENABLE_BILLING) {
 }
 
 // ============================================
+// PDF GENERATION & EMAIL REPORT ROUTES (Feature Gated)
+// ============================================
+
+if (ENABLE_BILLING) {
+    const { requireFeature } = require('./middleware/featureGate');
+    const { generateReportPdf } = require('./services/pdfService');
+    const { buildReportHtml } = require('./services/reportTemplate');
+
+    // Generate PDF report
+    app.post('/api/reports/generate-pdf', requireAdmin, requireFeature('pdf_export'), async (req, res) => {
+        try {
+            const { companyId, platform, month, kpis, dailyMetrics, topVideos } = req.body;
+
+            if (!companyId || !month) {
+                return res.status(400).json({ error: 'companyId és month megadása kötelező' });
+            }
+
+            const company = await prisma.company.findUnique({
+                where: { id: companyId },
+                select: { name: true },
+            });
+
+            if (!company) {
+                return res.status(404).json({ error: 'Cég nem található' });
+            }
+
+            const platformLabel = platform || 'Riport';
+            const html = buildReportHtml({
+                companyName: company.name,
+                month,
+                platformLabel,
+                kpis: kpis || [],
+                dailyMetrics,
+                topVideos,
+            });
+
+            const pdfBuffer = await generateReportPdf(html);
+
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="${company.name}-${platformLabel}-${month}.pdf"`,
+                'Content-Length': pdfBuffer.length,
+            });
+            res.send(pdfBuffer);
+        } catch (error) {
+            console.error('[PDF] Generation error:', error);
+            res.status(500).json({ error: 'PDF generálás sikertelen' });
+        }
+    });
+
+    // Manual trigger for monthly reports (admin only, feature-gated)
+    app.post('/api/reports/trigger-monthly', requireAdmin, requireFeature('monthly_email_reports'), async (req, res) => {
+        try {
+            const { runMonthlyReports } = require('./services/monthlyReportJob');
+            const result = await runMonthlyReports();
+            res.json({ success: true, ...result });
+        } catch (error) {
+            console.error('[MonthlyReport] Manual trigger error:', error);
+            res.status(500).json({ error: 'Havi riport küldés sikertelen' });
+        }
+    });
+
+    console.log('PDF generation route enabled');
+}
+
+// ============================================
 // START SERVER
 // ============================================
 
@@ -1010,5 +1119,15 @@ app.listen(PORT, async () => {
     } catch (error) {
         console.log(`TikTok Report API running on http://localhost:${PORT}`);
         console.error('Warning: Could not load companies from database:', error.message);
+    }
+
+    // Start monthly report cron job
+    if (ENABLE_BILLING) {
+        try {
+            const { startMonthlyReportJob } = require('./services/monthlyReportJob');
+            startMonthlyReportJob();
+        } catch (err) {
+            console.error('Failed to start monthly report job:', err.message);
+        }
     }
 });

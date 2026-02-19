@@ -207,7 +207,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
                 onClick={() => handlePeriod(3)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
                   periodMonths === 3
-                    ? 'bg-[var(--accent)] text-white'
+                    ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
                     : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                 }`}
               >
@@ -218,7 +218,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
                 onClick={() => handlePeriod(6)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
                   periodMonths === 6
-                    ? 'bg-[var(--accent)] text-white'
+                    ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
                     : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                 }`}
               >

@@ -31,7 +31,7 @@ export function WindsorKeyGuard({ children }: { children: ReactNode }) {
             </p>
             <Link
               href="/admin/settings"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--accent)] text-white font-semibold text-sm hover:brightness-110 transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--accent)] text-white dark:text-[var(--surface)] font-semibold text-sm hover:brightness-110 transition-all"
             >
               Beállítások megnyitása
               <ArrowRight className="w-4 h-4" />

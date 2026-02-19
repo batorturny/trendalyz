@@ -130,7 +130,7 @@ export function WindsorApiKeyForm({ hasKey, keyHint }: { hasKey: boolean; keyHin
         <button
           onClick={handleSave}
           disabled={isSaving || !apiKey}
-          className="px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-all flex items-center gap-2"
+          className="px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white dark:text-[var(--surface)] text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-all flex items-center gap-2"
         >
           {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {savedKey ? 'Kulcs cseréje' : 'Mentés'}

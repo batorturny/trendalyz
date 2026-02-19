@@ -5,36 +5,37 @@ import Link from 'next/link';
 import { DeleteCompanyButton } from './DeleteCompanyButton';
 import { SyncAllButton } from './SyncAllButton';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
+import { CompanyLimitToast } from './CompanyLimitToast';
 
 export default async function CompaniesPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') redirect('/login');
 
-  const adminUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { windsorApiKeyEnc: true },
-  });
-  const hasWindsorKey = !!adminUser?.windsorApiKeyEnc;
-
-  // Billing: get subscription limit
-  const subscription = process.env.ENABLE_BILLING === 'true'
-    ? await prisma.subscription.findUnique({
-        where: { userId: session.user.id },
-        select: { companyLimit: true, tier: true },
-      })
-    : null;
-  const companyLimit = subscription?.companyLimit || null;
-
-  const companies = await prisma.company.findMany({
-    where: { adminId: session.user.id },
-    include: {
-      _count: { select: { users: true } },
-      connections: {
-        select: { provider: true },
+  // Run all independent queries in parallel
+  const [adminUser, subscription, companies] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { windsorApiKeyEnc: true },
+    }),
+    process.env.ENABLE_BILLING === 'true'
+      ? prisma.subscription.findUnique({
+          where: { userId: session.user.id },
+          select: { companyLimit: true, tier: true },
+        })
+      : Promise.resolve(null),
+    prisma.company.findMany({
+      where: { adminId: session.user.id },
+      include: {
+        _count: { select: { users: true } },
+        connections: {
+          select: { provider: true },
+        },
       },
-    },
-    orderBy: { name: 'asc' },
-  });
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+  const hasWindsorKey = !!adminUser?.windsorApiKeyEnc;
+  const companyLimit = subscription?.companyLimit || null;
 
   const PLATFORM_COLORS: Record<string, string> = {
     tiktok: 'text-[var(--platform-tiktok)]',
@@ -48,7 +49,13 @@ export default async function CompaniesPage() {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Cégek</h1>
-          <p className="text-[var(--text-secondary)] mt-1">
+          <p className={`mt-1 font-medium ${
+            companyLimit !== null && companies.length >= companyLimit
+              ? 'text-red-500 dark:text-red-400'
+              : companyLimit !== null && companies.length >= companyLimit * 0.8
+                ? 'text-yellow-600 dark:text-yellow-400'
+                : 'text-[var(--text-secondary)]'
+          }`}>
             {companies.length}{companyLimit !== null ? ` / ${companyLimit}` : ''} cég
           </p>
         </div>
@@ -179,6 +186,10 @@ export default async function CompaniesPage() {
           );
         })}
       </div>
+
+      {companyLimit !== null && (
+        <CompanyLimitToast companyCount={companies.length} companyLimit={companyLimit} />
+      )}
     </div>
   );
 }

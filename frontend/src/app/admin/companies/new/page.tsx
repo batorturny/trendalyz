@@ -19,21 +19,9 @@ export default function NewCompanyPage() {
             <input
               name="name"
               required
-              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-emerald-500 focus:outline-none"
+              className="input-field"
               placeholder="Pl. Example Kft."
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
-              TikTok Account ID
-            </label>
-            <input
-              name="tiktokAccountId"
-              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-emerald-500 focus:outline-none font-mono text-sm"
-              placeholder="_000..."
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-1">Windsor AI TikTok connector account azonosító</p>
           </div>
 
           <div className="border-t border-[var(--border)] pt-4">
@@ -43,7 +31,7 @@ export default function NewCompanyPage() {
             <input
               name="clientEmail"
               type="email"
-              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-emerald-500 focus:outline-none"
+              className="input-field"
               placeholder="ugyfel@ceg.hu"
             />
             <p className="text-xs text-[var(--text-secondary)] mt-1">Ha megadod, automatikusan létrehozunk egy felhasználót és meghívó emailt küldünk</p>
@@ -53,7 +41,7 @@ export default function NewCompanyPage() {
         <div className="flex gap-3">
           <button
             type="submit"
-            className="px-6 py-3 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] transition-all duration-150"
+            className="px-6 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
           >
             Cég létrehozása
           </button>
