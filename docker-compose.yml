@@ -11,6 +11,7 @@ services:
       - WINDSOR_API_KEY=${WINDSOR_API_KEY:-b61021f891826f56f62c84529e8d5f2e0c31}
       - PDF_API_KEY=${PDF_API_KEY:-bator@capmarketing.hu_J6wye402YArBZE40tpawANZVQjbakvEKkZxkvREHh8IVnD3OgcPskFityrBVfYBe}
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:trendalyz_secret_password@db:5432/tiktok_report}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - PORT=4000
     depends_on:
       - db
@@ -26,6 +27,7 @@ services:
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - EXPRESS_API_URL=http://backend:4000
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:trendalyz_secret_password@db:5432/tiktok_report}
     depends_on:
       - backend
