@@ -13,6 +13,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:trendalyz_secret_password@db:5432/tiktok_report}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
       - PORT=4000
     depends_on:
       - db
