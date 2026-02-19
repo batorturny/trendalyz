@@ -119,6 +119,13 @@ async function resolveTiktokAccountId(company) {
 const platformAccountsCache = new Map();
 
 /**
+ * In-memory cache for Windsor chart data (1-hour TTL).
+ * Key: "platform:accountId:startDate:endDate"
+ */
+const chartDataCache = new Map();
+const CHART_DATA_CACHE_TTL = 60 * 60 * 1000;
+
+/**
  * Resolve all platform account IDs for a company.
  * Returns Map<provider, externalAccountId>.
  * TikTok falls back to legacy company.tiktokAccountId.
@@ -642,7 +649,7 @@ if (ENABLE_CHART_API) {
     // Generate charts
     app.post('/api/charts', requireCompanyAccess(req => req.body.accountId), async (req, res) => {
         try {
-            const { accountId, startDate, endDate, charts } = req.body;
+            const { accountId, startDate, endDate, charts, forceRefresh } = req.body;
 
             // Validate required fields
             if (!accountId || !startDate || !endDate || !charts || !Array.isArray(charts)) {
@@ -706,9 +713,19 @@ if (ENABLE_CHART_API) {
                 }
 
                 try {
-                    console.log(`[CHART API] Fetching ${platform} data for account ${platformAccountId}`);
-                    const windsorData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
-                    console.log(`[CHART API] ${platform}: received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows`);
+                    // Check in-memory cache first
+                    const cacheKey = `${platform}:${platformAccountId}:${startDate}:${endDate}`;
+                    let windsorData;
+                    const cached = !forceRefresh && chartDataCache.get(cacheKey);
+                    if (cached && (Date.now() - cached.ts) < CHART_DATA_CACHE_TTL) {
+                        windsorData = cached.data;
+                        console.log(`[CHART API] Cache HIT for ${platform} (${Array.isArray(windsorData) ? windsorData.length : 0} rows)`);
+                    } else {
+                        console.log(`[CHART API] Cache MISS — fetching ${platform} data for account ${platformAccountId}`);
+                        windsorData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
+                        chartDataCache.set(cacheKey, { data: windsorData, ts: Date.now() });
+                        console.log(`[CHART API] ${platform}: received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows, cached`);
+                    }
 
                     const generator = new ChartGenerator(windsorData, startDate, endDate);
                     return platformCharts.map(chartReq => {
