@@ -55,6 +55,14 @@ export const ADMIN_PLATFORM_CONFIGS: Record<string, AdminPlatformConfig> = {
 };
 
 export const CLIENT_PLATFORM_CONFIGS: Record<string, ClientPlatformConfig> = {
+  tiktok: {
+    platformKey: 'TIKTOK_ORGANIC',
+    label: 'TikTok',
+    platformIcon: 'tiktok',
+    gradient: 'from-cyan-400 to-emerald-400',
+    headerGradient: 'from-cyan-400/20 to-emerald-400/15',
+    borderColor: 'var(--platform-tiktok)',
+  },
   facebook: {
     platformKey: 'FACEBOOK_ORGANIC',
     label: 'Facebook',

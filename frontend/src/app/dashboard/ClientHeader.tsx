@@ -11,7 +11,7 @@ import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 import { Settings, Menu, X } from 'lucide-react';
 
 const platformTabs = [
-  { href: '/dashboard', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
+  { href: '/dashboard/tiktok', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
   { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'] },
   { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'] },
   { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'] },
@@ -47,16 +47,10 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
           <div className="desktop-only items-center gap-6">
             <nav className="flex gap-1">
               {platformTabs.map(tab => {
-                const isActive = tab.href === '/dashboard'
-                  ? pathname === '/dashboard'
-                  : pathname === tab.href || pathname.startsWith(tab.href + '/');
+                const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
 
-                // Check if manually disabled OR if no provider connected (except main TikTok which is always visible if not disabled)
-                // Main TikTok dashboard is always enabled (demo/organic). Others need provider connection.
-                const isEnabled = !tab.disabled && (
-                  (tab.platform === 'tiktok' && tab.href === '/dashboard') ||
-                  tab.providers.some(p => connectedProviders.includes(p))
-                );
+                const isEnabled = !tab.disabled &&
+                  tab.providers.some(p => connectedProviders.includes(p));
 
                 if (!isEnabled) {
                   return (
@@ -144,10 +138,8 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
             <nav className="p-4 space-y-1">
               <p className="px-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Platformok</p>
               {platformTabs.map(tab => {
-                const isActive = tab.href === '/dashboard'
-                  ? pathname === '/dashboard'
-                  : pathname === tab.href || pathname.startsWith(tab.href + '/');
-                const isEnabled = tab.platform === 'tiktok' || tab.providers.some(p => connectedProviders.includes(p));
+                const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
+                const isEnabled = !tab.disabled && tab.providers.some(p => connectedProviders.includes(p));
 
                 if (!isEnabled) {
                   return (
