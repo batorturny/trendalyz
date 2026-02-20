@@ -75,8 +75,17 @@ export async function proxyToExpress(
 
   try {
     const response = await fetch(url, fetchOptions);
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    const text = await response.text();
+    try {
+      const data = JSON.parse(text);
+      return NextResponse.json(data, { status: response.status });
+    } catch {
+      console.error(`Proxy: non-JSON response from ${url} (${response.status}):`, text.slice(0, 200));
+      return NextResponse.json(
+        { error: 'Backend returned unexpected response' },
+        { status: response.status >= 400 ? response.status : 502 }
+      );
+    }
   } catch (error) {
     console.error(`Proxy error to ${url}:`, error);
     return NextResponse.json(
