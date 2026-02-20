@@ -670,7 +670,8 @@ export async function testConnection(connectionId: string): Promise<{ success: b
 
 export async function updateDashboardConfig(
   companyId: string,
-  config: Record<string, { kpis: string[]; charts: string[] }>
+  config: Record<string, { kpis: string[]; charts: string[] }>,
+  notes?: Record<string, string>
 ) {
   const session = await requireAdmin();
 
@@ -682,7 +683,10 @@ export async function updateDashboardConfig(
 
   await prisma.company.update({
     where: { id: companyId },
-    data: { dashboardConfig: config },
+    data: {
+      dashboardConfig: config,
+      ...(notes !== undefined && { dashboardNotes: notes }),
+    },
   });
 
   revalidatePath(`/admin/companies/${companyId}`);

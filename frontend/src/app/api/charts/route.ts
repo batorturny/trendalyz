@@ -93,21 +93,54 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
   },
 };
 
-async function fetchWindsorChartData(apiKey: string, platform: string, accountId: string, dateFrom: string, dateTo: string) {
-  const config = PLATFORM_CONFIG[platform];
-  if (!config) throw new Error(`Unknown platform: ${platform}`);
-
-  const fields = config.allChartFields.join(',');
-  const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}&select_accounts=${accountId}`;
-
+async function fetchWindsorRaw(apiKey: string, endpoint: string, accountId: string, dateFrom: string, dateTo: string, fields: string) {
+  const url = `${WINDSOR_BASE}/${endpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}&select_accounts=${accountId}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(120000) });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    console.error(`Windsor chart ${res.status} for ${platform}:`, text.slice(0, 200));
+    console.error(`Windsor ${res.status} for ${endpoint}:`, text.slice(0, 200));
     throw new Error(`Windsor API error: ${res.status}`);
   }
   const raw = await res.json();
   return Array.isArray(raw) ? (raw[0]?.data || []) : (raw?.data || []);
+}
+
+// Demographics fields are separate Windsor dimensions — they must be fetched
+// in their own API calls and merged into the main dataset.
+const DEMOGRAPHICS_QUERIES: Record<string, { fields: string }[]> = {
+  TIKTOK_ORGANIC: [
+    { fields: 'audience_ages_age,audience_ages_percentage,date' },
+    { fields: 'video_audience_genders_gender,video_audience_genders_percentage,date' },
+  ],
+};
+
+async function fetchWindsorChartData(apiKey: string, platform: string, accountId: string, dateFrom: string, dateTo: string) {
+  const config = PLATFORM_CONFIG[platform];
+  if (!config) throw new Error(`Unknown platform: ${platform}`);
+
+  // Main data fields (exclude demographics — they need separate calls)
+  const demographicsFields = new Set(
+    (DEMOGRAPHICS_QUERIES[platform] || []).flatMap(q => q.fields.split(',').filter(f => f !== 'date'))
+  );
+  const mainFields = config.allChartFields.filter(f => !demographicsFields.has(f));
+
+  // Fetch main data + demographics in parallel
+  const promises: Promise<any[]>[] = [
+    fetchWindsorRaw(apiKey, config.endpoint, accountId, dateFrom, dateTo, mainFields.join(',')),
+  ];
+
+  for (const dq of DEMOGRAPHICS_QUERIES[platform] || []) {
+    promises.push(
+      fetchWindsorRaw(apiKey, config.endpoint, accountId, dateFrom, dateTo, dq.fields).catch(err => {
+        console.warn(`[Windsor] Demographics fetch failed for ${platform}:`, err.message);
+        return [];
+      })
+    );
+  }
+
+  const results = await Promise.all(promises);
+  // Merge all result arrays into one dataset
+  return results.flat();
 }
 
 export async function POST(req: Request) {

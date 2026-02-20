@@ -17,17 +17,21 @@ export default async function PlatformDashboardPage({
     notFound();
   }
 
-  // Fetch dashboardConfig for this company
+  // Fetch dashboardConfig and dashboardNotes for this company
   const session = await auth();
   let platformDashboardConfig: { kpis: string[]; charts: string[] } | null = null;
+  let platformNote: string | null = null;
 
   if (session?.user?.companyId) {
     const company = await prisma.company.findUnique({
       where: { id: session.user.companyId },
-      select: { dashboardConfig: true },
+      select: { dashboardConfig: true, dashboardNotes: true },
     });
     const fullConfig = company?.dashboardConfig as Record<string, { kpis: string[]; charts: string[] }> | null;
     platformDashboardConfig = fullConfig?.[config.platformKey] ?? null;
+
+    const fullNotes = company?.dashboardNotes as Record<string, string> | null;
+    platformNote = fullNotes?.[config.platformKey] ?? null;
   }
 
   return (
@@ -37,6 +41,7 @@ export default async function PlatformDashboardPage({
         icon: <PlatformIcon platform={config.platformIcon as 'tiktok' | 'facebook' | 'instagram' | 'youtube'} className="w-14 h-14" />,
       }}
       dashboardConfig={platformDashboardConfig}
+      adminNote={platformNote}
     />
   );
 }

@@ -6,7 +6,7 @@ export async function GET() {
   return NextResponse.json({
     total: chartCatalog.length,
     categories: Object.keys(byCategory),
-    charts: chartCatalog.map(c => ({
+    charts: chartCatalog.map((c: any) => ({
       key: c.key,
       title: c.title,
       description: c.description,

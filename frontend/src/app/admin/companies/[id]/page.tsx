@@ -85,6 +85,7 @@ export default async function CompanyDetailPage({
             companyId={company.id}
             connections={company.connections.map(c => ({ provider: c.provider }))}
             dashboardConfig={company.dashboardConfig as Record<string, { kpis: string[]; charts: string[] }> | null}
+            dashboardNotes={company.dashboardNotes as Record<string, string> | null}
           />
         </div>
       )}

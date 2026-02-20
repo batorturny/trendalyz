@@ -93,6 +93,7 @@ model Company {
   admin              User?         @relation("AdminCompanies", fields: [adminId], references: [id], onDelete: SetNull)
   status             CompanyStatus @default(ACTIVE)
   dashboardConfig    Json?         // Per-platform KPI + chart selection for client dashboard
+  dashboardNotes     Json?         // Per-platform admin notes: { "TIKTOK_ORGANIC": "megjegyzés", ... }
   emailDay           Int           @default(3)   // Day of month to send report (1-28)
   emailHour          Int           @default(8)   // Hour (UTC) to send report (0-23)
   createdAt          DateTime      @default(now())

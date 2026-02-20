@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
-import { extractKPIs, groupByCategory } from '@/lib/chartHelpers';
-import { Building2, Settings } from 'lucide-react';
+import { extractKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
+import { Building2, Settings, MessageSquare } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
@@ -42,14 +42,19 @@ interface DashboardConfigType {
 export function ClientPlatformPage({
   platform,
   dashboardConfig,
+  adminNote,
 }: {
   platform: PlatformConfig;
   dashboardConfig?: DashboardConfigType | null;
+  adminNote?: string | null;
 }) {
   const { data: session, status } = useSession();
   const [allCatalog, setAllCatalog] = useState<ChartDefinition[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [periodMonths, setPeriodMonths] = useState(1);
   const [results, setResults] = useState<ChartData[]>([]);
+  const [aggregatedKPIs, setAggregatedKPIs] = useState<KPI[] | null>(null);
+  const [aggregatedCount, setAggregatedCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,26 +121,57 @@ export function ClientPlatformPage({
     setLoading(true);
     setError(null);
     setResults([]);
+    setAggregatedKPIs(null);
+    setAggregatedCount(0);
 
     try {
-      const [year, month] = selectedMonth.split('-').map(Number);
-      const startDate = `${selectedMonth}-01`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
+      if (periodMonths > 1) {
+        // Multi-month: fetch each month separately, aggregate KPIs only
+        const monthRanges = generateMonthRanges(selectedMonth, periodMonths);
+        const allMonthKpis: KPI[][] = [];
 
-      const response = await generateCharts({
-        accountId: companyId,
-        startDate,
-        endDate,
-        charts: platformChartKeys.map(key => ({ key })),
-      });
-      setResults(response.charts);
+        for (const range of monthRanges) {
+          try {
+            const response = await generateCharts({
+              accountId: companyId,
+              startDate: range.startDate,
+              endDate: range.endDate,
+              charts: platformChartKeys.map(key => ({ key })),
+            });
+            const monthKpis = extractKPIs(platform.platformKey, response.charts);
+            allMonthKpis.push(monthKpis);
+          } catch {
+            // Skip failed months
+          }
+        }
+
+        if (allMonthKpis.length === 0) {
+          setError('Nem sikerült adatot lekérni a megadott időszakra');
+        } else {
+          setAggregatedKPIs(aggregateMonthlyKPIs(allMonthKpis));
+          setAggregatedCount(allMonthKpis.length);
+          setResults([{ key: '_placeholder', title: '', description: '', type: '', color: '', data: { labels: [], series: [] }, source: '', generatedAt: '', empty: true }]); // trigger hasResults
+        }
+      } else {
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const startDate = `${selectedMonth}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
+
+        const response = await generateCharts({
+          accountId: companyId,
+          startDate,
+          endDate,
+          charts: platformChartKeys.map(key => ({ key })),
+        });
+        setResults(response.charts);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Hiba történt');
     } finally {
       setLoading(false);
     }
-  }, [companyId, selectedMonth, platformChartKeys]);
+  }, [companyId, selectedMonth, platformChartKeys, periodMonths, platform.platformKey]);
 
   // Auto-generate on first load
   useEffect(() => {
@@ -146,11 +182,55 @@ export function ClientPlatformPage({
   }, [companyId, selectedMonth, platformChartKeys, status, autoLoaded, handleGenerate, isConfigured]);
 
   async function handleExportPdf() {
-    if (!reportRef.current) return;
     setExporting(true);
+    setError(null);
     try {
-      const { exportPdf } = await import('@/lib/exportPdf');
-      await exportPdf(reportRef.current, `${platform.label}_riport_${selectedMonth}`);
+      const displayKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
+
+      // Extract video data from table-type charts
+      const videoChart = results.find(c => c.type === 'table' && !c.empty);
+      const videos = videoChart?.data?.series?.[0]?.data as any[] || [];
+
+      // Collect chart sections for daily trend data tables
+      const chartSections = periodMonths === 1 ? sections.map(s => ({
+        category: s.category,
+        label: s.label,
+        charts: s.charts.filter(c => c.type !== 'table').map(c => ({
+          key: c.key,
+          title: c.title,
+          type: c.type,
+          data: c.data,
+        })),
+      })) : [];
+
+      const response = await fetch('/api/reports/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: session?.user?.name || 'Riport',
+          platform: platform.platformKey,
+          platformLabel: platform.label,
+          month: selectedMonth,
+          kpis: displayKpis.map(k => ({ label: k.label, value: k.value, description: k.description })),
+          sections: chartSections,
+          videos,
+          adminNote,
+          borderColor: platform.borderColor,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'PDF generálás sikertelen' }));
+        throw new Error(err.error || 'PDF generálás sikertelen');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${platform.label}_riport_${selectedMonth}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('PDF export error:', err);
       setError('PDF letöltés sikertelen: ' + (err instanceof Error ? err.message : 'Ismeretlen hiba'));
@@ -187,7 +267,7 @@ export function ClientPlatformPage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
-            <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+            <MonthPicker value={selectedMonth} onChange={setSelectedMonth} periodMonths={periodMonths} onPeriodChange={setPeriodMonths} />
           </div>
           <div className="flex items-end">
             <button
@@ -202,7 +282,7 @@ export function ClientPlatformPage({
           <div className="flex items-end">
             <button
               onClick={handleExportPdf}
-              disabled={results.length === 0 || exporting}
+              disabled={(results.length === 0 && !aggregatedKPIs) || exporting}
               className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] font-bold py-3 px-6 rounded-xl hover:bg-[var(--accent-subtle)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               {exporting ? 'PDF készítése...' : 'Letöltés PDF-ben'}
@@ -220,22 +300,41 @@ export function ClientPlatformPage({
       <div ref={reportRef}>
         {results.length > 0 && (
           <div className="space-y-8">
-            {/* KPI Header */}
-            {kpis.length > 0 && (
-              <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-                <div
-                  className="grid gap-3"
-                  style={{ gridTemplateColumns: `repeat(${bestCols(kpis.length)}, minmax(0, 1fr))` }}
-                >
-                  {kpis.map((kpi) => (
-                    <KPICard key={kpi.label} label={kpi.label} value={kpi.value} change={kpi.change} description={kpi.description} />
-                  ))}
+            {/* Admin Note */}
+            {adminNote && (
+              <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 flex items-start gap-3">
+                <MessageSquare className="w-5 h-5 text-[var(--accent)] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-1">Megjegyzés</p>
+                  <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{adminNote}</p>
                 </div>
               </div>
             )}
 
-            {/* Chart Sections */}
-            {sections.map(({ category, label, charts }) => (
+            {/* KPI Header */}
+            {(() => {
+              const displayKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
+              return displayKpis.length > 0 ? (
+                <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+                  {periodMonths > 1 && (
+                    <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
+                      Összesített KPI-ok ({aggregatedCount} hónap)
+                    </p>
+                  )}
+                  <div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: `repeat(${bestCols(displayKpis.length)}, minmax(0, 1fr))` }}
+                  >
+                    {displayKpis.map((kpi) => (
+                      <KPICard key={kpi.label} label={kpi.label} value={kpi.value} change={kpi.change} description={kpi.description} />
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Chart Sections - only for single month */}
+            {periodMonths === 1 && sections.map(({ category, label, charts }) => (
               <section key={category}>
                 <h3 className="text-xl font-bold mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                   {label}

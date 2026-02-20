@@ -1126,6 +1126,44 @@ if (ENABLE_BILLING) {
         }
     });
 
+    // Dashboard-style PDF export (admin or company access)
+    const { buildDashboardPdfHtml } = require('./services/dashboardPdfTemplate');
+
+    app.post('/api/reports/export-pdf', requireCompanyAccess(req => req.body.companyId || null), async (req, res) => {
+        try {
+            const { companyName, platform, platformLabel, month, kpis, sections, videos, adminNote, borderColor } = req.body;
+
+            if (!month || !platform) {
+                return res.status(400).json({ error: 'platform és month megadása kötelező' });
+            }
+
+            const html = buildDashboardPdfHtml({
+                companyName: companyName || 'Riport',
+                platform,
+                platformLabel,
+                month,
+                kpis: kpis || [],
+                sections: sections || [],
+                videos: videos || [],
+                adminNote: adminNote || null,
+                borderColor,
+            });
+
+            const pdfBuffer = await generateReportPdf(html);
+
+            const safeName = (companyName || 'riport').replace(/[^a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ_-]/g, '_');
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="${safeName}-${platformLabel || platform}-${month}.pdf"`,
+                'Content-Length': pdfBuffer.length,
+            });
+            res.send(pdfBuffer);
+        } catch (error) {
+            console.error('[PDF-EXPORT] Generation error:', error);
+            res.status(500).json({ error: 'PDF generálás sikertelen' });
+        }
+    });
+
     // Manual trigger for monthly reports (admin only, feature-gated)
     app.post('/api/reports/trigger-monthly', requireAdmin, requireFeature('monthly_email_reports'), async (req, res) => {
         try {

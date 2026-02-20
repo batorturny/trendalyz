@@ -352,14 +352,56 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                         if (!canUseFeature(userTier, 'pdf_export')) return;
                         setPdfExporting(true);
                         try {
-                          const { exportPdf } = await import('@/lib/exportPdf');
-                          const container = document.getElementById('report-results');
-                          if (container) {
-                            const companyName = companies.find(c => c.id === selectedCompany)?.name || 'riport';
-                            await exportPdf(container, `${companyName}-${platform.label}-${selectedMonth}`);
-                          }
+                          const companyName = companies.find(c => c.id === selectedCompany)?.name || 'riport';
+
+                          // Extract video data from table-type charts
+                          const videoChart = results.find(c => c.type === 'table' && !c.empty);
+                          const videos = videoChart?.data?.series?.[0]?.data as any[] || [];
+
+                          // Collect chart sections for daily trend data tables
+                          const chartSections = periodMonths === 1 ? sections.map(s => ({
+                            category: s.category,
+                            label: s.label,
+                            charts: s.charts.filter(c => c.type !== 'table').map(c => ({
+                              key: c.key,
+                              title: c.title,
+                              type: c.type,
+                              data: c.data,
+                            })),
+                          })) : [];
+
+                          // Fetch admin note for this company+platform
+                          const adminNote = (selectedCompanyObj?.dashboardNotes as Record<string, string> | null)?.[platform.platformKey] || null;
+
+                          const response = await fetch('/api/reports/export-pdf', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              companyName,
+                              companyId: selectedCompany,
+                              platform: platform.platformKey,
+                              platformLabel: platform.label,
+                              month: selectedMonth,
+                              kpis: displayKpis.map(k => ({ label: k.label, value: k.value, description: k.description })),
+                              sections: chartSections,
+                              videos,
+                              adminNote,
+                              borderColor: platform.borderColor,
+                            }),
+                          });
+
+                          if (!response.ok) throw new Error('PDF generálás sikertelen');
+
+                          const blob = await response.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${companyName}-${platform.label}-${selectedMonth}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
                         } catch (err) {
                           console.error('PDF export failed:', err);
+                          setError('PDF letöltés sikertelen');
                         } finally {
                           setPdfExporting(false);
                         }
@@ -495,82 +537,6 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
               </section>
             ))}
 
-            {/* For multi-month single company, show last month charts too */}
-            {!isAllCompanies && periodMonths > 1 && sections.length > 0 && (
-              <>
-                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase">
-                  Az utolsó hónap chartjai
-                </p>
-                {sections.map(({ category, label, charts }) => (
-                  <section key={category}>
-                    <h3 className="text-xl font-bold mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
-                      {label}
-                    </h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {charts.map((chart) => {
-                        if (chart.type === 'table') {
-                          return (
-                            <div key={chart.key} className="lg:col-span-2">
-                              <VideoTable
-                                chartVideos={chart.data?.series?.[0]?.data as any || []}
-                                title={chart.title}
-                                color={chart.color}
-                              />
-                            </div>
-                          );
-                        }
-
-                        // Render demographics charts as tables
-                        const isDemographics = chart.key.includes('demographics') || chart.key.includes('gender');
-                        if (isDemographics && chart.data?.labels && chart.data?.series?.[0]?.data) {
-                          const labels = chart.data.labels;
-                          const values = chart.data.series[0].data as number[];
-                          return (
-                            <div key={chart.key} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
-                              <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">{chart.title}</h4>
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="border-b border-[var(--border)]">
-                                    <th className="text-left py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">
-                                      {chart.key.includes('gender') ? 'Nem' : 'Korcsoport'}
-                                    </th>
-                                    <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">Megoszlás</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {labels.map((label, i) => (
-                                    <tr key={label} className="border-b border-[var(--border)] last:border-0">
-                                      <td className="py-2.5 px-3 font-medium text-[var(--text-primary)]">{label}</td>
-                                      <td className="py-2.5 px-3 text-right font-semibold text-[var(--text-primary)]">
-                                        {typeof values[i] === 'number' ? `${values[i].toFixed(1)}%` : values[i]}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          );
-                        }
-
-                        const isFollowerChart = chart.key.includes('follower') || chart.key === 'fb_fans';
-                        return (
-                          <Chart
-                            key={chart.key}
-                            type={chart.type as 'line' | 'bar'}
-                            labels={chart.data?.labels || []}
-                            data={(chart.data?.series?.[0]?.data || []) as number[]}
-                            label={chart.data?.series?.[0]?.name || chart.title}
-                            color={chart.color}
-                            title={chart.title}
-                            beginAtZero={!isFollowerChart}
-                          />
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </>
-            )}
           </div>
         )}
 

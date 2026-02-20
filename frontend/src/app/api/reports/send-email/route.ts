@@ -50,6 +50,7 @@ function find(results: ChartData[], key: string): ChartData | undefined {
 interface KPI { label: string; value: string | number }
 
 const PLATFORM_CHART_KEYS: Record<string, string[]> = {
+  TIKTOK_ORGANIC: ['followers_growth', 'tt_total_followers', 'profile_views', 'daily_likes', 'daily_comments', 'daily_shares', 'engagement_rate', 'all_videos', 'tt_bio_link_clicks'],
   TIKTOK_ADS: ['ttads_spend_trend', 'ttads_impressions_clicks', 'ttads_ctr_trend', 'ttads_cpc_cpm', 'ttads_conversions', 'ttads_cost_per_conversion'],
   FACEBOOK_ORGANIC: ['fb_page_reach', 'fb_page_fans', 'fb_engagement', 'fb_all_posts', 'fb_follows_trend', 'fb_video_views'],
   INSTAGRAM_ORGANIC: ['ig_reach', 'ig_follower_growth', 'ig_engagement', 'ig_profile_activity', 'ig_all_media', 'ig_daily_followers', 'ig_save_rate', 'ig_story_overview'],
@@ -59,6 +60,32 @@ const PLATFORM_CHART_KEYS: Record<string, string[]> = {
 
 function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
   switch (platformKey) {
+    case 'TIKTOK_ORGANIC': {
+      const followers = find(results, 'followers_growth');
+      const profileViews = find(results, 'profile_views');
+      const likes = find(results, 'daily_likes');
+      const comments = find(results, 'daily_comments');
+      const shares = find(results, 'daily_shares');
+      const videos = find(results, 'all_videos');
+      const bioClicks = find(results, 'tt_bio_link_clicks');
+      const totalFollowersChart = find(results, 'tt_total_followers');
+
+      const totalLikes = sumSeries(likes);
+      const totalComments = sumSeries(comments);
+      const totalShares = sumSeries(shares);
+      const vidCount = tableCount(videos);
+      return [
+        { label: 'Össz. követőnövekedés', value: sumSeries(followers) },
+        { label: 'Összes követő', value: lastValue(totalFollowersChart) },
+        { label: 'Profilnézetek', value: sumSeries(profileViews) },
+        { label: 'Like-ok', value: totalLikes },
+        { label: 'Kommentek', value: totalComments },
+        { label: 'Megosztások', value: totalShares },
+        { label: 'Összes interakció', value: totalLikes + totalComments + totalShares },
+        { label: 'Videók száma', value: vidCount },
+        { label: 'Bio link kattintás', value: sumSeries(bioClicks) },
+      ];
+    }
     case 'TIKTOK_ADS': {
       const spend = find(results, 'ttads_spend_trend');
       const impClicks = find(results, 'ttads_impressions_clicks');
@@ -160,6 +187,7 @@ function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
+  TIKTOK_ORGANIC: 'TikTok',
   TIKTOK_ADS: 'TikTok Ads',
   FACEBOOK_ORGANIC: 'Facebook',
   INSTAGRAM_ORGANIC: 'Instagram',

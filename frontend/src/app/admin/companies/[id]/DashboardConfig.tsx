@@ -10,6 +10,7 @@ interface DashboardConfigProps {
   companyId: string;
   connections: { provider: string }[];
   dashboardConfig: Record<string, { kpis: string[]; charts: string[] }> | null;
+  dashboardNotes: Record<string, string> | null;
 }
 
 type PlatformSelection = {
@@ -43,6 +44,8 @@ function PlatformConfigSection({
   onToggleChart,
   onSelectAll,
   onClearAll,
+  note,
+  onNoteChange,
 }: {
   platformKey: string;
   config: PlatformMetricConfig;
@@ -51,6 +54,8 @@ function PlatformConfigSection({
   onToggleChart: (key: string) => void;
   onSelectAll: () => void;
   onClearAll: () => void;
+  note: string;
+  onNoteChange: (value: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(true);
 
@@ -149,6 +154,18 @@ function PlatformConfigSection({
               ))}
             </div>
           </div>
+
+          {/* Admin note */}
+          <div>
+            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Megjegyzés az ügyfélnek</h4>
+            <textarea
+              value={note}
+              onChange={(e) => onNoteChange(e.target.value)}
+              placeholder="Ide írhatsz megjegyzést, amit az ügyfél látni fog a dashboardon..."
+              rows={3}
+              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all resize-y"
+            />
+          </div>
         </div>
       )}
     </div>
@@ -184,8 +201,9 @@ function CheckboxItem({ label, checked, onChange, color }: {
   );
 }
 
-export function DashboardConfig({ companyId, connections, dashboardConfig }: DashboardConfigProps) {
+export function DashboardConfig({ companyId, connections, dashboardConfig, dashboardNotes }: DashboardConfigProps) {
   const [selections, setSelections] = useState(() => initSelections(connections, dashboardConfig));
+  const [notes, setNotes] = useState<Record<string, string>>(dashboardNotes || {});
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -236,6 +254,11 @@ export function DashboardConfig({ companyId, connections, dashboardConfig }: Das
     }));
   }
 
+  function handleNoteChange(platform: string, value: string) {
+    setSaved(false);
+    setNotes(prev => ({ ...prev, [platform]: value }));
+  }
+
   function handleSave() {
     const config: Record<string, { kpis: string[]; charts: string[] }> = {};
     for (const [platform, sel] of Object.entries(selections)) {
@@ -245,7 +268,7 @@ export function DashboardConfig({ companyId, connections, dashboardConfig }: Das
       };
     }
     startTransition(async () => {
-      await updateDashboardConfig(companyId, config);
+      await updateDashboardConfig(companyId, config, notes);
       setSaved(true);
     });
   }
@@ -288,6 +311,8 @@ export function DashboardConfig({ companyId, connections, dashboardConfig }: Das
               onToggleChart={(key) => toggleChart(provider, key)}
               onSelectAll={() => selectAll(provider)}
               onClearAll={() => clearAll(provider)}
+              note={notes[provider] || ''}
+              onNoteChange={(value) => handleNoteChange(provider, value)}
             />
           );
         })}

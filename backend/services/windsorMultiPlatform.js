@@ -217,7 +217,41 @@ class WindsorMultiPlatform {
 
   async fetchAllChartData(provider, accountId, dateFrom, dateTo) {
     const config = this.getConfig(provider);
-    return this.fetchData(provider, accountId, dateFrom, dateTo, config.allChartFields);
+
+    // Demographics fields are a separate Windsor dimension — must be fetched
+    // in individual API calls and merged into the main dataset.
+    const demographicFieldSet = new Set();
+    if (config.demographicFields) {
+      for (const fields of Object.values(config.demographicFields)) {
+        for (const f of fields) {
+          if (f !== 'date') demographicFieldSet.add(f);
+        }
+      }
+    }
+
+    const mainFields = config.allChartFields.filter(f => !demographicFieldSet.has(f));
+
+    const promises = [
+      this.fetchData(provider, accountId, dateFrom, dateTo, mainFields),
+    ];
+
+    if (config.demographicFields) {
+      promises.push(
+        this.fetchDemographics(provider, accountId, dateFrom, dateTo, 'age').catch(err => {
+          console.warn(`[Windsor] Demographics age fetch failed for ${provider}:`, err.message);
+          return [];
+        })
+      );
+      promises.push(
+        this.fetchDemographics(provider, accountId, dateFrom, dateTo, 'gender').catch(err => {
+          console.warn(`[Windsor] Demographics gender fetch failed for ${provider}:`, err.message);
+          return [];
+        })
+      );
+    }
+
+    const results = await Promise.all(promises);
+    return results.flat();
   }
 
   /**
