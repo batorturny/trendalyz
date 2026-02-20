@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -10,9 +9,6 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  turbopack: {
-    root: path.resolve(__dirname),
-  },
   compress: true,
   images: {
     formats: ['image/avif', 'image/webp'],

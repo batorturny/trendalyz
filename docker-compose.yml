@@ -8,22 +8,22 @@ services:
     expose:
       - "4000"
     environment:
-      - WINDSOR_API_KEY=${WINDSOR_API_KEY:-b61021f891826f56f62c84529e8d5f2e0c31}
+      - DATABASE_URL=${DATABASE_URL}
+      - WINDSOR_API_KEY=${WINDSOR_API_KEY}
       - WINDSOR_PROXY_URL=${WINDSOR_PROXY_URL:-https://windsor-proxy.vercel.app}
-      - PDF_API_KEY=${PDF_API_KEY:-bator@capmarketing.hu_J6wye402YArBZE40tpawANZVQjbakvEKkZxkvREHh8IVnD3OgcPskFityrBVfYBe}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:trendalyz_secret_password@db:5432/tiktok_report}
+      - PDF_API_KEY=${PDF_API_KEY}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
       - RESEND_API_KEY=${RESEND_API_KEY}
-      - ENABLE_BILLING=${ENABLE_BILLING:-true}
+      - ENABLE_BILLING=${ENABLE_BILLING:-false}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - STRIPE_PRICE_STARTER_EUR=price_1T2doG2NYrBEtqNrg0fX5aiD
-      - STRIPE_PRICE_STARTER_HUF=price_1T2doH2NYrBEtqNrcucVU1GX
-      - STRIPE_PRICE_GROWTH_EUR=price_1T2doI2NYrBEtqNrTiOkou4Y
-      - STRIPE_PRICE_GROWTH_HUF=price_1T2doJ2NYrBEtqNrtzpQmH6h
-      - STRIPE_PRICE_PROFESSIONAL_EUR=price_1T2doJ2NYrBEtqNrhW5YPJWd
-      - STRIPE_PRICE_PROFESSIONAL_HUF=price_1T2doL2NYrBEtqNrA9qOsPvU
+      - STRIPE_PRICE_STARTER_EUR=${STRIPE_PRICE_STARTER_EUR}
+      - STRIPE_PRICE_STARTER_HUF=${STRIPE_PRICE_STARTER_HUF}
+      - STRIPE_PRICE_GROWTH_EUR=${STRIPE_PRICE_GROWTH_EUR}
+      - STRIPE_PRICE_GROWTH_HUF=${STRIPE_PRICE_GROWTH_HUF}
+      - STRIPE_PRICE_PROFESSIONAL_EUR=${STRIPE_PRICE_PROFESSIONAL_EUR}
+      - STRIPE_PRICE_PROFESSIONAL_HUF=${STRIPE_PRICE_PROFESSIONAL_HUF}
       - PORT=4000
     depends_on:
       - db
@@ -36,16 +36,16 @@ services:
     expose:
       - "3000"
     environment:
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - EXPRESS_API_URL=http://backend:4000
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:trendalyz_secret_password@db:5432/tiktok_report}
+      - DATABASE_URL=${DATABASE_URL}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY}
-      - ENABLE_BILLING=${ENABLE_BILLING:-true}
+      - ENABLE_BILLING=${ENABLE_BILLING:-false}
     depends_on:
       - backend
     restart: unless-stopped
@@ -54,7 +54,7 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trendalyz_secret_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-tiktok_report}
     volumes:
       - postgres_data:/var/lib/postgresql/data

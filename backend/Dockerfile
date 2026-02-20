@@ -2,12 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy Prisma schema from monorepo root
+# Copy prisma schema + migrations
 COPY prisma/ ./prisma/
 
-# Install backend dependencies
+# Install dependencies
 COPY backend/package*.json ./
-RUN npm install --production
+RUN npm install --omit=dev
 
 # Generate Prisma client
 RUN npx prisma generate --schema=./prisma/schema.prisma
@@ -17,5 +17,4 @@ COPY backend/ ./
 
 EXPOSE 4000
 
-# Run migrations then start server
 CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"]
