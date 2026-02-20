@@ -64,11 +64,13 @@ export function ReportDashboard({ report }: Props) {
         <VideoTable videos={report.data.video.videos} />
       </section>
 
-      {/* Demographics */}
-      <section>
-        <h3 className="text-xl font-bold mb-4 border-l-4 border-[var(--platform-tiktok)] pl-3">Közönség megoszlása</h3>
-        <DemographicsCard demographics={report.data.demographics} />
-      </section>
+      {/* Demographics — only render if data is available */}
+      {report.data.demographics && (
+        <section>
+          <h3 className="text-xl font-bold mb-4 border-l-4 border-[var(--platform-tiktok)] pl-3">Közönség megoszlása</h3>
+          <DemographicsCard demographics={report.data.demographics} />
+        </section>
+      )}
     </div>
   );
 }
