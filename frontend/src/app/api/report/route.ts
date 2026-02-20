@@ -93,25 +93,34 @@ export async function POST(req: Request) {
     const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
     const prevDateTo = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${prevLastDay}`;
 
-    // Fetch from Windsor
-    const fields = 'date,followers_count,new_followers,profile_views,likes,comments,shares,video_views,video_id,video_title,video_duration,video_description,reach,full_video_watched_rate,total_time_watched,average_time_watched,embed_link';
-    const selectAccounts = `&select_accounts=${tiktokAccountId}`;
+    // Fetch from Windsor (separate daily + video calls, matching backend WindsorService)
+    const dailyFields = 'comments,date,followers_count,likes,profile_views,shares,total_followers_count';
+    const videoFields = 'video_comments,video_create_datetime,video_embed_url,video_full_watched_rate,video_likes,video_new_followers,video_reach,video_shares,video_total_time_watched,video_views_count,video_average_time_watched_non_aggregated';
 
-    async function fetchWindsor(from: string, to: string) {
-      const url = `${WINDSOR_BASE}/tiktok_organic?api_key=${windsorApiKey}&date_from=${from}&date_to=${to}&fields=${fields}${selectAccounts}`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
-      if (!res.ok) throw new Error(`Windsor API error: ${res.status}`);
+    async function fetchWindsor(from: string, to: string, fields: string) {
+      const url = `${WINDSOR_BASE}/tiktok_organic?api_key=${windsorApiKey}&date_from=${from}&date_to=${to}&fields=${fields}&select_accounts=${tiktokAccountId}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(120000) });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.error(`Windsor ${res.status} for fields=${fields.slice(0, 40)}:`, text.slice(0, 200));
+        throw new Error(`Windsor API error: ${res.status}`);
+      }
       const raw = await res.json();
       return Array.isArray(raw) ? (raw[0]?.data || []) : (raw?.data || []);
     }
 
-    const [currentRows, prevRows] = await Promise.all([
-      fetchWindsor(dateFrom, dateTo),
-      fetchWindsor(prevDateFrom, prevDateTo),
+    const [currentDaily, prevDaily, currentVideo, prevVideo] = await Promise.all([
+      fetchWindsor(dateFrom, dateTo, dailyFields),
+      fetchWindsor(prevDateFrom, prevDateTo, dailyFields),
+      fetchWindsor(dateFrom, dateTo, videoFields),
+      fetchWindsor(prevDateFrom, prevDateTo, videoFields),
     ]);
 
-    // Process report data (simplified version matching backend processReport)
-    const reportData = processReportData(currentRows, prevRows);
+    const currentData = { daily: currentDaily, video: currentVideo };
+    const prevData = { daily: prevDaily, video: prevVideo };
+
+    // Process report data (matching backend processReport)
+    const reportData = processReportData(currentData, prevData);
 
     const responseData = {
       company: { id: company.id, name: company.name },
@@ -138,150 +147,152 @@ export async function POST(req: Request) {
 }
 
 // ============================================
-// REPORT PROCESSING (mirrors backend/services/report.js)
+// REPORT PROCESSING (exact port of backend/services/report.js)
 // ============================================
 
-interface WindsorRow {
-  date?: string;
-  followers_count?: number;
-  new_followers?: number;
-  profile_views?: number;
-  likes?: number;
-  comments?: number;
-  shares?: number;
-  video_views?: number;
-  video_id?: string;
-  video_title?: string;
-  video_duration?: number;
-  video_description?: string;
-  reach?: number;
-  full_video_watched_rate?: number;
-  total_time_watched?: number;
-  average_time_watched?: number;
-  embed_link?: string;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const num = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const nonNeg = (v: any) => Math.max(0, num(v));
+const sum = (arr: number[]) => arr.reduce((a, b) => a + num(b), 0);
+const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+function formatDateLabel(dateStr: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}.`;
 }
 
-function processReportData(currentRows: WindsorRow[], prevRows: WindsorRow[]) {
-  // Separate daily rows (no video_id) from video rows
-  const dailyRows = currentRows.filter(r => !r.video_id);
-  const videoRows = currentRows.filter(r => r.video_id);
-  const prevDailyRows = prevRows.filter(r => !r.video_id);
+function formatWatchTime(seconds: number) {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  if (hrs > 0) return `${hrs}ó ${mins}p`;
+  if (mins > 0) return `${mins}p ${secs}mp`;
+  return `${secs}mp`;
+}
 
-  // Daily totals
-  const totalLikes = dailyRows.reduce((s, r) => s + (Number(r.likes) || 0), 0);
-  const totalComments = dailyRows.reduce((s, r) => s + (Number(r.comments) || 0), 0);
-  const totalShares = dailyRows.reduce((s, r) => s + (Number(r.shares) || 0), 0);
-  const totalProfileViews = dailyRows.reduce((s, r) => s + (Number(r.profile_views) || 0), 0);
-  const totalNewFollowers = dailyRows.reduce((s, r) => s + (Number(r.new_followers) || 0), 0);
-  const currentFollowers = dailyRows.length > 0
-    ? Math.max(...dailyRows.map(r => Number(r.followers_count) || 0))
-    : 0;
+function calcChange(current: number, previous: number) {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+}
 
-  // Previous period totals for comparison
-  const prevTotalLikes = prevDailyRows.reduce((s, r) => s + (Number(r.likes) || 0), 0);
-  const prevTotalComments = prevDailyRows.reduce((s, r) => s + (Number(r.comments) || 0), 0);
-  const prevTotalShares = prevDailyRows.reduce((s, r) => s + (Number(r.shares) || 0), 0);
-  const prevTotalProfileViews = prevDailyRows.reduce((s, r) => s + (Number(r.profile_views) || 0), 0);
-  const prevTotalNewFollowers = prevDailyRows.reduce((s, r) => s + (Number(r.new_followers) || 0), 0);
-
-  // Chart data by date
-  const dateSet = [...new Set(dailyRows.map(r => r.date).filter(Boolean))].sort() as string[];
-  const chartLabels = dateSet.map(d => {
-    const parts = d.split('-');
-    return `${parts[1]}.${parts[2]}.`;
-  });
-
-  function sumByDate(rows: WindsorRow[], field: keyof WindsorRow) {
-    const map = new Map<string, number>();
-    for (const r of rows) {
-      if (!r.date) continue;
-      map.set(r.date, (map.get(r.date) || 0) + (Number(r[field]) || 0));
+function aggregateDaily(data: any[]) {
+  const byDate: Record<string, any> = {};
+  for (const row of data) {
+    if (!row.date) continue;
+    const d = row.date.substring(0, 10);
+    if (!byDate[d]) {
+      byDate[d] = { date: d, likes: 0, comments: 0, shares: 0, profile_views: 0, followers_count: 0, total_followers_count: 0, _tfcValues: [] as number[] };
     }
-    return dateSet.map(d => map.get(d) || 0);
+    byDate[d].likes += nonNeg(row.likes);
+    byDate[d].comments += nonNeg(row.comments);
+    byDate[d].shares += nonNeg(row.shares);
+    byDate[d].profile_views += nonNeg(row.profile_views);
+    byDate[d].followers_count += nonNeg(row.followers_count);
+    const tfc = nonNeg(row.total_followers_count);
+    if (tfc > 0) byDate[d]._tfcValues.push(tfc);
   }
+  for (const d in byDate) {
+    const tfcArr = byDate[d]._tfcValues;
+    byDate[d].total_followers_count = tfcArr.length > 0 ? Math.max(...tfcArr) : 0;
+    delete byDate[d]._tfcValues;
+  }
+  return Object.values(byDate).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
 
-  // Video metrics
-  const uniqueVideos = new Map<string, WindsorRow>();
-  for (const r of videoRows) {
-    if (!r.video_id) continue;
-    const existing = uniqueVideos.get(r.video_id);
-    if (!existing || (Number(r.video_views) || 0) > (Number(existing.video_views) || 0)) {
-      uniqueVideos.set(r.video_id, r);
+function processVideos(data: any[]) {
+  const byUrl: Record<string, any> = {};
+  for (const r of data) {
+    if (!r.video_embed_url) continue;
+    const url = r.video_embed_url;
+    if (!byUrl[url]) {
+      byUrl[url] = { datetime: r.video_create_datetime, embedUrl: url, views: 0, reach: 0, likes: 0, comments: 0, shares: 0, newFollowers: 0, fullWatchRate: 0, watchTimeSeconds: 0, avgWatchTime: 0 };
     }
+    const v = byUrl[url];
+    v.views = Math.max(v.views, nonNeg(r.video_views_count));
+    v.reach = Math.max(v.reach, nonNeg(r.video_reach));
+    v.likes = Math.max(v.likes, nonNeg(r.video_likes));
+    v.comments = Math.max(v.comments, nonNeg(r.video_comments));
+    v.shares = Math.max(v.shares, nonNeg(r.video_shares));
+    v.newFollowers = Math.max(v.newFollowers, nonNeg(r.video_new_followers));
+    v.fullWatchRate = Math.max(v.fullWatchRate, num(r.video_full_watched_rate) * 100);
+    v.watchTimeSeconds = Math.max(v.watchTimeSeconds, num(r.video_total_time_watched));
+    v.avgWatchTime = Math.max(v.avgWatchTime, num(r.video_average_time_watched_non_aggregated));
   }
+  return Object.values(byUrl).map((v: any) => {
+    const er = v.reach > 0 ? ((v.likes + v.comments + v.shares) / v.reach) * 100 : 0;
+    return { ...v, engagementRate: er, watchTimeFormatted: formatWatchTime(v.watchTimeSeconds), avgWatchTimeFormatted: formatWatchTime(v.avgWatchTime) };
+  }).sort((a: any, b: any) => new Date(a.datetime || 0).getTime() - new Date(b.datetime || 0).getTime());
+}
 
-  const videos = Array.from(uniqueVideos.values()).map(v => ({
-    videoId: v.video_id,
-    title: v.video_title || v.video_description?.slice(0, 60) || 'Videó',
-    views: Number(v.video_views) || 0,
-    likes: Number(v.likes) || 0,
-    comments: Number(v.comments) || 0,
-    shares: Number(v.shares) || 0,
-    reach: Number(v.reach) || 0,
-    duration: Number(v.video_duration) || 0,
-    fullWatchRate: Number(v.full_video_watched_rate) || 0,
-    totalWatchTime: Number(v.total_time_watched) || 0,
-    avgWatchTime: Number(v.average_time_watched) || 0,
-    embedUrl: v.embed_link || null,
-  }));
+function processReportData(rawData: { daily: any[]; video: any[] }, prevData: { daily: any[]; video: any[] }) {
+  const dailySorted = aggregateDaily(rawData.daily);
+  const prevDailySorted = aggregateDaily(prevData.daily);
 
-  const totalViews = videos.reduce((s, v) => s + v.views, 0);
-  const totalReach = videos.reduce((s, v) => s + v.reach, 0);
-  const videoCount = videos.length;
-  const avgEngagement = videoCount > 0
-    ? videos.reduce((s, v) => s + (v.views > 0 ? ((v.likes + v.comments + v.shares) / v.views) * 100 : 0), 0) / videoCount
-    : 0;
-  const avgFullWatchRate = videoCount > 0
-    ? videos.reduce((s, v) => s + v.fullWatchRate, 0) / videoCount
-    : 0;
-  const totalWatchTimeSec = videos.reduce((s, v) => s + v.totalWatchTime, 0);
+  const dailyChartLabels = dailySorted.map((r: any) => formatDateLabel(r.date));
+  const likesData = dailySorted.map((r: any) => r.likes);
+  const commentsData = dailySorted.map((r: any) => r.comments);
+  const sharesData = dailySorted.map((r: any) => r.shares);
+  const profileViewsData = dailySorted.map((r: any) => r.profile_views);
 
-  function formatWatchTime(seconds: number) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
+  let totalFollowersData = dailySorted.map((r: any) => r.total_followers_count);
+  let lastValidValue = totalFollowersData.find((v: number) => v > 0) || 0;
+  totalFollowersData = totalFollowersData.map((v: number) => { if (v > 0) { lastValidValue = v; return v; } return lastValidValue; });
 
-  function pctChange(curr: number, prev: number) {
-    if (prev === 0) return curr > 0 ? 100 : 0;
-    return ((curr - prev) / prev) * 100;
-  }
+  const firstDayTotal = totalFollowersData.find((v: number) => v > 0) || 0;
+  const lastDayTotal = [...totalFollowersData].reverse().find((v: number) => v > 0) || 0;
+  const newFollowersThisMonth = lastDayTotal - firstDayTotal;
+
+  const prevTotals = prevDailySorted.length > 0 ? {
+    totalLikes: sum(prevDailySorted.map((r: any) => r.likes)),
+    totalComments: sum(prevDailySorted.map((r: any) => r.comments)),
+    totalShares: sum(prevDailySorted.map((r: any) => r.shares)),
+    totalProfileViews: sum(prevDailySorted.map((r: any) => r.profile_views)),
+    totalNewFollowers: (() => {
+      const pf = prevDailySorted.find((r: any) => r.total_followers_count > 0)?.total_followers_count || 0;
+      const pl = [...prevDailySorted].reverse().find((r: any) => r.total_followers_count > 0)?.total_followers_count || 0;
+      return pl - pf;
+    })(),
+  } : null;
+
+  const dailyTotals = {
+    totalLikes: sum(likesData), totalComments: sum(commentsData), totalShares: sum(sharesData),
+    totalProfileViews: sum(profileViewsData), totalNewFollowers: newFollowersThisMonth,
+    currentFollowers: lastDayTotal, startFollowers: firstDayTotal,
+    likesChange: prevTotals ? calcChange(sum(likesData), prevTotals.totalLikes) : null,
+    commentsChange: prevTotals ? calcChange(sum(commentsData), prevTotals.totalComments) : null,
+    sharesChange: prevTotals ? calcChange(sum(sharesData), prevTotals.totalShares) : null,
+    profileViewsChange: prevTotals ? calcChange(sum(profileViewsData), prevTotals.totalProfileViews) : null,
+    newFollowersChange: prevTotals ? calcChange(newFollowersThisMonth, prevTotals.totalNewFollowers) : null,
+  };
+
+  const videos = processVideos(rawData.video);
+  const prevVideos = processVideos(prevData.video);
+
+  const videoTotals = {
+    totalViews: sum(videos.map((v: any) => v.views)),
+    totalReach: sum(videos.map((v: any) => v.reach)),
+    totalLikes: sum(videos.map((v: any) => v.likes)),
+    totalComments: sum(videos.map((v: any) => v.comments)),
+    totalShares: sum(videos.map((v: any) => v.shares)),
+    totalNewFollowers: sum(videos.map((v: any) => v.newFollowers)),
+    totalWatchTimeFormatted: formatWatchTime(sum(videos.map((v: any) => v.watchTimeSeconds))),
+    videoCount: videos.length,
+    avgEngagement: videos.length > 0 ? sum(videos.map((v: any) => v.engagementRate)) / videos.length : 0,
+    avgFullWatchRate: videos.length > 0 ? sum(videos.map((v: any) => v.fullWatchRate)) / videos.length : 0,
+    viewsChange: prevVideos.length > 0 ? calcChange(sum(videos.map((v: any) => v.views)), sum(prevVideos.map((v: any) => v.views))) : null,
+    reachChange: prevVideos.length > 0 ? calcChange(sum(videos.map((v: any) => v.reach)), sum(prevVideos.map((v: any) => v.reach))) : null,
+    videoCountChange: prevVideos.length > 0 ? calcChange(videos.length, prevVideos.length) : null,
+  };
+
+  const top3Videos = videos.slice().sort((a: any, b: any) => b.views - a.views).slice(0, 3);
 
   return {
     daily: {
-      chartLabels,
-      likesData: sumByDate(dailyRows, 'likes'),
-      commentsData: sumByDate(dailyRows, 'comments'),
-      sharesData: sumByDate(dailyRows, 'shares'),
-      profileViewsData: sumByDate(dailyRows, 'profile_views'),
-      newFollowersData: sumByDate(dailyRows, 'new_followers'),
-      followersData: sumByDate(dailyRows, 'followers_count'),
-      totals: {
-        currentFollowers,
-        totalNewFollowers,
-        totalLikes,
-        totalComments,
-        totalShares,
-        totalProfileViews,
-        changes: {
-          likes: pctChange(totalLikes, prevTotalLikes),
-          comments: pctChange(totalComments, prevTotalComments),
-          shares: pctChange(totalShares, prevTotalShares),
-          profileViews: pctChange(totalProfileViews, prevTotalProfileViews),
-          newFollowers: pctChange(totalNewFollowers, prevTotalNewFollowers),
-        },
-      },
+      chartLabels: dailyChartLabels, likesData, commentsData, sharesData, profileViewsData, totalFollowersData,
+      totals: dailyTotals,
+      dateRange: { from: (dailySorted[0] as any)?.date || '', to: (dailySorted[dailySorted.length - 1] as any)?.date || '' },
     },
-    video: {
-      videos: videos.sort((a, b) => b.views - a.views),
-      totals: {
-        totalViews,
-        totalReach,
-        videoCount,
-        avgEngagement,
-        avgFullWatchRate,
-        totalWatchTimeFormatted: formatWatchTime(totalWatchTimeSec),
-      },
-    },
+    video: { videos, top3: top3Videos, totals: videoTotals },
   };
 }
