@@ -44,6 +44,54 @@ export function ReportDashboard({ report }: Props) {
         ))}
       </div>
 
+      {/* Daily Charts */}
+      <section>
+        <h3 className="text-xl font-bold mb-4 border-l-4 border-[var(--platform-tiktok)] pl-3">Napi trendek</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Chart
+            type="line"
+            labels={report.data.daily.chartLabels}
+            data={report.data.daily.totalFollowersData}
+            label="Követők"
+            color="#00ff95"
+            title="Összes követő"
+            beginAtZero={false}
+          />
+          <Chart
+            type="bar"
+            labels={report.data.daily.chartLabels}
+            data={report.data.daily.likesData}
+            label="Like-ok"
+            color="#bc6aff"
+            title="Napi like-ok"
+          />
+          <Chart
+            type="bar"
+            labels={report.data.daily.chartLabels}
+            data={report.data.daily.commentsData}
+            label="Kommentek"
+            color="#ffce44"
+            title="Kommentek"
+          />
+          <Chart
+            type="bar"
+            labels={report.data.daily.chartLabels}
+            data={report.data.daily.sharesData}
+            label="Megosztások"
+            color="#4d96ff"
+            title="Megosztások"
+          />
+          <Chart
+            type="line"
+            labels={report.data.daily.chartLabels}
+            data={report.data.daily.profileViewsData}
+            label="Profilnézetek"
+            color="#00d4aa"
+            title="Profil megtekintések"
+          />
+        </div>
+      </section>
+
       {/* Top 3 Videos */}
       <section>
         <h3 className="text-xl font-bold mb-4 border-l-4 border-[var(--platform-tiktok)] pl-3">Top 3 videó</h3>
