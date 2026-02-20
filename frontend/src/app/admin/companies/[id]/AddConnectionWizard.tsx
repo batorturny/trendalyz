@@ -135,7 +135,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
+        className="px-4 py-2 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] transition-all duration-150"
       >
         + Új integráció
       </button>
@@ -368,7 +368,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               <button
                 onClick={handleSave}
                 disabled={saving || !accountId.trim()}
-                className="flex-1 px-4 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
                 {saving ? 'Mentés...' : 'Integráció hozzáadása'}
               </button>

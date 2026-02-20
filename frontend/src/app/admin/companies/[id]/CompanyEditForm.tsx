@@ -32,7 +32,7 @@ export function CompanyEditForm({ company }: Props) {
 
       <button
         type="submit"
-        className="px-6 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 active:scale-[0.97] transition-all duration-150"
+        className="px-6 py-3 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] transition-all duration-150"
       >
         Mentés
       </button>

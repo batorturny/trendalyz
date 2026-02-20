@@ -262,7 +262,7 @@ export function DashboardConfig({ companyId, connections, dashboardConfig }: Das
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="flex items-center gap-2 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-2 px-4 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+          className="flex items-center gap-2 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold py-2 px-4 rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

@@ -288,7 +288,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                   <FeatureGate feature="email_reports" tier={userTier}>
                     <button
                       onClick={() => setShowEmailModal(true)}
-                      className="btn-press py-3 px-4 rounded-xl bg-[var(--accent)] text-white dark:text-[var(--surface)] hover:brightness-110 flex items-center gap-2 font-bold"
+                      className="btn-press py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] hover:from-emerald-400 hover:to-cyan-400 flex items-center gap-2 font-bold"
                       title="Riport küldés emailben"
                     >
                       <Mail className="w-4 h-4" />

@@ -145,7 +145,7 @@ export function BillingOverview({
             <button
               onClick={handleReactivate}
               disabled={loading === 'reactivate'}
-              className="px-4 py-2 text-sm font-semibold bg-[var(--accent)] text-white dark:text-[var(--surface)] rounded-xl hover:brightness-110 transition-all disabled:opacity-50"
+              className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] rounded-xl hover:from-emerald-400 hover:to-cyan-400 transition-all disabled:opacity-50"
             >
               {loading === 'reactivate' ? 'Feldolgozás...' : 'Újraaktiválás'}
             </button>

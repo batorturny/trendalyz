@@ -62,7 +62,7 @@ export function CouponCode() {
         <button
           onClick={handleRedeem}
           disabled={loading || !code.trim()}
-          className="btn-press px-6 py-2.5 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold text-sm rounded-xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-press px-6 py-2.5 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold text-sm rounded-xl hover:from-emerald-400 hover:to-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Beváltás...' : 'Beváltás'}
         </button>

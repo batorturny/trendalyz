@@ -52,7 +52,7 @@ export function SubscriptionOverlay({
         <div className="space-y-3">
           <Link
             href="/admin/billing"
-            className="block w-full px-6 py-3 bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:brightness-110 transition-all text-center"
+            className="block w-full px-6 py-3 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 transition-all text-center"
           >
             Előfizetés váltása
           </Link>

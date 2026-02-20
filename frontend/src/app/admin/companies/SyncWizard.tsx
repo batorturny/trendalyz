@@ -180,7 +180,7 @@ export function SyncWizard({ onComplete }: { onComplete?: () => void }) {
               <button
                 onClick={handleExecute}
                 disabled={activeGroups.length === 0}
-                className="px-6 py-2 text-sm font-bold rounded-xl bg-[var(--accent)] text-white dark:text-[var(--surface)] hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-50"
+                className="px-6 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] transition-all disabled:opacity-50"
               >
                 Véglegesítés
               </button>
@@ -191,7 +191,7 @@ export function SyncWizard({ onComplete }: { onComplete?: () => void }) {
           <div className="flex justify-end px-6 py-4 border-t border-[var(--border)]">
             <button
               onClick={handleClose}
-              className="px-6 py-2 text-sm font-bold rounded-xl bg-[var(--accent)] text-white dark:text-[var(--surface)] hover:brightness-110 active:scale-[0.97] transition-all"
+              className="px-6 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] transition-all"
             >
               Bezárás
             </button>
