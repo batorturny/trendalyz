@@ -20,6 +20,18 @@ interface PlatformConfig {
   borderColor: string;
 }
 
+/** Pick columns so every row is full (no orphan cards) */
+function bestCols(count: number): number {
+  if (count <= 2) return count;
+  if (count <= 4) return count;
+  for (const c of [5, 4, 3]) {
+    if (count % c === 0) return c;
+  }
+  if (count >= 10) return 5;
+  if (count >= 6) return count <= 8 ? 4 : 5;
+  return 3;
+}
+
 interface DashboardConfigType {
   kpis: string[];
   charts: string[];
@@ -211,7 +223,10 @@ export function ClientPlatformPage({
             {/* KPI Header */}
             {kpis.length > 0 && (
               <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div
+                  className="grid gap-3"
+                  style={{ gridTemplateColumns: `repeat(${bestCols(kpis.length)}, minmax(0, 1fr))` }}
+                >
                   {kpis.map((kpi) => (
                     <KPICard key={kpi.label} label={kpi.label} value={kpi.value} change={kpi.change} description={kpi.description} />
                   ))}

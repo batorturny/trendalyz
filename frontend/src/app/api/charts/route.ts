@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
 import { NextResponse } from 'next/server';
 import { chartCatalog, validateChartKeys } from '@/lib/chartCatalog';
-import { ChartGenerator } from '@/lib/chartGenerator';
+import ChartGenerator from '@/lib/chartGenerator';
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
 
@@ -16,6 +16,8 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'video_views_count', 'video_reach', 'video_likes', 'video_comments',
       'video_shares', 'video_new_followers', 'video_full_watched_rate',
       'audience_activity_hour', 'audience_activity_count',
+      'audience_ages_age', 'audience_ages_percentage',
+      'video_audience_genders_gender', 'video_audience_genders_percentage',
       'bio_link_clicks', 'email_clicks', 'engaged_audience',
       'video_average_time_watched', 'video_total_time_watched', 'video_duration',
       'video_impression_sources_impression_source', 'video_impression_sources_percentage',

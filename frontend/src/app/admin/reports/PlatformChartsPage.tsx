@@ -25,6 +25,24 @@ export interface PlatformConfig {
   borderColor: string;
 }
 
+/** Pick columns so every row is full (no orphan cards) */
+function bestCols(count: number): number {
+  if (count <= 2) return count;
+  if (count <= 4) return count;
+  // Try 5, 4, 3 columns — pick the first that divides evenly
+  for (const c of [5, 4, 3]) {
+    if (count % c === 0) return c;
+  }
+  // If nothing divides evenly, try to find close fit
+  for (const c of [4, 5, 3]) {
+    if (count % c === 0) return c;
+  }
+  // Fallback: use 5 for larger sets, 4 for medium, 3 for small
+  if (count >= 10) return 5;
+  if (count >= 6) return count <= 8 ? 4 : 5;
+  return 3;
+}
+
 // ===== Component =====
 
 export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
@@ -391,13 +409,17 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                   Összesített KPI-ok ({aggregatedCount} hónap)
                 </p>
               )}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div
+                className="grid gap-3"
+                style={{ gridTemplateColumns: `repeat(${bestCols(displayKpis.length)}, minmax(0, 1fr))` }}
+              >
                 {displayKpis.map((kpi) => (
                   <KPICard
                     key={kpi.label}
                     label={kpi.label}
                     value={kpi.value}
                     change={kpi.change}
+                    description={kpi.description}
                   />
                 ))}
               </div>
