@@ -473,11 +473,11 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                 <h3 className="text-xl font-bold mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                   {label}
                 </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {charts.map((chart) => {
                     if (chart.type === 'table') {
                       return (
-                        <div key={chart.key} className="lg:col-span-2">
+                        <div key={chart.key}>
                           <VideoTable
                             chartVideos={chart.data?.series?.[0]?.data as any || []}
                             title={chart.title}
