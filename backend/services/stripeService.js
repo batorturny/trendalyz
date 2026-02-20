@@ -6,7 +6,9 @@ const Stripe = require('stripe');
 const prisma = require('../lib/prisma');
 const { PLANS, getPlanByTier, getPlanByPriceId } = require('../config/plans');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
 // ============================================
 // CUSTOMER MANAGEMENT

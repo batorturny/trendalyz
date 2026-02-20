@@ -35,7 +35,7 @@ const app = express();
 // STRIPE WEBHOOK — must be BEFORE express.json()
 // Raw body needed for Stripe signature verification
 // ============================================
-if (ENABLE_BILLING) {
+if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
     const stripeService = require('./services/stripeService');
 
     app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -925,7 +925,7 @@ app.post('/api/billing/redeem-coupon', requireAdmin, async (req, res) => {
 // BILLING ROUTES (Feature Flag Protected)
 // ============================================
 
-if (ENABLE_BILLING) {
+if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
     const stripeService = require('./services/stripeService');
     const { PLANS } = require('./config/plans');
 
