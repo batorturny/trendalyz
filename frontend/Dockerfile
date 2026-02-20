@@ -31,15 +31,17 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Standalone output preserves monorepo structure: server.js is at /app/frontend/server.js
 COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/frontend/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/static ./frontend/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/public ./frontend/public
 
 # Prisma for runtime migrations
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/frontend/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/frontend/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/frontend/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/frontend/node_modules/effect ./node_modules/effect
 
 USER nextjs
 
@@ -47,4 +49,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy --schema ./prisma/schema.prisma 2>&1; node server.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy --schema ./prisma/schema.prisma 2>&1; node frontend/server.js"]
