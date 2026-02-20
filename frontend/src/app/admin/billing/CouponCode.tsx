@@ -1,43 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Ticket } from 'lucide-react';
+import { redeemCoupon } from './actions';
 
 export function CouponCode() {
   const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  async function handleRedeem() {
+  function handleRedeem() {
     if (!code.trim()) return;
-    setLoading(true);
     setMessage(null);
 
-    try {
-      const res = await fetch('/api/billing/redeem-coupon', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim() }),
-        credentials: 'include',
-      });
+    startTransition(async () => {
+      const result = await redeemCoupon(code.trim());
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'Hiba történt' });
-        return;
+      if (result.success) {
+        setMessage({ type: 'success', text: `Sikeres beváltás! Új csomag: ${result.tier} (${result.companyLimit} cég)` });
+        setCode('');
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Hiba történt' });
       }
-
-      setMessage({ type: 'success', text: `Sikeres beváltás! Új csomag: ${data.tier}` });
-      setCode('');
-
-      // Reload after short delay to reflect new tier
-      setTimeout(() => window.location.reload(), 1500);
-    } catch {
-      setMessage({ type: 'error', text: 'Hálózati hiba' });
-    } finally {
-      setLoading(false);
-    }
+    });
   }
 
   return (
@@ -61,10 +47,10 @@ export function CouponCode() {
         />
         <button
           onClick={handleRedeem}
-          disabled={loading || !code.trim()}
+          disabled={isPending || !code.trim()}
           className="btn-press px-6 py-2.5 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold text-sm rounded-xl hover:from-emerald-400 hover:to-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Beváltás...' : 'Beváltás'}
+          {isPending ? 'Beváltás...' : 'Beváltás'}
         </button>
       </div>
 
