@@ -1153,6 +1153,21 @@ app.listen(PORT, async () => {
         console.error('Warning: Could not load companies from database:', error.message);
     }
 
+    // Ensure admin@capmarketing.hu has ENTERPRISE subscription with 25 companies
+    try {
+        const adminUser = await prisma.user.findUnique({ where: { email: 'admin@capmarketing.hu' } });
+        if (adminUser) {
+            await prisma.subscription.upsert({
+                where: { userId: adminUser.id },
+                update: { tier: 'ENTERPRISE', status: 'ACTIVE', companyLimit: 25 },
+                create: { userId: adminUser.id, tier: 'ENTERPRISE', status: 'ACTIVE', companyLimit: 25 },
+            });
+            console.log('[Startup] admin@capmarketing.hu → ENTERPRISE (25 cég)');
+        }
+    } catch (err) {
+        console.error('[Startup] Failed to set admin subscription:', err.message);
+    }
+
     // Start monthly report cron job
     if (ENABLE_BILLING) {
         try {
