@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
-import { extractKPIs, mergeKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
+import { extractKPIs, mergeKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
@@ -60,6 +60,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [companyConnections, setCompanyConnections] = useState<string[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [prevMonthKpis, setPrevMonthKpis] = useState<KPI[] | null>(null);
   const [userTier, setUserTier] = useState<string>('FREE');
   const [pdfExporting, setPdfExporting] = useState(false);
 
@@ -96,11 +97,12 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
   const kpis = useMemo(() => {
     if (isAllCompanies) return aggregatedKPIs || [];
-    const all = extractKPIs(platform.platformKey, results);
+    // Use prevMonthKpis if available (has change values), otherwise extract from results
+    const all = prevMonthKpis || extractKPIs(platform.platformKey, results);
     if (!dashboardConfig || dashboardConfig.kpis.length === 0) return all;
     const allowedKpis = new Set(dashboardConfig.kpis);
     return all.filter(k => allowedKpis.has(k.key));
-  }, [platform.platformKey, results, isAllCompanies, aggregatedKPIs, dashboardConfig]);
+  }, [platform.platformKey, results, isAllCompanies, aggregatedKPIs, dashboardConfig, prevMonthKpis]);
 
   const sections = useMemo(() => {
     if (isAllCompanies) return []; // No charts for "all companies"
@@ -174,6 +176,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     setAggregatedKPIs(null);
     setAggregatedCount(0);
     setFailedCompanies([]);
+    setPrevMonthKpis(null);
 
     try {
       if (periodMonths > 1 && !isAllCompanies) {
@@ -271,13 +274,39 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         const lastDay = new Date(year, month, 0).getDate();
         const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
 
-        const response = await generateCharts({
-          accountId: selectedCompany,
-          startDate,
-          endDate,
-          charts: platformChartKeys.map(key => ({ key })),
-        });
+        // Also fetch previous month for % change calculation
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMM = String(prevMonth).padStart(2, '0');
+        const prevStartDate = `${prevYear}-${prevMM}-01`;
+        const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
+        const prevEndDate = `${prevYear}-${prevMM}-${String(prevLastDay).padStart(2, '0')}`;
+
+        const [response, prevResponse] = await Promise.all([
+          generateCharts({
+            accountId: selectedCompany,
+            startDate,
+            endDate,
+            charts: platformChartKeys.map(key => ({ key })),
+          }),
+          generateCharts({
+            accountId: selectedCompany,
+            startDate: prevStartDate,
+            endDate: prevEndDate,
+            charts: platformChartKeys.map(key => ({ key })),
+          }).catch(() => null),
+        ]);
+
         setResults(response.charts);
+
+        // Compute KPI changes vs previous month
+        if (prevResponse?.charts) {
+          const currentKpis = extractKPIs(platform.platformKey, response.charts);
+          const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
+          const kpisWithChange = computeKPIChanges(currentKpis, prevKpis);
+          setPrevMonthKpis(kpisWithChange);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Hiba történt');

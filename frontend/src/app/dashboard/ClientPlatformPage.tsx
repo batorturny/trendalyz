@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
-import { extractKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
+import { extractKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
 import { Building2, Settings, MessageSquare } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
@@ -59,6 +59,7 @@ export function ClientPlatformPage({
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoLoaded, setAutoLoaded] = useState(false);
+  const [prevMonthKpis, setPrevMonthKpis] = useState<KPI[] | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const companyId = session?.user?.companyId;
@@ -84,13 +85,13 @@ export function ClientPlatformPage({
     return platformCatalog.map(c => c.key);
   }, [configuredChartKeys, platformCatalog]);
 
-  // Filter KPIs based on config
+  // Filter KPIs based on config, use prevMonthKpis if available (has change values)
   const kpis = useMemo(() => {
-    const all = extractKPIs(platform.platformKey, results);
+    const all = prevMonthKpis || extractKPIs(platform.platformKey, results);
     if (!dashboardConfig || dashboardConfig.kpis.length === 0) return all;
     const allowedKpis = new Set(dashboardConfig.kpis);
     return all.filter(k => allowedKpis.has(k.key));
-  }, [platform.platformKey, results, dashboardConfig]);
+  }, [platform.platformKey, results, dashboardConfig, prevMonthKpis]);
 
   // Filter chart sections based on config
   const sections = useMemo(() => {
@@ -123,6 +124,7 @@ export function ClientPlatformPage({
     setResults([]);
     setAggregatedKPIs(null);
     setAggregatedCount(0);
+    setPrevMonthKpis(null);
 
     try {
       if (periodMonths > 1) {
@@ -158,13 +160,37 @@ export function ClientPlatformPage({
         const lastDay = new Date(year, month, 0).getDate();
         const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
 
-        const response = await generateCharts({
-          accountId: companyId,
-          startDate,
-          endDate,
-          charts: platformChartKeys.map(key => ({ key })),
-        });
+        // Also fetch previous month for % change
+        const prevDate = new Date(year, month - 2, 1);
+        const prevYear = prevDate.getFullYear();
+        const prevMonth = prevDate.getMonth() + 1;
+        const prevMM = String(prevMonth).padStart(2, '0');
+        const prevStartDate = `${prevYear}-${prevMM}-01`;
+        const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
+        const prevEndDate = `${prevYear}-${prevMM}-${String(prevLastDay).padStart(2, '0')}`;
+
+        const [response, prevResponse] = await Promise.all([
+          generateCharts({
+            accountId: companyId,
+            startDate,
+            endDate,
+            charts: platformChartKeys.map(key => ({ key })),
+          }),
+          generateCharts({
+            accountId: companyId,
+            startDate: prevStartDate,
+            endDate: prevEndDate,
+            charts: platformChartKeys.map(key => ({ key })),
+          }).catch(() => null),
+        ]);
+
         setResults(response.charts);
+
+        if (prevResponse?.charts) {
+          const currentKpis = extractKPIs(platform.platformKey, response.charts);
+          const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
+          setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Hiba történt');

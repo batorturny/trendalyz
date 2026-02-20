@@ -537,6 +537,26 @@ export function generateMonthRanges(endMonth: string, periodMonths: number): { s
   return ranges;
 }
 
+/**
+ * Compute % change for each KPI by comparing current vs previous month KPIs.
+ * Returns a new array with `change` field populated.
+ */
+export function computeKPIChanges(current: KPI[], previous: KPI[]): KPI[] {
+  const prevMap = new Map(previous.map(k => [k.key, k]));
+  return current.map(kpi => {
+    const prev = prevMap.get(kpi.key);
+    if (!prev) return kpi;
+
+    const curVal = typeof kpi.value === 'number' ? kpi.value : parseFloat(String(kpi.value).replace(/[^0-9.-]/g, ''));
+    const prevVal = typeof prev.value === 'number' ? prev.value : parseFloat(String(prev.value).replace(/[^0-9.-]/g, ''));
+
+    if (isNaN(curVal) || isNaN(prevVal) || prevVal === 0) return kpi;
+
+    const change = ((curVal - prevVal) / Math.abs(prevVal)) * 100;
+    return { ...kpi, change };
+  });
+}
+
 // ===== Section grouping =====
 
 export const CATEGORY_LABELS: Record<string, string> = {
