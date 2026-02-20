@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { CompanyUsers } from './CompanyUsers';
+import { DashboardConfig } from './DashboardConfig';
 import { EmailSchedule } from './EmailSchedule';
 import { IntegrationConnections } from './IntegrationConnections';
 import { OAuthFeedback } from './OAuthFeedback';
@@ -76,6 +77,17 @@ export default async function CompanyDetailPage({
           initialHour={company.emailHour}
         />
       </div>
+
+      {/* Dashboard config */}
+      {company.connections.length > 0 && (
+        <div className="mb-6">
+          <DashboardConfig
+            companyId={company.id}
+            connections={company.connections.map(c => ({ provider: c.provider }))}
+            dashboardConfig={company.dashboardConfig as Record<string, { kpis: string[]; charts: string[] }> | null}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         {/* Users */}

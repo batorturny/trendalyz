@@ -663,3 +663,27 @@ export async function testConnection(connectionId: string): Promise<{ success: b
     return { success: false, message: `Windsor API hiba: ${msg}` };
   }
 }
+
+// ============================================
+// DASHBOARD CONFIG
+// ============================================
+
+export async function updateDashboardConfig(
+  companyId: string,
+  config: Record<string, { kpis: string[]; charts: string[] }>
+) {
+  const session = await requireAdmin();
+
+  // Verify company belongs to this admin
+  const company = await prisma.company.findFirst({
+    where: { id: companyId, adminId: session.user.id },
+  });
+  if (!company) throw new Error('Cég nem található');
+
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { dashboardConfig: config },
+  });
+
+  revalidatePath(`/admin/companies/${companyId}`);
+}

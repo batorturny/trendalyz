@@ -4,11 +4,12 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { extractKPIs, groupByCategory } from '@/lib/chartHelpers';
-import { Building2 } from 'lucide-react';
+import { Building2, Settings } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
+import { collectChartKeysForConfig } from '@/lib/platformMetrics';
 
 interface PlatformConfig {
   platformKey: string;
@@ -19,9 +20,20 @@ interface PlatformConfig {
   borderColor: string;
 }
 
+interface DashboardConfigType {
+  kpis: string[];
+  charts: string[];
+}
+
 // ===== Component =====
 
-export function ClientPlatformPage({ platform }: { platform: PlatformConfig }) {
+export function ClientPlatformPage({
+  platform,
+  dashboardConfig,
+}: {
+  platform: PlatformConfig;
+  dashboardConfig?: DashboardConfigType | null;
+}) {
   const { data: session, status } = useSession();
   const [allCatalog, setAllCatalog] = useState<ChartDefinition[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -34,13 +46,47 @@ export function ClientPlatformPage({ platform }: { platform: PlatformConfig }) {
 
   const companyId = session?.user?.companyId;
 
+  // If dashboardConfig is null/undefined, show "not configured" state
+  const isConfigured = dashboardConfig != null &&
+    (dashboardConfig.kpis.length > 0 || dashboardConfig.charts.length > 0);
+
+  // Compute which chart keys to fetch from API based on config
+  const configuredChartKeys = useMemo(() => {
+    if (!dashboardConfig) return [];
+    return collectChartKeysForConfig(platform.platformKey, dashboardConfig);
+  }, [platform.platformKey, dashboardConfig]);
+
   const platformCatalog = useMemo(
     () => allCatalog.filter(c => c.platform === platform.platformKey),
     [allCatalog, platform.platformKey]
   );
-  const platformChartKeys = useMemo(() => platformCatalog.map(c => c.key), [platformCatalog]);
-  const kpis = useMemo(() => extractKPIs(platform.platformKey, results), [platform.platformKey, results]);
-  const sections = useMemo(() => groupByCategory(platformCatalog, results), [platformCatalog, results]);
+
+  // Use configured chart keys if available, otherwise fall back to full catalog
+  const platformChartKeys = useMemo(() => {
+    if (configuredChartKeys.length > 0) return configuredChartKeys;
+    return platformCatalog.map(c => c.key);
+  }, [configuredChartKeys, platformCatalog]);
+
+  // Filter KPIs based on config
+  const kpis = useMemo(() => {
+    const all = extractKPIs(platform.platformKey, results);
+    if (!dashboardConfig || dashboardConfig.kpis.length === 0) return all;
+    const allowedKpis = new Set(dashboardConfig.kpis);
+    return all.filter(k => allowedKpis.has(k.key));
+  }, [platform.platformKey, results, dashboardConfig]);
+
+  // Filter chart sections based on config
+  const sections = useMemo(() => {
+    const all = groupByCategory(platformCatalog, results);
+    if (!dashboardConfig || dashboardConfig.charts.length === 0) return all;
+    const allowedCharts = new Set(dashboardConfig.charts);
+    return all
+      .map(section => ({
+        ...section,
+        charts: section.charts.filter(c => allowedCharts.has(c.key)),
+      }))
+      .filter(section => section.charts.length > 0);
+  }, [platformCatalog, results, dashboardConfig]);
 
   useEffect(() => {
     const now = new Date();
@@ -81,11 +127,11 @@ export function ClientPlatformPage({ platform }: { platform: PlatformConfig }) {
 
   // Auto-generate on first load
   useEffect(() => {
-    if (companyId && selectedMonth && platformChartKeys.length > 0 && status === 'authenticated' && !autoLoaded) {
+    if (companyId && selectedMonth && platformChartKeys.length > 0 && status === 'authenticated' && !autoLoaded && isConfigured) {
       setAutoLoaded(true);
       handleGenerate();
     }
-  }, [companyId, selectedMonth, platformChartKeys, status, autoLoaded, handleGenerate]);
+  }, [companyId, selectedMonth, platformChartKeys, status, autoLoaded, handleGenerate, isConfigured]);
 
   async function handleExportPdf() {
     if (!reportRef.current) return;
@@ -107,6 +153,17 @@ export function ClientPlatformPage({ platform }: { platform: PlatformConfig }) {
         <Building2 className="w-12 h-12 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
         <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Nincs hozzárendelt cég</h2>
         <p className="text-[var(--text-secondary)]">Kérd meg az adminisztrátort, hogy rendeljen hozzád egy céget.</p>
+      </div>
+    );
+  }
+
+  // Not configured state
+  if (!isConfigured) {
+    return (
+      <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
+        <Settings className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
+        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Dashboard még nincs konfigurálva</h2>
+        <p className="text-[var(--text-secondary)]">Az adminisztrátor még nem állította be, mely adatokat lásd ezen a platformon.</p>
       </div>
     );
   }
@@ -152,13 +209,15 @@ export function ClientPlatformPage({ platform }: { platform: PlatformConfig }) {
         {results.length > 0 && (
           <div className="space-y-8">
             {/* KPI Header */}
-            <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {kpis.map((kpi) => (
-                  <KPICard key={kpi.label} label={kpi.label} value={kpi.value} change={kpi.change} />
-                ))}
+            {kpis.length > 0 && (
+              <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {kpis.map((kpi) => (
+                    <KPICard key={kpi.label} label={kpi.label} value={kpi.value} change={kpi.change} description={kpi.description} />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Chart Sections */}
             {sections.map(({ category, label, charts }) => (
