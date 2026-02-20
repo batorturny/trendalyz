@@ -4,6 +4,7 @@
 export interface Company {
     id: string;
     name: string;
+    dashboardConfig?: Record<string, { kpis: string[]; charts: string[] }> | null;
 }
 
 export interface ReportRequest {

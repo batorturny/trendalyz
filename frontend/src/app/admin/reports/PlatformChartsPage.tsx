@@ -14,6 +14,7 @@ import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 import { SendReportModal } from '@/components/SendReportModal';
 import { FeatureGate } from '@/components/FeatureGate';
 import { canUseFeature } from '@/lib/featureGate';
+import { collectChartKeysForConfig } from '@/lib/platformMetrics';
 
 export interface PlatformConfig {
   platformKey: string;
@@ -46,22 +47,55 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
 
+  // Get dashboardConfig for selected company
+  const selectedCompanyObj = useMemo(
+    () => companies.find(c => c.id === selectedCompany),
+    [companies, selectedCompany]
+  );
+  const dashboardConfig = useMemo(() => {
+    if (!selectedCompanyObj?.dashboardConfig) return null;
+    return (selectedCompanyObj.dashboardConfig as Record<string, { kpis: string[]; charts: string[] }>)?.[platform.platformKey] ?? null;
+  }, [selectedCompanyObj, platform.platformKey]);
+
+  const isConfigured = dashboardConfig != null &&
+    (dashboardConfig.kpis.length > 0 || dashboardConfig.charts.length > 0);
+
   const platformCatalog = useMemo(
     () => allCatalog.filter(c => c.platform === platform.platformKey),
     [allCatalog, platform.platformKey]
   );
 
-  const platformChartKeys = useMemo(() => platformCatalog.map(c => c.key), [platformCatalog]);
+  // Use configured chart keys if available, otherwise fall back to full catalog
+  const configuredChartKeys = useMemo(() => {
+    if (!dashboardConfig || !isConfigured) return [];
+    return collectChartKeysForConfig(platform.platformKey, dashboardConfig);
+  }, [platform.platformKey, dashboardConfig, isConfigured]);
+
+  const platformChartKeys = useMemo(() => {
+    if (configuredChartKeys.length > 0) return configuredChartKeys;
+    return platformCatalog.map(c => c.key);
+  }, [configuredChartKeys, platformCatalog]);
 
   const kpis = useMemo(() => {
     if (isAllCompanies) return aggregatedKPIs || [];
-    return extractKPIs(platform.platformKey, results);
-  }, [platform.platformKey, results, isAllCompanies, aggregatedKPIs]);
+    const all = extractKPIs(platform.platformKey, results);
+    if (!dashboardConfig || dashboardConfig.kpis.length === 0) return all;
+    const allowedKpis = new Set(dashboardConfig.kpis);
+    return all.filter(k => allowedKpis.has(k.key));
+  }, [platform.platformKey, results, isAllCompanies, aggregatedKPIs, dashboardConfig]);
 
   const sections = useMemo(() => {
     if (isAllCompanies) return []; // No charts for "all companies"
-    return groupByCategory(platformCatalog, results);
-  }, [platformCatalog, results, isAllCompanies]);
+    const all = groupByCategory(platformCatalog, results);
+    if (!dashboardConfig || dashboardConfig.charts.length === 0) return all;
+    const allowedCharts = new Set(dashboardConfig.charts);
+    return all
+      .map(section => ({
+        ...section,
+        charts: section.charts.filter(c => allowedCharts.has(c.key)),
+      }))
+      .filter(section => section.charts.length > 0);
+  }, [platformCatalog, results, isAllCompanies, dashboardConfig]);
 
   // Check if platform is available for selected company
   const platformAvailable = !selectedCompany || isAllCompanies ||
@@ -389,6 +423,38 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                       );
                     }
 
+                    // Render demographics charts as tables
+                    const isDemographics = chart.key.includes('demographics') || chart.key.includes('gender');
+                    if (isDemographics && chart.data?.labels && chart.data?.series?.[0]?.data) {
+                      const labels = chart.data.labels;
+                      const values = chart.data.series[0].data as number[];
+                      return (
+                        <div key={chart.key} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
+                          <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">{chart.title}</h4>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-[var(--border)]">
+                                <th className="text-left py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">
+                                  {chart.key.includes('gender') ? 'Nem' : 'Korcsoport'}
+                                </th>
+                                <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">Megoszlás</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {labels.map((label, i) => (
+                                <tr key={label} className="border-b border-[var(--border)] last:border-0">
+                                  <td className="py-2.5 px-3 font-medium text-[var(--text-primary)]">{label}</td>
+                                  <td className="py-2.5 px-3 text-right font-semibold text-[var(--text-primary)]">
+                                    {typeof values[i] === 'number' ? `${values[i].toFixed(1)}%` : values[i]}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    }
+
                     const isFollowerChart = chart.key.includes('follower') || chart.key === 'fb_fans';
                     return (
                       <Chart
@@ -431,6 +497,39 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                             </div>
                           );
                         }
+
+                        // Render demographics charts as tables
+                        const isDemographics = chart.key.includes('demographics') || chart.key.includes('gender');
+                        if (isDemographics && chart.data?.labels && chart.data?.series?.[0]?.data) {
+                          const labels = chart.data.labels;
+                          const values = chart.data.series[0].data as number[];
+                          return (
+                            <div key={chart.key} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
+                              <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">{chart.title}</h4>
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-[var(--border)]">
+                                    <th className="text-left py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">
+                                      {chart.key.includes('gender') ? 'Nem' : 'Korcsoport'}
+                                    </th>
+                                    <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">Megoszlás</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {labels.map((label, i) => (
+                                    <tr key={label} className="border-b border-[var(--border)] last:border-0">
+                                      <td className="py-2.5 px-3 font-medium text-[var(--text-primary)]">{label}</td>
+                                      <td className="py-2.5 px-3 text-right font-semibold text-[var(--text-primary)]">
+                                        {typeof values[i] === 'number' ? `${values[i].toFixed(1)}%` : values[i]}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          );
+                        }
+
                         const isFollowerChart = chart.key.includes('follower') || chart.key === 'fb_fans';
                         return (
                           <Chart

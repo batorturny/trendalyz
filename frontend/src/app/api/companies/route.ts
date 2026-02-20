@@ -21,6 +21,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        dashboardConfig: true,
         connections: {
           select: { provider: true, externalAccountId: true },
         },

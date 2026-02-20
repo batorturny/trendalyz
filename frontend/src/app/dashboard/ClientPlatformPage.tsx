@@ -238,6 +238,39 @@ export function ClientPlatformPage({
                         </div>
                       );
                     }
+
+                    // Render demographics charts as tables
+                    const isDemographics = chart.key.includes('demographics') || chart.key.includes('gender');
+                    if (isDemographics && chart.data?.labels && chart.data?.series?.[0]?.data) {
+                      const labels = chart.data.labels;
+                      const values = chart.data.series[0].data as number[];
+                      return (
+                        <div key={chart.key} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
+                          <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">{chart.title}</h4>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-[var(--border)]">
+                                <th className="text-left py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">
+                                  {chart.key.includes('gender') ? 'Nem' : 'Korcsoport'}
+                                </th>
+                                <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">Megoszlás</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {labels.map((label, i) => (
+                                <tr key={label} className="border-b border-[var(--border)] last:border-0">
+                                  <td className="py-2.5 px-3 font-medium text-[var(--text-primary)]">{label}</td>
+                                  <td className="py-2.5 px-3 text-right font-semibold text-[var(--text-primary)]">
+                                    {typeof values[i] === 'number' ? `${values[i].toFixed(1)}%` : values[i]}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    }
+
                     return (
                       <Chart
                         key={chart.key}
