@@ -163,9 +163,12 @@ async function resolvePlatformAccounts(company) {
 const PORT = process.env.PORT || 4000;
 
 // Middleware
-app.use(cors());
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:3000'];
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(compression());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Per-request Windsor service factory
 function createWindsorServices(apiKey) {
@@ -199,9 +202,9 @@ async function resolveWindsorKey(req) {
 function requireInternalAuth(req, res, next) {
     const apiKey = process.env.INTERNAL_API_KEY;
 
-    // If no INTERNAL_API_KEY is configured, skip auth (dev mode)
     if (!apiKey) {
-        return next();
+        console.warn('WARNING: INTERNAL_API_KEY not set — rejecting request');
+        return res.status(500).json({ error: 'Server misconfigured' });
     }
 
     const authHeader = req.headers.authorization;
@@ -346,7 +349,7 @@ app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (
 
     } catch (error) {
         console.error('Report generation error:', error);
-        res.status(500).json({ error: 'Failed to generate report', details: error.message });
+        res.status(500).json({ error: 'Failed to generate report' });
     }
 });
 
@@ -452,7 +455,7 @@ if (ENABLE_MULTI_PLATFORM) {
             res.json({ provider, accounts });
         } catch (error) {
             console.error('Windsor discover error:', error);
-            res.status(500).json({ error: 'Failed to discover accounts', details: error.message });
+            res.status(500).json({ error: 'Failed to discover accounts' });
         }
     });
 
@@ -465,7 +468,7 @@ if (ENABLE_MULTI_PLATFORM) {
             res.json({ datasources });
         } catch (error) {
             console.error('Windsor datasources error:', error);
-            res.status(500).json({ error: 'Failed to list datasources', details: error.message });
+            res.status(500).json({ error: 'Failed to list datasources' });
         }
     });
 
@@ -509,7 +512,7 @@ if (ENABLE_MULTI_PLATFORM) {
             res.json({ authorizationUrl });
         } catch (error) {
             console.error('OAuth authorize error:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Belső szerverhiba' });
         }
     });
 
@@ -628,7 +631,7 @@ if (ENABLE_MULTI_PLATFORM) {
         } catch (error) {
             console.error('OAuth complete error:', error);
             res.status(500).json({
-                error: error.message,
+                error: 'OAuth hiba történt',
                 companyId: stateCompanyId,
             });
         }
@@ -749,7 +752,7 @@ if (ENABLE_CHART_API) {
                         } catch (error) {
                             return {
                                 key: chartReq.key,
-                                error: error.message,
+                                error: 'Chart generation failed',
                                 empty: true
                             };
                         }
@@ -777,7 +780,7 @@ if (ENABLE_CHART_API) {
 
         } catch (error) {
             console.error('Chart generation error:', error);
-            res.status(500).json({ error: 'Failed to generate charts', details: error.message });
+            res.status(500).json({ error: 'Failed to generate charts' });
         }
     });
 
@@ -804,7 +807,7 @@ if (ENABLE_ACCOUNT_MANAGEMENT) {
             res.status(201).json({ success: true, account: newAccount });
 
         } catch (error) {
-            res.status(500).json({ error: 'Failed to add account', details: error.message });
+            res.status(500).json({ error: 'Failed to add account' });
         }
     });
 
@@ -821,7 +824,7 @@ if (ENABLE_ACCOUNT_MANAGEMENT) {
             res.json({ success: true, message: `Account ${id} removed` });
 
         } catch (error) {
-            res.status(500).json({ error: 'Failed to remove account', details: error.message });
+            res.status(500).json({ error: 'Failed to remove account' });
         }
     });
 
@@ -887,7 +890,8 @@ app.post('/api/billing/redeem-coupon', requireAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Kuponkód megadása kötelező' });
         }
 
-        if (code !== '22445599') {
+        const validCoupon = process.env.COUPON_CODE;
+        if (!validCoupon || code !== validCoupon) {
             return res.status(400).json({ error: 'Érvénytelen kuponkód' });
         }
 
@@ -949,6 +953,18 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
                 return res.status(400).json({ error: 'tier, successUrl, and cancelUrl are required' });
             }
 
+            // Validate redirect URLs against allowed origins
+            const allowedHosts = ALLOWED_ORIGINS.map(o => { try { return new URL(o).hostname; } catch { return null; } }).filter(Boolean);
+            try {
+                const sHost = new URL(successUrl).hostname;
+                const cHost = new URL(cancelUrl).hostname;
+                if (!allowedHosts.includes(sHost) || !allowedHosts.includes(cHost)) {
+                    return res.status(400).json({ error: 'Invalid redirect URL' });
+                }
+            } catch {
+                return res.status(400).json({ error: 'Invalid redirect URL format' });
+            }
+
             const user = await prisma.user.findUnique({
                 where: { id: req.userContext.userId },
                 select: { email: true, name: true },
@@ -967,7 +983,7 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
             res.json(result);
         } catch (error) {
             console.error('Error creating checkout:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Belső szerverhiba' });
         }
     });
 
@@ -975,6 +991,19 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
     app.post('/api/billing/portal', requireAdmin, async (req, res) => {
         try {
             const { returnUrl } = req.body;
+
+            // Validate return URL
+            if (returnUrl) {
+                const allowedHosts = ALLOWED_ORIGINS.map(o => { try { return new URL(o).hostname; } catch { return null; } }).filter(Boolean);
+                try {
+                    if (!allowedHosts.includes(new URL(returnUrl).hostname)) {
+                        return res.status(400).json({ error: 'Invalid return URL' });
+                    }
+                } catch {
+                    return res.status(400).json({ error: 'Invalid return URL format' });
+                }
+            }
+
             const sub = await prisma.subscription.findUnique({
                 where: { userId: req.userContext.userId },
                 select: { stripeCustomerId: true },
@@ -988,7 +1017,7 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
             res.json(result);
         } catch (error) {
             console.error('Error creating portal session:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Belső szerverhiba' });
         }
     });
 
@@ -1002,7 +1031,7 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
             res.json(result);
         } catch (error) {
             console.error('Error changing plan:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Belső szerverhiba' });
         }
     });
 
@@ -1013,7 +1042,7 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
             res.json(result);
         } catch (error) {
             console.error('Error canceling subscription:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Belső szerverhiba' });
         }
     });
 
@@ -1024,7 +1053,7 @@ if (ENABLE_BILLING && process.env.STRIPE_SECRET_KEY) {
             res.json(result);
         } catch (error) {
             console.error('Error reactivating subscription:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: 'Belső szerverhiba' });
         }
     });
 

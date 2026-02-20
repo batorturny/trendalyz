@@ -2,7 +2,10 @@ import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 const EXPRESS_API_URL = process.env.EXPRESS_API_URL || 'http://localhost:4000';
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+if (!INTERNAL_API_KEY) {
+  console.error('FATAL: INTERNAL_API_KEY not configured');
+}
 
 interface ProxyOptions {
   requireAuth?: boolean;
