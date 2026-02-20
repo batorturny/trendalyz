@@ -877,6 +877,51 @@ app.get('/api/summary/:companyId/:month', requireCompanyAccess(req => req.params
 });
 
 // ============================================
+// COUPON REDEMPTION (always available)
+// ============================================
+
+app.post('/api/billing/redeem-coupon', requireAdmin, async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ error: 'Kuponkód megadása kötelező' });
+        }
+
+        if (code !== '22445599') {
+            return res.status(400).json({ error: 'Érvénytelen kuponkód' });
+        }
+
+        const userId = req.userContext.userId;
+
+        const subscription = await prisma.subscription.upsert({
+            where: { userId },
+            update: {
+                tier: 'ENTERPRISE',
+                status: 'ACTIVE',
+                companyLimit: 100,
+            },
+            create: {
+                userId,
+                tier: 'ENTERPRISE',
+                status: 'ACTIVE',
+                companyLimit: 100,
+                stripeCustomerId: null,
+            },
+        });
+
+        console.log(`[Coupon] User ${userId} redeemed coupon → ENTERPRISE (100 cég)`);
+        res.json({
+            success: true,
+            tier: subscription.tier,
+            companyLimit: subscription.companyLimit,
+        });
+    } catch (error) {
+        console.error('Error redeeming coupon:', error);
+        res.status(500).json({ error: 'Hiba a kupon beváltásnál' });
+    }
+});
+
+// ============================================
 // BILLING ROUTES (Feature Flag Protected)
 // ============================================
 
@@ -1011,49 +1056,6 @@ if (ENABLE_BILLING) {
         } catch (error) {
             console.error('Error fetching usage:', error);
             res.status(500).json({ error: 'Failed to fetch usage' });
-        }
-    });
-
-    // Redeem coupon code
-    app.post('/api/billing/redeem-coupon', requireAdmin, async (req, res) => {
-        try {
-            const { code } = req.body;
-            if (!code) {
-                return res.status(400).json({ error: 'Kuponkód megadása kötelező' });
-            }
-
-            // Hardcoded coupon: full ENTERPRISE access
-            if (code !== '22445599') {
-                return res.status(400).json({ error: 'Érvénytelen kuponkód' });
-            }
-
-            const userId = req.userContext.userId;
-
-            const subscription = await prisma.subscription.upsert({
-                where: { userId },
-                update: {
-                    tier: 'ENTERPRISE',
-                    status: 'ACTIVE',
-                    companyLimit: 999,
-                },
-                create: {
-                    userId,
-                    tier: 'ENTERPRISE',
-                    status: 'ACTIVE',
-                    companyLimit: 999,
-                    stripeCustomerId: null,
-                },
-            });
-
-            console.log(`[Coupon] User ${userId} redeemed coupon → ENTERPRISE`);
-            res.json({
-                success: true,
-                tier: subscription.tier,
-                companyLimit: subscription.companyLimit,
-            });
-        } catch (error) {
-            console.error('Error redeeming coupon:', error);
-            res.status(500).json({ error: 'Hiba a kupon beváltásnál' });
         }
     });
 
