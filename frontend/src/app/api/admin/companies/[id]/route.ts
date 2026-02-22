@@ -2,6 +2,15 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
+async function verifyCompanyOwnership(companyId: string, userId: string) {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    include: { users: { select: { id: true, email: true, name: true, role: true } } },
+  });
+  if (!company || company.adminId !== userId) return null;
+  return company;
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') {
@@ -9,13 +18,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const { id } = await params;
-  const company = await prisma.company.findUnique({
-    where: { id },
-    include: {
-      users: { select: { id: true, email: true, name: true, role: true } },
-    },
-  });
-
+  const company = await verifyCompanyOwnership(id, session.user.id);
   if (!company) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
@@ -30,8 +33,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const { id } = await params;
-  const body = await req.json();
+  const existing = await verifyCompanyOwnership(id, session.user.id);
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
+  const body = await req.json();
   const company = await prisma.company.update({
     where: { id },
     data: {
@@ -51,6 +58,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   const { id } = await params;
+  const existing = await verifyCompanyOwnership(id, session.user.id);
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   await prisma.user.updateMany({
     where: { companyId: id },

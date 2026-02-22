@@ -10,9 +10,18 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   const { id } = await params;
 
-  // Don't allow deleting yourself
   if (id === session.user.id) {
     return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
+  }
+
+  // Verify user belongs to one of this admin's companies
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: { company: { select: { adminId: true } } },
+  });
+
+  if (!user || (user.company && user.company.adminId !== session.user.id)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   await prisma.user.delete({ where: { id } });

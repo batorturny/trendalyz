@@ -30,6 +30,15 @@ async function requireAdmin() {
   return session;
 }
 
+async function requireCompanyOwnership(companyId: string) {
+  const session = await requireAdmin();
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { adminId: true } });
+  if (!company || company.adminId !== session.user.id) {
+    throw new Error('Cég nem található');
+  }
+  return session;
+}
+
 export async function createCompany(formData: FormData) {
   const session = await requireAdmin();
 
@@ -132,7 +141,7 @@ export async function createCompany(formData: FormData) {
 }
 
 export async function updateCompany(companyId: string, formData: FormData) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   const name = formData.get('name') as string;
   const tiktokAccountId = formData.get('tiktokAccountId') as string;
@@ -152,7 +161,7 @@ export async function updateCompany(companyId: string, formData: FormData) {
 }
 
 export async function toggleCompanyStatus(companyId: string, status: 'ACTIVE' | 'INACTIVE') {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   await prisma.company.update({
     where: { id: companyId },
@@ -164,7 +173,7 @@ export async function toggleCompanyStatus(companyId: string, status: 'ACTIVE' | 
 }
 
 export async function updateEmailSchedule(companyId: string, emailDay: number, emailHour: number) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   if (emailDay < 1 || emailDay > 28) throw new Error('A nap 1 és 28 között kell legyen');
   if (emailHour < 0 || emailHour > 23) throw new Error('Az óra 0 és 23 között kell legyen');
@@ -178,7 +187,7 @@ export async function updateEmailSchedule(companyId: string, emailDay: number, e
 }
 
 export async function deleteCompany(companyId: string) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   // Unlink users first
   await prisma.user.updateMany({
@@ -194,7 +203,7 @@ export async function deleteCompany(companyId: string) {
 }
 
 export async function addUserToCompany(companyId: string, formData: FormData) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   const email = formData.get('email') as string;
   if (!email) throw new Error('Email megadása kötelező');
@@ -257,7 +266,7 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
 }
 
 export async function resendInvite(userId: string, companyId: string) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('Felhasználó nem található');
@@ -307,7 +316,7 @@ export async function resendInvite(userId: string, companyId: string) {
 }
 
 export async function removeUserFromCompany(userId: string, companyId: string) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   await prisma.user.update({
     where: { id: userId },
@@ -552,7 +561,7 @@ export async function addConnection(
   externalAccountId: string,
   externalAccountName: string | null
 ) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   const validProviders = ['TIKTOK_ORGANIC', 'TIKTOK_ADS', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'INSTAGRAM_PUBLIC', 'YOUTUBE', 'FACEBOOK'];
   if (!validProviders.includes(provider)) {
@@ -580,7 +589,7 @@ export async function addConnection(
 }
 
 export async function deleteConnection(connectionId: string, companyId: string) {
-  await requireAdmin();
+  await requireCompanyOwnership(companyId);
 
   await prisma.integrationConnection.delete({
     where: { id: connectionId },
@@ -594,9 +603,10 @@ export async function testConnection(connectionId: string): Promise<{ success: b
 
   const connection = await prisma.integrationConnection.findUnique({
     where: { id: connectionId },
+    include: { company: { select: { adminId: true } } },
   });
 
-  if (!connection) {
+  if (!connection || connection.company.adminId !== session.user.id) {
     return { success: false, message: 'Integráció nem található' };
   }
 

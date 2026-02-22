@@ -13,6 +13,12 @@ export async function GET(
 
     const { companyId } = await params;
 
+    // Verify company belongs to this admin
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { adminId: true } });
+    if (!company || company.adminId !== session.user.id) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     const connections = await prisma.integrationConnection.findMany({
         where: { companyId },
         select: {

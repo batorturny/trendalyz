@@ -8,7 +8,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // Only return users belonging to this admin's companies
   const users = await prisma.user.findMany({
+    where: {
+      company: { adminId: session.user.id },
+    },
     select: {
       id: true,
       email: true,
@@ -35,6 +39,14 @@ export async function POST(req: Request) {
 
   if (!email) {
     return NextResponse.json({ error: 'email is required' }, { status: 400 });
+  }
+
+  // Verify company belongs to this admin
+  if (companyId) {
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    if (!company || company.adminId !== session.user.id) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });

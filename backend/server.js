@@ -10,6 +10,7 @@ dns.setDefaultResultOrder('ipv4first');
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const WindsorService = require('./services/windsor');
 const ChartGenerator = require('./services/chartGenerator');
 const { processReport } = require('./services/report');
@@ -170,6 +171,12 @@ app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
+// Rate limiters
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: 'Túl sok próbálkozás, próbáld újra később' } });
+const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, message: { error: 'Túl sok kérés, próbáld újra később' } });
+app.use(globalLimiter);
+
 // Per-request Windsor service factory
 function createWindsorServices(apiKey) {
     return {
@@ -243,7 +250,7 @@ app.get('/api/companies', async (req, res) => {
 const REPORT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 // Generate report
-app.post('/api/report', requireCompanyAccess(req => req.body.companyId), async (req, res) => {
+app.post('/api/report', apiLimiter, requireCompanyAccess(req => req.body.companyId), async (req, res) => {
     try {
         const { companyId, month, forceRefresh } = req.body;
 
@@ -518,7 +525,7 @@ if (ENABLE_MULTI_PLATFORM) {
 
     // Complete OAuth: exchange code, create Windsor connector, create connection
     // No requireAdmin - the state JWT (signed with NEXTAUTH_SECRET) authenticates this request
-    app.post('/api/oauth/complete', async (req, res) => {
+    app.post('/api/oauth/complete', authLimiter, async (req, res) => {
         let stateCompanyId = null;
         try {
             const { provider, code, state, redirectUri } = req.body;
@@ -665,7 +672,7 @@ if (ENABLE_CHART_API) {
     });
 
     // Generate charts
-    app.post('/api/charts', requireCompanyAccess(req => req.body.accountId), async (req, res) => {
+    app.post('/api/charts', apiLimiter, requireCompanyAccess(req => req.body.accountId), async (req, res) => {
         try {
             const { accountId, startDate, endDate, charts, forceRefresh } = req.body;
 
@@ -883,7 +890,7 @@ app.get('/api/summary/:companyId/:month', requireCompanyAccess(req => req.params
 // COUPON REDEMPTION (always available)
 // ============================================
 
-app.post('/api/billing/redeem-coupon', requireAdmin, async (req, res) => {
+app.post('/api/billing/redeem-coupon', authLimiter, requireAdmin, async (req, res) => {
     try {
         const { code } = req.body;
         if (!code) {

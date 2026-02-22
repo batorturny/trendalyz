@@ -1,28 +1,42 @@
 import crypto from 'crypto';
 
-const ALGORITHM = 'aes-256-cbc';
-const IV_LENGTH = 16;
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 12;
+const AUTH_TAG_LENGTH = 16;
 
 function getKey(): Buffer {
   const key = process.env.TOKEN_ENCRYPTION_KEY;
-  if (!key) {
-    throw new Error('TOKEN_ENCRYPTION_KEY env var is required for token encryption');
+  if (!key || key.length !== 64) {
+    throw new Error('TOKEN_ENCRYPTION_KEY must be a 64-character hex string (256 bits)');
   }
   return Buffer.from(key, 'hex');
 }
 
 export function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(ALGORITHM, getKey(), iv);
+  const cipher = crypto.createCipheriv(ALGORITHM, getKey(), iv, { authTagLength: AUTH_TAG_LENGTH });
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  return iv.toString('hex') + ':' + encrypted;
+  const authTag = cipher.getAuthTag().toString('hex');
+  return iv.toString('hex') + ':' + authTag + ':' + encrypted;
 }
 
 export function decrypt(text: string): string {
-  const [ivHex, encrypted] = text.split(':');
+  const parts = text.split(':');
+  // Backwards compatible: old CBC format has 2 parts (iv:ciphertext)
+  if (parts.length === 2) {
+    const [ivHex, encrypted] = parts;
+    const iv = Buffer.from(ivHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', getKey(), iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  }
+  const [ivHex, authTagHex, encrypted] = parts;
   const iv = Buffer.from(ivHex, 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
+  const authTag = Buffer.from(authTagHex, 'hex');
+  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv, { authTagLength: AUTH_TAG_LENGTH });
+  decipher.setAuthTag(authTag);
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
