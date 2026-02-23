@@ -780,6 +780,346 @@ export const chartCatalog = [
         platform: 'YOUTUBE',
         windsorFields: ['likes', 'dislikes', 'date']
     },
+
+    // ========== TIKTOK ORGANIC (NEW WINDSOR FIELDS) ==========
+    {
+        key: 'tt_daily_reached',
+        title: 'Napi el\u00e9rt k\u00f6z\u00f6ns\u00e9g',
+        description: 'Naponta el\u00e9rt felhaszn\u00e1l\u00f3k sz\u00e1ma',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['daily_reached_audience', 'date']
+    },
+    {
+        key: 'tt_engaged_audience',
+        title: 'Elk\u00f6telezett k\u00f6z\u00f6ns\u00e9g',
+        description: 'Elk\u00f6telezett felhaszn\u00e1l\u00f3k napi trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#bc6aff',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['engaged_audience', 'date']
+    },
+    {
+        key: 'tt_follower_change',
+        title: 'K\u00f6vet\u0151 v\u00e1ltoz\u00e1s \u00b1',
+        description: 'Szerzett \u00e9s elvesztett k\u00f6vet\u0151k napi bont\u00e1sban',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#00ff95',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['daily_gained_followers', 'daily_lost_followers', 'date']
+    },
+    {
+        key: 'tt_audience_countries',
+        title: 'K\u00f6z\u00f6ns\u00e9g orsz\u00e1gok',
+        description: 'K\u00f6vet\u0151k megoszl\u00e1sa orsz\u00e1gonk\u00e9nt',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['audience_country', 'audience_country_percentage']
+    },
+    {
+        key: 'tt_audience_cities',
+        title: 'K\u00f6z\u00f6ns\u00e9g v\u00e1rosok',
+        description: 'K\u00f6vet\u0151k megoszl\u00e1sa v\u00e1rosonk\u00e9nt',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#00d4ff',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['audience_cities_city', 'audience_cities_percentage']
+    },
+    {
+        key: 'tt_email_clicks',
+        title: 'Email kattint\u00e1sok',
+        description: 'Email c\u00edm kattint\u00e1sok trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ffce44',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['email_clicks', 'date']
+    },
+    {
+        key: 'tt_phone_clicks',
+        title: 'Telefonsz\u00e1m kattint\u00e1sok',
+        description: 'Telefonsz\u00e1m kattint\u00e1sok trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'TIKTOK_ORGANIC',
+        windsorFields: ['phone_number_clicks', 'date']
+    },
+
+    // ========== FACEBOOK ORGANIC (NEW WINDSOR FIELDS) ==========
+    {
+        key: 'fb_impressions_breakdown',
+        title: 'Organikus vs fizetett impresszi\u00f3k',
+        description: 'Impresszi\u00f3k bont\u00e1sa organikus \u00e9s fizetett',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#4d96ff',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_impressions_organic', 'page_impressions_paid', 'date']
+    },
+    {
+        key: 'fb_post_clicks_breakdown',
+        title: 'Kattint\u00e1s t\u00edpusok',
+        description: 'Poszt kattint\u00e1sok t\u00edpus szerinti bont\u00e1sban',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['post_clicks_by_type_link_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play', 'date']
+    },
+    {
+        key: 'fb_fans_country',
+        title: 'K\u00f6vet\u0151k orsz\u00e1gonk\u00e9nt',
+        description: 'Oldal k\u00f6vet\u0151k megoszl\u00e1sa orsz\u00e1gonk\u00e9nt',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#00d4aa',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_fans_country_name', 'page_fans_country_value']
+    },
+    {
+        key: 'fb_fans_city',
+        title: 'K\u00f6vet\u0151k v\u00e1rosonk\u00e9nt',
+        description: 'Oldal k\u00f6vet\u0151k megoszl\u00e1sa v\u00e1rosonk\u00e9nt',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#9d4edd',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_fans_city_name', 'page_fans_city_value']
+    },
+    {
+        key: 'fb_page_actions',
+        title: 'Oldal akci\u00f3k',
+        description: 'Oldal \u00f6sszes akci\u00f3 \u00e9s poszt engagement',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#00d4ff',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['page_total_actions', 'page_post_engagements', 'date']
+    },
+    {
+        key: 'fb_reels_plays',
+        title: 'Reels lej\u00e1tsz\u00e1sok',
+        description: 'Facebook Reels lej\u00e1tsz\u00e1sok trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#bc6aff',
+        platform: 'FACEBOOK_ORGANIC',
+        windsorFields: ['blue_reels_play_count', 'fb_reels_total_plays', 'date']
+    },
+
+    // ========== INSTAGRAM (NEW WINDSOR FIELDS) ==========
+    {
+        key: 'ig_audience_age',
+        title: '\u00c9letkori megoszl\u00e1s',
+        description: 'K\u00f6z\u00f6ns\u00e9g \u00e9letkori megoszl\u00e1sa',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#e040fb',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['audience_age_name', 'audience_age_size']
+    },
+    {
+        key: 'ig_audience_gender',
+        title: 'Nemek megoszl\u00e1sa',
+        description: 'K\u00f6z\u00f6ns\u00e9g nemi megoszl\u00e1sa',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#f472b6',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['audience_gender_name', 'audience_gender_size']
+    },
+    {
+        key: 'ig_audience_country',
+        title: 'K\u00f6z\u00f6ns\u00e9g orsz\u00e1gok',
+        description: 'K\u00f6vet\u0151k megoszl\u00e1sa orsz\u00e1gonk\u00e9nt',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['audience_country_name', 'audience_country_size']
+    },
+    {
+        key: 'ig_audience_city',
+        title: 'K\u00f6z\u00f6ns\u00e9g v\u00e1rosok',
+        description: 'K\u00f6vet\u0151k megoszl\u00e1sa v\u00e1rosonk\u00e9nt',
+        category: CHART_CATEGORIES.AUDIENCE,
+        type: 'bar',
+        color: '#00d4ff',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['city', 'audience_city_size']
+    },
+    {
+        key: 'ig_website_clicks_trend',
+        title: 'Weboldal kattint\u00e1sok',
+        description: 'Weboldal kattint\u00e1sok napi trendje',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['website_clicks_1d', 'date']
+    },
+    {
+        key: 'ig_story_interactions',
+        title: 'Story interakci\u00f3k',
+        description: 'Story v\u00e1laszok, megoszt\u00e1sok \u00e9s interakci\u00f3k',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['story_interactions', 'story_replies', 'story_shares', 'date']
+    },
+    {
+        key: 'ig_story_navigation',
+        title: 'Story navig\u00e1ci\u00f3',
+        description: 'El\u0151re/h\u00e1tra \u00e9rint\u00e9sek, kil\u00e9p\u00e9sek',
+        category: CHART_CATEGORIES.MEDIA,
+        type: 'bar',
+        color: '#9d4edd',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['story_taps_forward', 'story_taps_back', 'story_swipe_forward', 'date']
+    },
+    {
+        key: 'ig_clicks',
+        title: 'Profil kattint\u00e1sok',
+        description: 'Email, telefon, \u00fatvonal \u00e9s weblap kattint\u00e1sok',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#ff6b9d',
+        platform: 'INSTAGRAM_ORGANIC',
+        windsorFields: ['email_contacts_1d', 'phone_call_clicks_1d', 'get_directions_clicks_1d', 'text_message_clicks_1d', 'date']
+    },
+
+    // ========== YOUTUBE (NEW WINDSOR FIELDS) ==========
+    {
+        key: 'yt_subscriber_count',
+        title: '\u00d6sszes feliratkoz\u00f3',
+        description: 'Feliratkoz\u00f3sz\u00e1m alakul\u00e1sa',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff0000',
+        platform: 'YOUTUBE',
+        windsorFields: ['subscriber_count', 'date']
+    },
+    {
+        key: 'yt_card_performance',
+        title: 'K\u00e1rtya teljes\u00edtm\u00e9ny',
+        description: 'Vide\u00f3 k\u00e1rty\u00e1k kattint\u00e1sai \u00e9s megjelen\u00e9sei',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'YOUTUBE',
+        windsorFields: ['card_clicks', 'card_impressions', 'date']
+    },
+    {
+        key: 'yt_red_watch_time',
+        title: 'Premium n\u00e9z\u00e9si id\u0151',
+        description: 'YouTube Premium n\u00e9z\u00e9si id\u0151 (perc)',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff6b6b',
+        platform: 'YOUTUBE',
+        windsorFields: ['estimated_red_minutes_watched', 'date']
+    },
+    {
+        key: 'yt_videos_published',
+        title: 'K\u00f6zz\u00e9tett vide\u00f3k',
+        description: 'Napi k\u00f6zz\u00e9tett vide\u00f3k sz\u00e1ma',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#00d4aa',
+        platform: 'YOUTUBE',
+        windsorFields: ['videos_published', 'date']
+    },
+    {
+        key: 'yt_playlist_removes',
+        title: 'Playlist elt\u00e1vol\u00edt\u00e1s',
+        description: 'Playlistb\u0151l elt\u00e1vol\u00edtott vide\u00f3k',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#ff6b9d',
+        platform: 'YOUTUBE',
+        windsorFields: ['videos_removed_from_playlists', 'date']
+    },
+    {
+        key: 'yt_card_ctr',
+        title: 'K\u00e1rtya CTR',
+        description: 'K\u00e1rtya \u00e1tkattint\u00e1si ar\u00e1ny trend',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#bc6aff',
+        platform: 'YOUTUBE',
+        windsorFields: ['card_click_rate', 'date']
+    },
+
+    // ========== TIKTOK ADS (NEW WINDSOR FIELDS) ==========
+    {
+        key: 'ttads_reach_cost',
+        title: 'El\u00e9r\u00e9si k\u00f6lts\u00e9g (CPR)',
+        description: '1000 el\u00e9r\u00e9sre jut\u00f3 k\u00f6lts\u00e9g trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#9d4edd',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['cost_per_1000_reached', 'date']
+    },
+    {
+        key: 'ttads_video_play_time',
+        title: '\u00c1tl. vide\u00f3 lej\u00e1tsz\u00e1s',
+        description: '\u00c1tlagos vide\u00f3 lej\u00e1tsz\u00e1si id\u0151 \u00e9s per-user',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['average_video_play', 'average_video_play_per_user', 'date']
+    },
+    {
+        key: 'ttads_app_install',
+        title: 'App telep\u00edt\u00e9sek',
+        description: 'App telep\u00edt\u00e9sek \u00e9s k\u00f6lts\u00e9g/telep\u00edt\u00e9s',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#00ff95',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['app_install', 'cost_per_app_install', 'date']
+    },
+    {
+        key: 'ttads_payment_trend',
+        title: 'Fizet\u00e9s konverzi\u00f3k',
+        description: 'Befejezett fizet\u00e9sek \u00e9s ROAS',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'line',
+        color: '#ffce44',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['complete_payment', 'complete_payment_roas', 'date']
+    },
+    {
+        key: 'ttads_adgroup_perf',
+        title: 'Hirdet\u00e9scsoport teljes\u00edtm\u00e9ny',
+        description: 'Hirdet\u00e9scsoportok r\u00e9szletes teljes\u00edtm\u00e9nye',
+        category: CHART_CATEGORIES.ADS,
+        type: 'table',
+        color: '#4d96ff',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['adgroup_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions']
+    },
+    {
+        key: 'ttads_registration',
+        title: 'Regisztr\u00e1ci\u00f3k',
+        description: 'Regisztr\u00e1ci\u00f3k \u00e9s k\u00f6lts\u00e9g/regisztr\u00e1ci\u00f3',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#00d4ff',
+        platform: 'TIKTOK_ADS',
+        windsorFields: ['registration', 'cost_per_registration', 'date']
+    },
 ];
 
 // Get all required Windsor fields for a set of charts

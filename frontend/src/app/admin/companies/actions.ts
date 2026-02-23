@@ -636,6 +636,7 @@ export async function testConnection(connectionId: string): Promise<{ success: b
   const WINDSOR_BASE = 'https://connectors.windsor.ai';
   const PROVIDER_ENDPOINTS: Record<string, string> = {
     TIKTOK_ORGANIC: 'tiktok_organic',
+    TIKTOK_ADS: 'tiktok',
     FACEBOOK_ORGANIC: 'facebook_organic',
     INSTAGRAM_ORGANIC: 'instagram',
     INSTAGRAM: 'instagram',

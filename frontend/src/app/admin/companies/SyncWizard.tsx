@@ -136,7 +136,10 @@ export function SyncWizard({ onComplete }: { onComplete?: () => void }) {
             </h2>
             {step === 'review' && discovery && (
               <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-                {discovery.platforms.reduce((sum, p) => sum + p.accounts.length, 0)} fiók találva {discovery.platforms.filter(p => p.accounts.length > 0).length} platformon
+                {discovery.platforms.reduce((sum, p) => sum + p.accounts.length, 0)} fiók találva
+                {discovery.platforms.filter(p => p.accounts.length > 0).length > 0
+                  ? ` ${discovery.platforms.filter(p => p.accounts.length > 0).length} platformon`
+                  : ''}
               </p>
             )}
           </div>
@@ -236,23 +239,26 @@ function ReviewStep({
 }) {
   return (
     <div className="space-y-4">
-      {/* Platform summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {discovery.platforms.map(p => {
-          const platform = getPlatformFromProvider(p.provider);
-          return (
-          <div key={p.provider} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-3 text-center">
-            <div className={`flex justify-center ${PLATFORM_COLORS[platform]}`}>
-              <PlatformIcon platform={platform} className="w-6 h-6" />
-            </div>
-            <div className="text-xs font-bold text-[var(--text-primary)] mt-1">{p.label}</div>
-            <div className="text-lg font-bold text-[var(--text-primary)]">{p.accounts.length}</div>
-            <div className="text-[10px] text-[var(--text-secondary)]">fiók</div>
-            {p.error && <div className="text-[10px] text-red-500 mt-1">{p.error}</div>}
-          </div>
-          );
-        })}
-      </div>
+      {/* Platform summary — only show platforms that found accounts */}
+      {discovery.platforms.some(p => p.accounts.length > 0) && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {discovery.platforms
+            .filter(p => p.accounts.length > 0)
+            .map(p => {
+              const platform = getPlatformFromProvider(p.provider);
+              return (
+                <div key={p.provider} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-3 text-center">
+                  <div className={`flex justify-center ${PLATFORM_COLORS[platform]}`}>
+                    <PlatformIcon platform={platform} className="w-6 h-6" />
+                  </div>
+                  <div className="text-xs font-bold text-[var(--text-primary)] mt-1">{p.label}</div>
+                  <div className="text-lg font-bold text-[var(--text-primary)]">{p.accounts.length}</div>
+                  <div className="text-[10px] text-[var(--text-secondary)]">fiók</div>
+                </div>
+              );
+            })}
+        </div>
+      )}
 
       {error && (
         <div className="p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-sm text-red-700 dark:text-red-400">

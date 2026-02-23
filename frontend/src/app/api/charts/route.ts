@@ -21,6 +21,11 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'bio_link_clicks', 'email_clicks', 'engaged_audience',
       'video_average_time_watched', 'video_total_time_watched', 'video_duration',
       'video_impression_sources_impression_source', 'video_impression_sources_percentage',
+      // New fields
+      'daily_reached_audience', 'daily_gained_followers', 'daily_lost_followers',
+      'phone_number_clicks', 'total_likes', 'total_video_views', 'videos_count',
+      'audience_country', 'audience_country_percentage',
+      'audience_cities_city', 'audience_cities_percentage',
     ],
   },
   TIKTOK_ADS: {
@@ -29,6 +34,12 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'date', 'impressions', 'clicks', 'spend', 'cpc', 'cpm', 'ctr',
       'conversions', 'cost_per_conversion', 'campaign_name', 'adgroup_name', 'ad_name',
       'video_play_actions', 'video_watched_2s', 'video_watched_6s',
+      // New fields
+      'cost_per_1000_reached', 'average_video_play', 'average_video_play_per_user',
+      'app_install', 'cost_per_app_install',
+      'complete_payment', 'complete_payment_roas',
+      'registration', 'cost_per_registration',
+      'billed_cost', 'reach',
     ],
   },
   FACEBOOK_ORGANIC: {
@@ -42,7 +53,12 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'page_video_views', 'page_video_view_time',
       'post_video_views', 'post_reactions_like_total', 'post_reactions_love_total',
       'post_reactions_wow_total', 'post_reactions_haha_total',
-      'post_reactions_sad_total', 'post_reactions_angry_total',
+      'post_reactions_sorry_total', 'post_reactions_anger_total',
+      // New fields
+      'page_impressions_organic', 'page_impressions_paid',
+      'post_clicks_by_type_link_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play',
+      'page_total_actions', 'page_post_engagements',
+      'blue_reels_play_count', 'fb_reels_total_plays',
     ],
   },
   INSTAGRAM_ORGANIC: {
@@ -54,6 +70,16 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'follower_count_1d', 'media_engagement', 'media_reach', 'media_saved', 'media_shares',
       'media_reel_video_views', 'media_reel_avg_watch_time',
       'story_reach', 'story_views', 'story_exits',
+      // New fields
+      'clicks', 'email_contacts_1d', 'phone_call_clicks_1d', 'website_clicks_1d',
+      'get_directions_clicks_1d', 'text_message_clicks_1d',
+      'story_interactions', 'story_replies', 'story_shares',
+      'story_taps_forward', 'story_taps_back', 'story_swipe_forward',
+      'media_all_plays', 'media_plays', 'media_video_views',
+      'audience_age_name', 'audience_age_size',
+      'audience_gender_name', 'audience_gender_size',
+      'audience_country_name', 'audience_country_size',
+      'city', 'audience_city_size',
     ],
     secondaryEndpoint: 'instagram_public',
     secondaryFields: [
@@ -87,6 +113,9 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'estimated_minutes_watched', 'video_id', 'video_title', 'video_published_at',
       'average_view_duration',
       'average_view_percentage', 'videos_added_to_playlists', 'red_views', 'dislikes',
+      // New fields
+      'subscriber_count', 'card_clicks', 'card_impressions', 'card_click_rate',
+      'estimated_red_minutes_watched', 'videos_published', 'videos_removed_from_playlists',
     ],
   },
 };
@@ -109,6 +138,14 @@ const DEMOGRAPHICS_QUERIES: Record<string, { fields: string }[]> = {
   TIKTOK_ORGANIC: [
     { fields: 'audience_ages_age,audience_ages_percentage,date' },
     { fields: 'video_audience_genders_gender,video_audience_genders_percentage,date' },
+    { fields: 'audience_country,audience_country_percentage,date' },
+    { fields: 'audience_cities_city,audience_cities_percentage,date' },
+  ],
+  INSTAGRAM_ORGANIC: [
+    { fields: 'audience_age_name,audience_age_size,date' },
+    { fields: 'audience_gender_name,audience_gender_size,date' },
+    { fields: 'audience_country_name,audience_country_size,date' },
+    { fields: 'city,audience_city_size,date' },
   ],
 };
 
