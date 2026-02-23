@@ -67,20 +67,22 @@ export async function POST(req: Request) {
     }
 
     try {
-        // Get admin's Windsor API key
+        // Get admin's Windsor API key (personal or central fallback)
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
             select: { windsorApiKeyEnc: true },
         });
 
-        if (!user?.windsorApiKeyEnc) {
+        const apiKey = user?.windsorApiKeyEnc
+            ? decrypt(user.windsorApiKeyEnc)
+            : process.env.WINDSOR_API_KEY;
+
+        if (!apiKey) {
             return NextResponse.json(
                 { error: 'Nincs Windsor API kulcs konfigurálva.' },
                 { status: 400 }
             );
         }
-
-        const apiKey = decrypt(user.windsorApiKeyEnc);
 
         // Get Windsor session cookie
         const sessionCookie = await getWindsorSession(apiKey, source);

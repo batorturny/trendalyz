@@ -8,7 +8,7 @@ const { decrypt } = require('../utils/encryption');
 
 /**
  * Get Windsor API key for a specific admin user.
- * Only uses the admin's personally saved key — no env fallback.
+ * Priority: admin's personal key → WINDSOR_API_KEY env var.
  */
 async function getWindsorApiKey(adminUserId) {
   if (adminUserId) {
@@ -22,7 +22,24 @@ async function getWindsorApiKey(adminUserId) {
     }
   }
 
+  // Fallback to central Windsor API key
+  if (process.env.WINDSOR_API_KEY) {
+    return process.env.WINDSOR_API_KEY;
+  }
+
   throw new Error('Nincs Windsor API kulcs konfigurálva. Kérjük, add meg a Beállítások oldalon.');
+}
+
+/**
+ * Check if a specific admin has their OWN Windsor API key (not fallback).
+ */
+async function hasPersonalWindsorKey(adminUserId) {
+  if (!adminUserId) return false;
+  const user = await prisma.user.findUnique({
+    where: { id: adminUserId },
+    select: { windsorApiKeyEnc: true },
+  });
+  return !!user?.windsorApiKeyEnc;
 }
 
 /**
@@ -38,4 +55,4 @@ async function getWindsorApiKeyForCompany(companyId) {
   return getWindsorApiKey(company?.adminId || null);
 }
 
-module.exports = { getWindsorApiKey, getWindsorApiKeyForCompany };
+module.exports = { getWindsorApiKey, getWindsorApiKeyForCompany, hasPersonalWindsorKey };

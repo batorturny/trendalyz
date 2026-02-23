@@ -19,7 +19,22 @@ async function getAdminWindsorApiKey(userId: string): Promise<string> {
   if (user?.windsorApiKeyEnc) {
     return decrypt(user.windsorApiKeyEnc);
   }
+  // Fallback to central Windsor API key
+  if (process.env.WINDSOR_API_KEY) {
+    return process.env.WINDSOR_API_KEY;
+  }
   throw new Error('Nincs Windsor API kulcs konfigurálva. Kérjük, add meg a Beállítások oldalon.');
+}
+
+async function getAdminPersonalWindsorApiKey(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { windsorApiKeyEnc: true },
+  });
+  if (user?.windsorApiKeyEnc) {
+    return decrypt(user.windsorApiKeyEnc);
+  }
+  throw new Error('Szinkronizáláshoz saját Windsor API kulcs szükséges. Add meg a Beállítások oldalon.');
 }
 
 async function requireAdmin() {
@@ -351,7 +366,8 @@ export interface SyncDiscoveryResult {
 
 export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const session = await requireAdmin();
-  const windsorApiKey = await getAdminWindsorApiKey(session.user.id);
+  // Sync ONLY works with personal API key — never use central fallback
+  const windsorApiKey = await getAdminPersonalWindsorApiKey(session.user.id);
 
   const now = new Date();
   const dateTo = now.toISOString().split('T')[0];

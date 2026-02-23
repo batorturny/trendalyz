@@ -459,7 +459,21 @@ if (ENABLE_MULTI_PLATFORM) {
             const apiKey = await resolveWindsorKey(req);
             const { windsorMulti: wm } = createWindsorServices(apiKey);
             const accounts = await wm.discoverAccounts(provider);
-            res.json({ provider, accounts });
+
+            // Filter out accounts already assigned to any company
+            const occupiedConnections = await prisma.integrationConnection.findMany({
+                where: { provider },
+                select: { externalAccountId: true, company: { select: { name: true } } },
+            });
+            const occupiedMap = new Map(
+                occupiedConnections.map(c => [c.externalAccountId, c.company.name])
+            );
+
+            const freeAccounts = accounts.filter(
+                (a) => !occupiedMap.has(a.accountId)
+            );
+
+            res.json({ provider, accounts: freeAccounts });
         } catch (error) {
             console.error('Windsor discover error:', error);
             res.status(500).json({ error: 'Failed to discover accounts' });
@@ -562,13 +576,26 @@ if (ENABLE_MULTI_PLATFORM) {
             const oauthApiKey = await getWindsorApiKey(stateUserId || null);
             const { windsorMulti: wmOauth } = createWindsorServices(oauthApiKey);
 
-            // Check if Windsor already has this datasource configured
+            // Auto-register the access token in Windsor via createConnector
             let windsorReady = false;
             try {
-                const testResult = await wmOauth.testConnection(provider, 'any');
-                windsorReady = !testResult.needsWindsorSetup;
-            } catch {
-                windsorReady = false;
+                const { windsorConnector } = createWindsorServices(oauthApiKey);
+                await windsorConnector.createConnector(
+                    config.windsorConnectorType,
+                    tokens.access_token,
+                    tokens.refresh_token || null
+                );
+                windsorReady = true;
+                console.log(`Windsor connector created for ${provider}`);
+            } catch (connectorErr) {
+                console.error(`Windsor createConnector failed for ${provider} (non-fatal):`, connectorErr.message);
+                // Fall back to checking if Windsor already has this datasource
+                try {
+                    const testResult = await wmOauth.testConnection(provider, 'any');
+                    windsorReady = !testResult.needsWindsorSetup;
+                } catch {
+                    windsorReady = false;
+                }
             }
 
             // Platform-specific account discovery using the fresh access token
