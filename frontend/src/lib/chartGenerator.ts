@@ -360,9 +360,17 @@ export default class ChartGenerator {
                  + (parseInt(p.post_reactions_wow_total) || 0) + (parseInt(p.post_reactions_haha_total) || 0),
             comments: parseInt(p.post_activity_by_action_type_comment) || 0,
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
-            link: p.post_permalink || '#'
+            link: p.post_permalink || this._fbPostLink(p.post_id)
         }));
         return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Posts', data: tableData }] };
+    }
+
+    /** Build Facebook post URL from post_id (format: pageId_postId) */
+    _fbPostLink(postId) {
+        if (!postId) return '#';
+        const parts = postId.split('_');
+        if (parts.length === 2) return `https://www.facebook.com/${parts[0]}/posts/${parts[1]}`;
+        return `https://www.facebook.com/${postId}`;
     }
 
     generate_fb_worst_3_posts() {
@@ -404,7 +412,7 @@ export default class ChartGenerator {
             likes: (parseInt(p.post_reactions_like_total) || 0) + (parseInt(p.post_reactions_love_total) || 0),
             comments: parseInt(p.post_activity_by_action_type_comment) || 0,
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
-            link: p.post_permalink || '#'
+            link: p.post_permalink || this._fbPostLink(p.post_id)
         }));
         return { labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'], series: [{ name: 'Reels', data: tableData }] };
     }
