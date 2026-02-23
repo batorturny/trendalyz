@@ -118,8 +118,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         fields: [
           'post_id', 'post_message', 'post_created_time', 'post_permalink',
           'post_impressions', 'post_impressions_unique',
-          'post_reactions_like_total', 'post_reactions_love_total',
-          'post_reactions_wow_total', 'post_reactions_haha_total',
+          'post_activity_by_action_type_like',
           'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
           'post_clicks', 'post_video_views',
         ],
@@ -233,8 +232,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         fields: [
           'post_id', 'post_message', 'post_created_time', 'post_permalink',
           'post_impressions', 'post_impressions_unique',
-          'post_reactions_like_total', 'post_reactions_love_total',
-          'post_reactions_wow_total', 'post_reactions_haha_total',
+          'post_activity_by_action_type_like',
           'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
           'post_clicks',
         ],

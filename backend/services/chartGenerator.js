@@ -343,8 +343,7 @@ class ChartGenerator {
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
             views: parseInt(p.post_impressions) || 0,
-            likes: (parseInt(p.post_reactions_like_total) || 0) + (parseInt(p.post_reactions_love_total) || 0)
-                 + (parseInt(p.post_reactions_wow_total) || 0) + (parseInt(p.post_reactions_haha_total) || 0),
+            likes: parseInt(p.post_activity_by_action_type_like) || 0,
             comments: parseInt(p.post_activity_by_action_type_comment) || 0,
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
             link: p.post_permalink || this._fbPostLink(p.post_id)
@@ -391,7 +390,7 @@ class ChartGenerator {
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
             views: parseInt(p.post_video_views) || 0,
-            likes: (parseInt(p.post_reactions_like_total) || 0) + (parseInt(p.post_reactions_love_total) || 0),
+            likes: parseInt(p.post_activity_by_action_type_like) || 0,
             comments: parseInt(p.post_activity_by_action_type_comment) || 0,
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
             link: p.post_permalink || this._fbPostLink(p.post_id)
