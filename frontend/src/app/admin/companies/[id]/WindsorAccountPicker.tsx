@@ -7,9 +7,10 @@ interface Props {
   provider: ConnectionProvider;
   existingAccountIds: string[];
   onSelect: (accountId: string, accountName: string) => void;
+  onEmpty?: () => void;
 }
 
-export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }: Props) {
+export function WindsorAccountPicker({ provider, existingAccountIds, onSelect, onEmpty }: Props) {
   const [accounts, setAccounts] = useState<WindsorDiscoveredAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,10 +30,12 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
         return res.json();
       })
       .then((data) => {
-        setAccounts(data.accounts || []);
+        const accts = data.accounts || [];
+        setAccounts(accts);
+        if (accts.length === 0) onEmpty?.();
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch(() => {
+        onEmpty?.();
       })
       .finally(() => {
         setLoading(false);
@@ -57,27 +60,11 @@ export function WindsorAccountPicker({ provider, existingAccountIds, onSelect }:
   }
 
   if (error) {
-    return (
-      <div className="space-y-3">
-        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talált fiókok</div>
-        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
-          <p className="text-sm text-red-700 dark:text-red-300">Nem sikerült betölteni a fiókokat: {error}</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">Használd a manuális megadást lentebb.</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (accounts.length === 0) {
-    return (
-      <div className="space-y-3">
-        <div className="text-xs font-bold text-[var(--text-secondary)] uppercase">Windsor-ben talált fiókok</div>
-        <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
-          <p className="text-sm text-[var(--text-secondary)]">Nem található kapcsolt fiók a Windsor-ben ehhez a platformhoz.</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-1 opacity-70">Használd a manuális megadást lentebb.</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

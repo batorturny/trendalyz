@@ -27,6 +27,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
   // Windsor OAuth popup state
   const [oauthLoading, setOauthLoading] = useState(false);
   const [oauthStatus, setOauthStatus] = useState<'idle' | 'loading' | 'popup' | 'syncing' | 'done' | 'error'>('idle');
+  const [pickerEmpty, setPickerEmpty] = useState(false);
   const popupRef = useRef<Window | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -40,6 +41,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
     setShowManual(false);
     setOauthLoading(false);
     setOauthStatus('idle');
+    setPickerEmpty(false);
     if (pollRef.current) clearInterval(pollRef.current);
   };
 
@@ -251,8 +253,8 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               </button>
             )}
 
-            {/* Divider */}
-            {selectedMeta.supportsOAuth && (
+            {/* Divider + Account Picker — only shown when picker has results */}
+            {!pickerEmpty && selectedMeta.supportsOAuth && (
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-[var(--border)]" />
                 <span className="text-xs text-[var(--text-secondary)]">
@@ -268,6 +270,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               provider={selectedProvider!}
               existingAccountIds={existingAccountIds}
               onSelect={handleAccountPicked}
+              onEmpty={() => { setPickerEmpty(true); setShowManual(true); }}
             />
 
             {/* Selected account display */}
@@ -294,28 +297,31 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               </div>
             )}
 
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-[var(--border)]" />
-              <span className="text-xs text-[var(--text-secondary)]">vagy</span>
-              <div className="flex-1 h-px bg-[var(--border)]" />
-            </div>
+            {/* Divider + Manual toggle — only when picker has results */}
+            {!pickerEmpty && (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                  <span className="text-xs text-[var(--text-secondary)]">vagy</span>
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
 
-            {/* Manual entry toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowManual(!showManual);
-                if (!showManual) {
-                  setAccountId('');
-                  setAccountName('');
-                }
-              }}
-              className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            >
-              <ChevronRight className={`w-4 h-4 transition-transform ${showManual ? 'rotate-90' : ''}`} />
-              Manuális megadás
-            </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManual(!showManual);
+                    if (!showManual) {
+                      setAccountId('');
+                      setAccountName('');
+                    }
+                  }}
+                  className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                >
+                  <ChevronRight className={`w-4 h-4 transition-transform ${showManual ? 'rotate-90' : ''}`} />
+                  Manuális megadás
+                </button>
+              </>
+            )}
 
             {/* Manual entry fields */}
             {showManual && (
