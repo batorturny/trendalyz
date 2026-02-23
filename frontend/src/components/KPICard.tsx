@@ -19,13 +19,14 @@ interface KPICardProps {
 export function KPICard({ label, value, change, icon, description }: KPICardProps) {
     const [open, setOpen] = useState(false);
 
-    const formattedValue = typeof value === 'number'
-        ? value >= 1_000_000
-            ? `${(value / 1_000_000).toFixed(1)}M`
-            : value >= 10_000
-                ? `${(value / 1_000).toFixed(1)}K`
-                : value.toLocaleString('hu-HU')
-        : value;
+    const safeValue = value ?? 0;
+    const formattedValue = typeof safeValue === 'number'
+        ? safeValue >= 1_000_000
+            ? `${(safeValue / 1_000_000).toFixed(1)}M`
+            : safeValue >= 10_000
+                ? `${(safeValue / 1_000).toFixed(1)}K`
+                : safeValue.toLocaleString('hu-HU')
+        : safeValue;
 
     // Auto-size: shrink text for long values
     const valueLen = String(formattedValue).length;

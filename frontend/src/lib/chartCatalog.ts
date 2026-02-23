@@ -862,7 +862,7 @@ export const chartCatalog = [
         type: 'line',
         color: '#4d96ff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['page_impressions_organic', 'page_impressions_paid', 'date']
+        windsorFields: ['impressions', 'date']
     },
     {
         key: 'fb_post_clicks_breakdown',
@@ -872,7 +872,7 @@ export const chartCatalog = [
         type: 'bar',
         color: '#ffce44',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['post_clicks_by_type_link_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play', 'date']
+        windsorFields: ['post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play', 'date']
     },
     {
         key: 'fb_fans_country',

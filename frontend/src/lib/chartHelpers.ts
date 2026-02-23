@@ -324,8 +324,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'clicks') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_organic_impressions', label: 'Organikus impressziók', value: sumSeries(findChart(results, 'fb_impressions_breakdown'), 0) },
-        { key: 'fb_paid_impressions', label: 'Fizetett impressziók', value: sumSeries(findChart(results, 'fb_impressions_breakdown'), 1) },
+        { key: 'fb_total_impressions', label: 'Összes impresszió', value: sumSeries(findChart(results, 'fb_impressions_breakdown'), 0) },
         { key: 'fb_page_actions_total', label: 'Oldal akciók', value: sumSeries(findChart(results, 'fb_page_actions'), 0) },
         { key: 'fb_reels_plays_total', label: 'Reels lejátszások', value: sumSeries(findChart(results, 'fb_reels_plays')) },
       ]);

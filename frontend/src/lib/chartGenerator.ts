@@ -388,10 +388,10 @@ export default class ChartGenerator {
     }
 
     // New Facebook charts
-    generate_fb_impressions_breakdown() { return this.dailyMultiMetric(this.daily, [['page_impressions_organic', 'Organikus'], ['page_impressions_paid', 'Fizetett']]); }
+    generate_fb_impressions_breakdown() { return this.dailyMultiMetric(this.daily, [['impressions', 'Impressziók']]); }
     generate_fb_page_actions() { return this.dailyMultiMetric(this.daily, [['page_total_actions', '\u00d6sszes akci\u00f3'], ['page_post_engagements', 'Poszt engagement']]); }
     generate_fb_reels_plays() { return this.dailyMultiMetric(this.daily, [['blue_reels_play_count', 'Reels lej\u00e1tsz\u00e1s'], ['fb_reels_total_plays', '\u00d6sszes Reels']]); }
-    generate_fb_post_clicks_breakdown() { return this.dailyMultiMetric(this.daily, [['post_clicks_by_type_link_clicks', 'Link'], ['post_clicks_by_type_photo_view', 'Fot\u00f3'], ['post_clicks_by_type_video_play', 'Vide\u00f3']]); }
+    generate_fb_post_clicks_breakdown() { return this.dailyMultiMetric(this.daily, [['post_clicks_by_type_photo_view', 'Fot\u00f3'], ['post_clicks_by_type_video_play', 'Vide\u00f3']]); }
     generate_fb_fans_country() { return this._aggregateByField(this.data, 'page_fans_country_name', 'page_fans_country_value', 'K\u00f6vet\u0151k', false, 10); }
     generate_fb_fans_city() { return this._aggregateByField(this.data, 'page_fans_city_name', 'page_fans_city_value', 'K\u00f6vet\u0151k', false, 10); }
 

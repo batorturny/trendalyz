@@ -109,7 +109,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'reactions', 'comments', 'shares',
           'page_follows', 'page_daily_follows', 'page_daily_unfollows',
           'page_video_views', 'page_video_view_time',
-          'page_impressions_organic', 'page_impressions_paid',
           'page_total_actions', 'page_post_engagements',
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
@@ -136,7 +135,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       // Post click types (separate dimension)
       {
         name: 'click_types',
-        fields: ['date', 'post_clicks_by_type_link_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play'],
+        fields: ['date', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play'],
         optional: true,
       },
       // Demographics
