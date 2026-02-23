@@ -51,10 +51,10 @@ export function VideoTable({ videos, chartVideos, title, color }: VideoTableProp
                                         <td className="px-3 py-2 max-w-[300px] truncate" title={video.caption}>
                                             {video.caption}
                                         </td>
-                                        <td className="px-3 py-2 text-right font-semibold text-[var(--text-primary)]">{video.views.toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2 text-right">{video.likes.toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2 text-right">{video.comments.toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2 text-right">{video.shares.toLocaleString('hu-HU')}</td>
+                                        <td className="px-3 py-2 text-right font-semibold text-[var(--text-primary)]">{(video.views ?? 0).toLocaleString('hu-HU')}</td>
+                                        <td className="px-3 py-2 text-right">{(video.likes ?? 0).toLocaleString('hu-HU')}</td>
+                                        <td className="px-3 py-2 text-right">{(video.comments ?? 0).toLocaleString('hu-HU')}</td>
+                                        <td className="px-3 py-2 text-right">{(video.shares ?? 0).toLocaleString('hu-HU')}</td>
                                         <td className="px-3 py-2">
                                             {video.link && video.link !== '#' ? (
                                                 <a
@@ -112,12 +112,12 @@ export function VideoTable({ videos, chartVideos, title, color }: VideoTableProp
                         return (
                             <tr key={idx} className="border-t border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)]">
                                 <td className="px-3 py-2">{date}</td>
-                                <td className="px-3 py-2">{video.views.toLocaleString('hu-HU')}</td>
-                                <td className="px-3 py-2">{video.reach.toLocaleString('hu-HU')}</td>
-                                <td className="px-3 py-2">{video.likes.toLocaleString('hu-HU')}</td>
-                                <td className="px-3 py-2">{video.comments.toLocaleString('hu-HU')}</td>
-                                <td className="px-3 py-2">{video.shares.toLocaleString('hu-HU')}</td>
-                                <td className="px-3 py-2">+{video.newFollowers.toLocaleString('hu-HU')}</td>
+                                <td className="px-3 py-2">{(video.views ?? 0).toLocaleString('hu-HU')}</td>
+                                <td className="px-3 py-2">{(video.reach ?? 0).toLocaleString('hu-HU')}</td>
+                                <td className="px-3 py-2">{(video.likes ?? 0).toLocaleString('hu-HU')}</td>
+                                <td className="px-3 py-2">{(video.comments ?? 0).toLocaleString('hu-HU')}</td>
+                                <td className="px-3 py-2">{(video.shares ?? 0).toLocaleString('hu-HU')}</td>
+                                <td className="px-3 py-2">+{(video.newFollowers ?? 0).toLocaleString('hu-HU')}</td>
                                 <td className="px-3 py-2">{video.engagementRate.toFixed(2)}%</td>
                                 <td className="px-3 py-2">
                                     <a

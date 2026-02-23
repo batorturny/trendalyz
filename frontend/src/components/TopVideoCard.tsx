@@ -20,10 +20,10 @@ export function TopVideoCard({ video, rank }: TopVideoCardProps) {
             <div className="flex-1">
                 <div className="text-xs font-bold text-[var(--text-secondary)] mb-1">{date}</div>
                 <div className="flex flex-wrap gap-3 text-xs font-semibold text-[var(--text-secondary)]">
-                    <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {video.views.toLocaleString('hu-HU')}</span>
-                    <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {video.likes.toLocaleString('hu-HU')}</span>
-                    <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {video.comments.toLocaleString('hu-HU')}</span>
-                    <span className="flex items-center gap-1"><Repeat2 className="w-3.5 h-3.5" /> {video.shares.toLocaleString('hu-HU')}</span>
+                    <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {(video.views ?? 0).toLocaleString('hu-HU')}</span>
+                    <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {(video.likes ?? 0).toLocaleString('hu-HU')}</span>
+                    <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> {(video.comments ?? 0).toLocaleString('hu-HU')}</span>
+                    <span className="flex items-center gap-1"><Repeat2 className="w-3.5 h-3.5" /> {(video.shares ?? 0).toLocaleString('hu-HU')}</span>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs font-semibold text-[var(--text-secondary)] mt-1 opacity-70">
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {video.watchTimeFormatted}</span>
