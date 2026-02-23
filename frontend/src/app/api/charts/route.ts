@@ -112,20 +112,16 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
       },
-      // Per-post content (identity + text)
+      // Per-post data (Windsor uses non-obvious field names for some metrics)
       {
-        name: 'post_content',
+        name: 'posts',
         fields: [
           'post_id', 'post_message', 'post_created_time', 'post_permalink',
-        ],
-      },
-      // Per-post metrics (separate API call — Windsor requires this split)
-      {
-        name: 'post_metrics',
-        fields: [
-          'post_id', 'post_impressions', 'post_reach',
-          'post_reactions', 'post_comments', 'post_shares', 'post_clicks',
-          'post_video_views',
+          'post_impressions', 'post_impressions_unique',
+          'post_reactions_like_total', 'post_reactions_love_total',
+          'post_reactions_wow_total', 'post_reactions_haha_total',
+          'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
+          'post_clicks', 'post_video_views',
         ],
       },
       // Reaction breakdown per post (separate dimension)
@@ -233,16 +229,14 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         ],
       },
       {
-        name: 'post_content',
+        name: 'posts',
         fields: [
           'post_id', 'post_message', 'post_created_time', 'post_permalink',
-        ],
-      },
-      {
-        name: 'post_metrics',
-        fields: [
-          'post_id', 'post_impressions', 'post_reach',
-          'post_reactions', 'post_comments', 'post_shares', 'post_clicks',
+          'post_impressions', 'post_impressions_unique',
+          'post_reactions_like_total', 'post_reactions_love_total',
+          'post_reactions_wow_total', 'post_reactions_haha_total',
+          'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
+          'post_clicks',
         ],
       },
     ],

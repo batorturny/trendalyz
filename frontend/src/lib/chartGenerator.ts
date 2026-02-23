@@ -347,7 +347,7 @@ export default class ChartGenerator {
 
     generate_fb_all_posts() { return this.generateFacebookPostTable(this.video); }
     generate_fb_top_3_posts() {
-        const sorted = [...this.video].sort((a, b) => (parseInt(b.post_reach) || 0) - (parseInt(a.post_reach) || 0));
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.post_impressions) || 0) - (parseInt(a.post_impressions) || 0));
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
@@ -356,17 +356,18 @@ export default class ChartGenerator {
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
             views: parseInt(p.post_impressions) || 0,
-            likes: parseInt(p.post_reactions) || 0,
-            comments: parseInt(p.post_comments) || 0,
-            shares: parseInt(p.post_shares) || 0,
+            likes: (parseInt(p.post_reactions_like_total) || 0) + (parseInt(p.post_reactions_love_total) || 0)
+                 + (parseInt(p.post_reactions_wow_total) || 0) + (parseInt(p.post_reactions_haha_total) || 0),
+            comments: parseInt(p.post_activity_by_action_type_comment) || 0,
+            shares: parseInt(p.post_activity_by_action_type_share) || 0,
             link: p.post_permalink || '#'
         }));
         return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Posts', data: tableData }] };
     }
 
     generate_fb_worst_3_posts() {
-        const sorted = [...this.video].filter(p => parseInt(p.post_reach) > 0)
-            .sort((a, b) => (parseInt(a.post_reach) || 0) - (parseInt(b.post_reach) || 0));
+        const sorted = [...this.video].filter(p => parseInt(p.post_impressions) > 0)
+            .sort((a, b) => (parseInt(a.post_impressions) || 0) - (parseInt(b.post_impressions) || 0));
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
@@ -400,8 +401,9 @@ export default class ChartGenerator {
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
             views: parseInt(p.post_video_views) || 0,
-            likes: parseInt(p.post_reactions) || 0,
-            comments: parseInt(p.post_comments) || 0, shares: parseInt(p.post_shares) || 0,
+            likes: (parseInt(p.post_reactions_like_total) || 0) + (parseInt(p.post_reactions_love_total) || 0),
+            comments: parseInt(p.post_activity_by_action_type_comment) || 0,
+            shares: parseInt(p.post_activity_by_action_type_share) || 0,
             link: p.post_permalink || '#'
         }));
         return { labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'], series: [{ name: 'Reels', data: tableData }] };

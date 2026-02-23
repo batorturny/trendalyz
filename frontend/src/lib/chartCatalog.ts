@@ -185,7 +185,7 @@ export const chartCatalog = [
         type: 'table',
         color: '#00d4ff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink']
+        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_impressions_unique', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_clicks', 'post_permalink']
     },
     {
         key: 'fb_top_3_posts',
@@ -195,7 +195,7 @@ export const chartCatalog = [
         type: 'table',
         color: '#00ff95',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink']
+        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_impressions_unique', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_clicks', 'post_permalink']
     },
 
     // ========== INSTAGRAM CHARTS ==========
@@ -564,7 +564,7 @@ export const chartCatalog = [
         type: 'table',
         color: '#00d4ff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_video_views', 'post_reactions', 'post_comments', 'post_shares', 'post_permalink']
+        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_video_views', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_permalink']
     },
 
     // ========== INSTAGRAM BUSINESS (NEW) ==========
@@ -672,7 +672,7 @@ export const chartCatalog = [
         type: 'table',
         color: '#ff6b6b',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink']
+        windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_impressions_unique', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_clicks', 'post_permalink']
     },
     {
         key: 'fb_engaged_users',
