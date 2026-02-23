@@ -299,7 +299,8 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const postCount = postRows.length;
 
       // Post-level metrics (from post data, not daily)
-      const totalPostReactions = postRows.reduce((s, r) => s + (Number(r.reactions) || 0), 0);
+      // 'likes' = post_activity_by_action_type_like (includes all reaction types)
+      const totalPostReactions = postRows.reduce((s, r) => s + (Number(r.likes) || 0), 0);
       const totalPostComments = postRows.reduce((s, r) => s + (Number(r.comments) || 0), 0);
       const totalPostShares = postRows.reduce((s, r) => s + (Number(r.shares) || 0), 0);
 
@@ -320,7 +321,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'fb_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalEngagement / totalReach * 100 : 0), agg: 'avg' },
         // Átlag poszt KPI-ok
         { key: 'fb_avg_reach_post', label: 'Átl. elérés/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reach') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reactions') / postCount) : 0, agg: 'avg' },
+        { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'likes') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'clicks') / postCount) : 0, agg: 'avg' },
