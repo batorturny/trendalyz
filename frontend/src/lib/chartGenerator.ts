@@ -211,6 +211,20 @@ export default class ChartGenerator {
         return this.dailyMax(this.daily, 'total_followers_count', '\u00d6sszes k\u00f6vet\u0151');
     }
 
+    generate_tt_engaged_audience() { return this.dailyMetric(this.daily, 'engaged_audience', 'Elk\u00f6telezett k\u00f6z\u00f6ns\u00e9g'); }
+    generate_tt_daily_reached() { return this.dailyMetric(this.daily, 'engaged_audience', 'Elk\u00f6telezett k\u00f6z\u00f6ns\u00e9g'); }
+    generate_tt_email_clicks() { return this.dailyMetric(this.daily, 'email_clicks', 'Email kattint\u00e1sok'); }
+    generate_tt_phone_clicks() { return this.dailyMetric(this.daily, 'phone_number_clicks', 'Telefonsz\u00e1m kattint\u00e1sok'); }
+    generate_tt_follower_change() {
+        return this.dailyMultiMetric(this.daily, [['daily_lost_followers', 'Elvesztett k\u00f6vet\u0151k']]);
+    }
+    generate_tt_audience_countries() {
+        return this._aggregateByField(this.data, 'audience_country', 'audience_country_percentage', 'Ar\u00e1ny %', false, 10, 1, true);
+    }
+    generate_tt_audience_cities() {
+        return this._aggregateByField(this.data, 'audience_cities_city', 'audience_cities_percentage', 'Ar\u00e1ny %', false, 10, 1, true);
+    }
+
     // ===== TIMING CHARTS =====
 
     generate_engagement_by_day() {
@@ -373,6 +387,14 @@ export default class ChartGenerator {
         return { labels, series: [{ name: 'ER %', data }] };
     }
 
+    // New Facebook charts
+    generate_fb_impressions_breakdown() { return this.dailyMultiMetric(this.daily, [['page_impressions_organic', 'Organikus'], ['page_impressions_paid', 'Fizetett']]); }
+    generate_fb_page_actions() { return this.dailyMultiMetric(this.daily, [['page_total_actions', '\u00d6sszes akci\u00f3'], ['page_post_engagements', 'Poszt engagement']]); }
+    generate_fb_reels_plays() { return this.dailyMultiMetric(this.daily, [['blue_reels_play_count', 'Reels lej\u00e1tsz\u00e1s'], ['fb_reels_total_plays', '\u00d6sszes Reels']]); }
+    generate_fb_post_clicks_breakdown() { return this.dailyMultiMetric(this.daily, [['post_clicks_by_type_link_clicks', 'Link'], ['post_clicks_by_type_photo_view', 'Fot\u00f3'], ['post_clicks_by_type_video_play', 'Vide\u00f3']]); }
+    generate_fb_fans_country() { return this._aggregateByField(this.data, 'page_fans_country_name', 'page_fans_country_value', 'K\u00f6vet\u0151k', false, 10); }
+    generate_fb_fans_city() { return this._aggregateByField(this.data, 'page_fans_city_name', 'page_fans_city_value', 'K\u00f6vet\u0151k', false, 10); }
+
     generate_fb_reel_performance() {
         const posts = this.video.filter(p => parseInt(p.post_video_views) > 0);
         const sorted = [...posts].sort((a, b) => (parseInt(b.post_video_views) || 0) - (parseInt(a.post_video_views) || 0));
@@ -407,6 +429,14 @@ export default class ChartGenerator {
     }
 
     generate_ig_story_overview() { return this.dailyMultiMetric(this.daily, [['story_reach', 'El\u00e9r\u00e9s'], ['story_views', 'Megtekint\u00e9sek'], ['story_exits', 'Kil\u00e9p\u00e9sek']]); }
+    generate_ig_website_clicks_trend() { return this.dailyMetric(this.daily, 'website_clicks_1d', 'Weboldal kattint\u00e1sok'); }
+    generate_ig_story_interactions() { return this.dailyMultiMetric(this.daily, [['story_interactions', 'Interakci\u00f3k'], ['story_replies', 'V\u00e1laszok'], ['story_shares', 'Megoszt\u00e1sok']]); }
+    generate_ig_story_navigation() { return this.dailyMultiMetric(this.daily, [['story_taps_forward', 'El\u0151re'], ['story_taps_back', 'H\u00e1tra'], ['story_swipe_forward', 'Sw\u00e1jp']]); }
+    generate_ig_clicks() { return this.dailyMultiMetric(this.daily, [['email_contacts_1d', 'Email'], ['phone_call_clicks_1d', 'Telefon'], ['get_directions_clicks_1d', '\u00datvonal'], ['text_message_clicks_1d', '\u00dczenet']]); }
+    generate_ig_audience_age() { return this._aggregateByField(this.data, 'audience_age_name', 'audience_age_size', 'K\u00f6z\u00f6ns\u00e9g', true); }
+    generate_ig_audience_gender() { return this._aggregateByField(this.data, 'audience_gender_name', 'audience_gender_size', 'K\u00f6z\u00f6ns\u00e9g'); }
+    generate_ig_audience_country() { return this._aggregateByField(this.data, 'audience_country_name', 'audience_country_size', 'K\u00f6z\u00f6ns\u00e9g', false, 10); }
+    generate_ig_audience_city() { return this._aggregateByField(this.data, 'city', 'audience_city_size', 'K\u00f6z\u00f6ns\u00e9g', false, 10); }
 
     generate_ig_media_type_breakdown() {
         const typeMap = {};
@@ -555,6 +585,12 @@ export default class ChartGenerator {
     generate_yt_playlist_adds() { return this.dailyMetric(this.daily, 'videos_added_to_playlists', 'Playlisthez adva'); }
     generate_yt_premium_views() { return this.dailyMetric(this.daily, 'red_views', 'Premium n\u00e9z\u00e9sek'); }
     generate_yt_likes_dislikes() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['dislikes', 'Dislike-ok']]); }
+    generate_yt_subscriber_count() { return this.dailyMax(this.daily, 'subscriber_count', 'Feliratkoz\u00f3k'); }
+    generate_yt_card_performance() { return this.dailyMultiMetric(this.daily, [['card_clicks', 'Kattint\u00e1sok'], ['card_impressions', 'Megjelen\u00e9sek']]); }
+    generate_yt_card_ctr() { return this.dailyAvg(this.daily, 'card_click_rate', 'CTR %'); }
+    generate_yt_red_watch_time() { return this.dailyMetric(this.daily, 'estimated_red_minutes_watched', 'Premium n\u00e9z\u00e9si id\u0151 (perc)'); }
+    generate_yt_playlist_removes() { return this.dailyMetric(this.daily, 'videos_removed_from_playlists', 'Elt\u00e1vol\u00edtva'); }
+    generate_yt_videos_published() { return this.dailyMetric(this.daily, 'videos_published', 'K\u00f6zz\u00e9t\u00e9ve'); }
 
     generate_yt_top_5_videos() {
         const sorted = [...this.video].sort((a, b) => (parseInt(b.views) || 0) - (parseInt(a.views) || 0));
@@ -610,6 +646,32 @@ export default class ChartGenerator {
     generate_ttads_conversions() { return this.dailyMetric(this.daily, 'conversions', 'Konverzi\u00f3k'); }
     generate_ttads_cost_per_conversion() { return this.dailyAvg(this.daily, 'cost_per_conversion', 'K\u00f6lts\u00e9g/konverzi\u00f3'); }
     generate_ttads_video_engagement() { return this.dailyMultiMetric(this.daily, [['video_play_actions', 'Lej\u00e1tsz\u00e1sok'], ['video_watched_2s', '2s n\u00e9z\u00e9s'], ['video_watched_6s', '6s n\u00e9z\u00e9s']]); }
+    generate_ttads_reach_cost() { return this.dailyAvg(this.daily, 'cost_per_1000_reached', 'CPR'); }
+    generate_ttads_video_play_time() { return this.dailyMultiMetric(this.daily, [['average_video_play', '\u00c1tl. lej\u00e1tsz\u00e1s'], ['average_video_play_per_user', '\u00c1tl./felhaszn\u00e1l\u00f3']]); }
+    generate_ttads_app_install() { return this.dailyMultiMetric(this.daily, [['app_install', 'Telep\u00edt\u00e9sek'], ['cost_per_app_install', 'K\u00f6lts\u00e9g/telep\u00edt\u00e9s']]); }
+    generate_ttads_payment_trend() { return this.dailyMultiMetric(this.daily, [['complete_payment', 'Fizet\u00e9sek'], ['complete_payment_roas', 'ROAS']]); }
+    generate_ttads_registration() { return this.dailyMultiMetric(this.daily, [['registration', 'Regisztr\u00e1ci\u00f3k'], ['cost_per_registration', 'K\u00f6lts\u00e9g/reg.']]); }
+
+    generate_ttads_adgroup_perf() {
+        const adgroupMap = {};
+        this.data.forEach(item => {
+            const name = item.adgroup_name;
+            if (!name) return;
+            if (!adgroupMap[name]) adgroupMap[name] = { impressions: 0, clicks: 0, spend: 0, conversions: 0 };
+            adgroupMap[name].impressions += parseInt(item.impressions) || 0;
+            adgroupMap[name].clicks += parseInt(item.clicks) || 0;
+            adgroupMap[name].spend += parseFloat(item.spend) || 0;
+            adgroupMap[name].conversions += parseInt(item.conversions) || 0;
+        });
+        const tableData = Object.entries(adgroupMap).map(([name, s]) => ({
+            adgroup: name, impressions: s.impressions, clicks: s.clicks,
+            spend: parseFloat(s.spend.toFixed(2)),
+            cpc: s.clicks > 0 ? parseFloat((s.spend / s.clicks).toFixed(2)) : 0,
+            ctr: s.impressions > 0 ? parseFloat(((s.clicks / s.impressions) * 100).toFixed(2)) : 0,
+            conversions: s.conversions,
+        }));
+        return { labels: ['Csoport', 'Impresszi\u00f3k', 'Kattint\u00e1sok', 'K\u00f6lt\u00e9s', 'CPC', 'CTR%', 'Konverzi\u00f3k'], series: [{ name: 'Adgroups', data: tableData }] };
+    }
 
     generate_ttads_campaign_perf() {
         const campaignMap = {};

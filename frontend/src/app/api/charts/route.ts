@@ -29,15 +29,13 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   TIKTOK_ORGANIC: {
     endpoint: 'tiktok_organic',
     fieldGroups: [
-      // Daily account-level metrics
+      // Daily account-level metrics (verified against Windsor API)
       {
         name: 'daily',
         fields: [
           'date', 'followers_count', 'total_followers_count', 'profile_views',
           'likes', 'comments', 'shares', 'bio_link_clicks', 'email_clicks',
-          'engaged_audience', 'daily_reached_audience',
-          'daily_gained_followers', 'daily_lost_followers',
-          'phone_number_clicks', 'total_likes', 'total_video_views', 'videos_count',
+          'engaged_audience', 'daily_lost_followers', 'phone_number_clicks',
         ],
       },
       // Per-video metrics
@@ -141,6 +139,9 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         fields: ['date', 'post_clicks_by_type_link_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play'],
         optional: true,
       },
+      // Demographics
+      { name: 'fans_country', fields: ['page_fans_country_name', 'page_fans_country_value'], optional: true },
+      { name: 'fans_city', fields: ['page_fans_city_name', 'page_fans_city_value'], optional: true },
     ],
   },
   INSTAGRAM_ORGANIC: {

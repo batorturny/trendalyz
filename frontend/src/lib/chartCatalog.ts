@@ -790,7 +790,7 @@ export const chartCatalog = [
         type: 'line',
         color: '#00d4aa',
         platform: 'TIKTOK_ORGANIC',
-        windsorFields: ['daily_reached_audience', 'date']
+        windsorFields: ['engaged_audience', 'date']
     },
     {
         key: 'tt_engaged_audience',
@@ -810,7 +810,7 @@ export const chartCatalog = [
         type: 'bar',
         color: '#00ff95',
         platform: 'TIKTOK_ORGANIC',
-        windsorFields: ['daily_gained_followers', 'daily_lost_followers', 'date']
+        windsorFields: ['daily_lost_followers', 'date']
     },
     {
         key: 'tt_audience_countries',

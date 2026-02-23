@@ -781,9 +781,9 @@ const chartCatalog = [
     },
 
     // ========== TIKTOK ORGANIC (NEW WINDSOR FIELDS) ==========
-    { key: 'tt_daily_reached', title: 'Napi elért közönség', description: 'Naponta elért felhasználók száma', category: CHART_CATEGORIES.TREND, type: 'line', color: '#00d4aa', platform: 'TIKTOK_ORGANIC', windsorFields: ['daily_reached_audience', 'date'] },
+    { key: 'tt_daily_reached', title: 'Napi elért közönség', description: 'Naponta elért felhasználók száma', category: CHART_CATEGORIES.TREND, type: 'line', color: '#00d4aa', platform: 'TIKTOK_ORGANIC', windsorFields: ['engaged_audience', 'date'] },
     { key: 'tt_engaged_audience', title: 'Elkötelezett közönség', description: 'Elkötelezett felhasználók napi trendje', category: CHART_CATEGORIES.TREND, type: 'line', color: '#bc6aff', platform: 'TIKTOK_ORGANIC', windsorFields: ['engaged_audience', 'date'] },
-    { key: 'tt_follower_change', title: 'Követő változás ±', description: 'Szerzett és elvesztett követők napi bontásban', category: CHART_CATEGORIES.TREND, type: 'bar', color: '#00ff95', platform: 'TIKTOK_ORGANIC', windsorFields: ['daily_gained_followers', 'daily_lost_followers', 'date'] },
+    { key: 'tt_follower_change', title: 'Követő változás ±', description: 'Szerzett és elvesztett követők napi bontásban', category: CHART_CATEGORIES.TREND, type: 'bar', color: '#00ff95', platform: 'TIKTOK_ORGANIC', windsorFields: ['daily_lost_followers', 'date'] },
     { key: 'tt_audience_countries', title: 'Közönség országok', description: 'Követők megoszlása országonként', category: CHART_CATEGORIES.AUDIENCE, type: 'bar', color: '#4d96ff', platform: 'TIKTOK_ORGANIC', windsorFields: ['audience_country', 'audience_country_percentage'] },
     { key: 'tt_audience_cities', title: 'Közönség városok', description: 'Követők megoszlása városonként', category: CHART_CATEGORIES.AUDIENCE, type: 'bar', color: '#00d4ff', platform: 'TIKTOK_ORGANIC', windsorFields: ['audience_cities_city', 'audience_cities_percentage'] },
     { key: 'tt_email_clicks', title: 'Email kattintások', description: 'Email cím kattintások trendje', category: CHART_CATEGORIES.TREND, type: 'line', color: '#ffce44', platform: 'TIKTOK_ORGANIC', windsorFields: ['email_clicks', 'date'] },
