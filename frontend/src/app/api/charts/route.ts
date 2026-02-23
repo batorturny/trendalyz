@@ -101,7 +101,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   FACEBOOK_ORGANIC: {
     endpoint: 'facebook_organic',
     fieldGroups: [
-      // Daily page metrics
+      // 1. Daily page metrics
       {
         name: 'daily',
         fields: [
@@ -112,18 +112,53 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
       },
-      // Per-post data (Windsor uses non-obvious field names for some metrics)
+      // 2. Post content (identity + text)
       {
-        name: 'posts',
+        name: 'post_content',
         fields: [
-          'post_id', 'post_message', 'post_created_time', 'post_permalink',
-          'post_impressions', 'post_impressions_unique',
-          'post_activity_by_action_type_like',
-          'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
-          'post_clicks', 'post_video_views',
+          'post_id', 'post_message', 'post_created_time',
         ],
       },
-      // Reaction breakdown per post (separate dimension)
+      // 3. Post activity metrics (likes, comments, shares)
+      {
+        name: 'post_activity',
+        fields: [
+          'post_id',
+          'post_activity_by_action_type_like',
+          'post_activity_by_action_type_comment',
+          'post_activity_by_action_type_share',
+        ],
+      },
+      // 4. Post impressions & reach
+      {
+        name: 'post_impressions',
+        fields: [
+          'post_id',
+          'post_impressions', 'post_impressions_unique',
+          'post_impressions_fan', 'post_impressions_organic',
+        ],
+      },
+      // 5. Post video views (reels + video posts)
+      {
+        name: 'post_video',
+        fields: [
+          'post_id',
+          'post_video_views', 'post_video_views_autoplayed',
+          'post_video_views_clicked_to_play',
+          'post_video_views_organic', 'post_video_views_unique',
+        ],
+      },
+      // 6. Post clicks breakdown
+      {
+        name: 'post_clicks',
+        fields: [
+          'post_id',
+          'post_clicks', 'post_clicks_by_type_other_clicks',
+          'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play',
+          'post_clicks_by_type_link_clicks',
+        ],
+      },
+      // 7. Reaction breakdown (daily dimension)
       {
         name: 'reactions',
         fields: [
@@ -131,12 +166,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'post_reactions_wow_total', 'post_reactions_haha_total',
           'post_reactions_sorry_total', 'post_reactions_anger_total',
         ],
-        optional: true,
-      },
-      // Post click types (separate dimension)
-      {
-        name: 'click_types',
-        fields: ['date', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play'],
         optional: true,
       },
       // Demographics
@@ -228,14 +257,24 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         ],
       },
       {
-        name: 'posts',
-        fields: [
-          'post_id', 'post_message', 'post_created_time', 'post_permalink',
-          'post_impressions', 'post_impressions_unique',
-          'post_activity_by_action_type_like',
-          'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
-          'post_clicks',
-        ],
+        name: 'post_content',
+        fields: ['post_id', 'post_message', 'post_created_time'],
+      },
+      {
+        name: 'post_activity',
+        fields: ['post_id', 'post_activity_by_action_type_like', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share'],
+      },
+      {
+        name: 'post_impressions',
+        fields: ['post_id', 'post_impressions', 'post_impressions_unique'],
+      },
+      {
+        name: 'post_video',
+        fields: ['post_id', 'post_video_views', 'post_video_views_unique'],
+      },
+      {
+        name: 'post_clicks',
+        fields: ['post_id', 'post_clicks'],
       },
     ],
   },

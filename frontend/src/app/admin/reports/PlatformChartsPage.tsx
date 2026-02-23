@@ -509,6 +509,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                         <div key={chart.key}>
                           <VideoTable
                             chartVideos={chart.data?.series?.[0]?.data as any || []}
+                            chartLabels={chart.data?.labels as string[] || undefined}
                             title={chart.title}
                             color={chart.color}
                           />

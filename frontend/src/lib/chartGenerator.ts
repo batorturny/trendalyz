@@ -356,12 +356,34 @@ export default class ChartGenerator {
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
             views: parseInt(p.post_impressions) || 0,
+            reach: parseInt(p.post_impressions_unique) || 0,
             likes: parseInt(p.post_activity_by_action_type_like) || 0,
             comments: parseInt(p.post_activity_by_action_type_comment) || 0,
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
-            link: p.post_permalink || this._fbPostLink(p.post_id)
+            clicks: parseInt(p.post_clicks) || 0,
+            videoViews: parseInt(p.post_video_views) || 0,
+            link: this._fbPostLink(p.post_id)
         }));
-        return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Posts', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Impresszió', 'Elérés', 'Reakció', 'Komment', 'Megosztás', 'Kattintás', 'Videó nézés', 'Link'], series: [{ name: 'Posts', data: tableData }] };
+    }
+
+    generateFacebookReelTable(posts) {
+        const reels = posts.filter(p => (parseInt(p.post_video_views) || 0) > 0);
+        const sorted = [...reels].sort((a, b) => (parseInt(b.post_video_views) || 0) - (parseInt(a.post_video_views) || 0));
+        const tableData = sorted.map(p => ({
+            id: p.post_id, caption: p.post_message || '-',
+            date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
+            views: parseInt(p.post_video_views) || 0,
+            autoplay: parseInt(p.post_video_views_autoplayed) || 0,
+            clickToPlay: parseInt(p.post_video_views_clicked_to_play) || 0,
+            organic: parseInt(p.post_video_views_organic) || 0,
+            unique: parseInt(p.post_video_views_unique) || 0,
+            likes: parseInt(p.post_activity_by_action_type_like) || 0,
+            comments: parseInt(p.post_activity_by_action_type_comment) || 0,
+            shares: parseInt(p.post_activity_by_action_type_share) || 0,
+            link: this._fbPostLink(p.post_id)
+        }));
+        return { labels: ['Dátum', 'Üzenet', 'Videó nézés', 'Autoplay', 'Kattintásra', 'Organikus', 'Egyedi', 'Reakció', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Reels', data: tableData }] };
     }
 
     /** Build Facebook post URL from post_id (format: pageId_postId) */
@@ -402,18 +424,7 @@ export default class ChartGenerator {
     generate_fb_fans_city() { return this._aggregateByField(this.data, 'page_fans_city_name', 'page_fans_city_value', 'K\u00f6vet\u0151k', false, 10); }
 
     generate_fb_reel_performance() {
-        const posts = this.video.filter(p => parseInt(p.post_video_views) > 0);
-        const sorted = [...posts].sort((a, b) => (parseInt(b.post_video_views) || 0) - (parseInt(a.post_video_views) || 0));
-        const tableData = sorted.map(p => ({
-            id: p.post_id, caption: p.post_message || '-',
-            date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            views: parseInt(p.post_video_views) || 0,
-            likes: parseInt(p.post_activity_by_action_type_like) || 0,
-            comments: parseInt(p.post_activity_by_action_type_comment) || 0,
-            shares: parseInt(p.post_activity_by_action_type_share) || 0,
-            link: p.post_permalink || this._fbPostLink(p.post_id)
-        }));
-        return { labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'], series: [{ name: 'Reels', data: tableData }] };
+        return this.generateFacebookReelTable(this.video);
     }
 
     // ===== INSTAGRAM CHARTS =====

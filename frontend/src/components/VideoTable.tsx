@@ -1,27 +1,53 @@
 import { Video } from '@/lib/api';
 
-interface ChartVideo {
-    id: string | null;
-    caption: string;
-    date: string;
-    views: number;
-    likes: number;
-    comments: number;
-    shares: number;
-    link: string;
-}
+// Maps Hungarian column labels to data object property names
+const LABEL_TO_KEY: Record<string, string> = {
+    'Dátum': 'date',
+    'Üzenet': 'caption',
+    'Cím': 'caption',
+    'Impresszió': 'views',
+    'Megtekintés': 'views',
+    'Elérés': 'reach',
+    'Reakció': 'likes',
+    'Like': 'likes',
+    'Komment': 'comments',
+    'Megosztás': 'shares',
+    'Kattintás': 'clicks',
+    'Videó nézés': 'videoViews',
+    'Autoplay': 'autoplay',
+    'Kattintásra': 'clickToPlay',
+    'Organikus': 'organic',
+    'Egyedi': 'unique',
+    'Link': 'link',
+};
+
+const TEXT_COLUMNS = new Set(['date', 'caption', 'link']);
 
 interface VideoTableProps {
     videos?: Video[];
-    chartVideos?: ChartVideo[];
+    chartVideos?: any[];
+    chartLabels?: string[];
     title?: string;
     color?: string;
 }
 
-export function VideoTable({ videos, chartVideos, title, color }: VideoTableProps) {
+export function VideoTable({ videos, chartVideos, chartLabels, title, color }: VideoTableProps) {
     // Chart table mode - video data from chart API
     if (chartVideos !== undefined) {
-        const filtered = chartVideos.filter(v => v.views > 0 || v.caption !== '-');
+        const filtered = chartVideos.filter(v => (v.views ?? 0) > 0 || (v.caption && v.caption !== '-'));
+
+        // Build columns from labels if provided, otherwise use defaults
+        const columns = chartLabels
+            ? chartLabels.map(label => ({ label, key: LABEL_TO_KEY[label] || label }))
+            : [
+                { label: 'Dátum', key: 'date' },
+                { label: 'Caption', key: 'caption' },
+                { label: 'Megtekintés', key: 'views' },
+                { label: 'Like', key: 'likes' },
+                { label: 'Komment', key: 'comments' },
+                { label: 'Megosztás', key: 'shares' },
+                { label: 'Link', key: 'link' },
+            ];
 
         return (
             <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 lg:col-span-2 shadow-[var(--shadow-card)]">
@@ -35,40 +61,53 @@ export function VideoTable({ videos, chartVideos, title, color }: VideoTableProp
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="text-left text-xs font-bold text-[var(--text-secondary)] uppercase">
-                                    <th className="px-3 py-2">Dátum</th>
-                                    <th className="px-3 py-2 max-w-[300px]">Caption</th>
-                                    <th className="px-3 py-2 text-right">Megtekintés</th>
-                                    <th className="px-3 py-2 text-right">Like</th>
-                                    <th className="px-3 py-2 text-right">Komment</th>
-                                    <th className="px-3 py-2 text-right">Megosztás</th>
-                                    <th className="px-3 py-2">Link</th>
+                                    {columns.map(col => (
+                                        <th
+                                            key={col.key}
+                                            className={`px-3 py-2 ${col.key === 'caption' ? 'max-w-[300px]' : ''} ${!TEXT_COLUMNS.has(col.key) ? 'text-right' : ''}`}
+                                        >
+                                            {col.label}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {filtered.map((video, idx) => (
                                     <tr key={idx} className="border-t border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)]">
-                                        <td className="px-3 py-2 whitespace-nowrap">{video.date}</td>
-                                        <td className="px-3 py-2 max-w-[300px] truncate" title={video.caption}>
-                                            {video.caption}
-                                        </td>
-                                        <td className="px-3 py-2 text-right font-semibold text-[var(--text-primary)]">{(video.views ?? 0).toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2 text-right">{(video.likes ?? 0).toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2 text-right">{(video.comments ?? 0).toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2 text-right">{(video.shares ?? 0).toLocaleString('hu-HU')}</td>
-                                        <td className="px-3 py-2">
-                                            {video.link && video.link !== '#' ? (
-                                                <a
-                                                    href={video.link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="px-2 py-1 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-xs font-bold rounded-lg hover:opacity-80"
-                                                >
-                                                    Link
-                                                </a>
-                                            ) : (
-                                                <span className="text-[var(--text-secondary)] text-xs opacity-50">-</span>
-                                            )}
-                                        </td>
+                                        {columns.map(col => {
+                                            if (col.key === 'link') {
+                                                return (
+                                                    <td key={col.key} className="px-3 py-2">
+                                                        {video.link && video.link !== '#' ? (
+                                                            <a href={video.link} target="_blank" rel="noopener noreferrer"
+                                                                className="px-2 py-1 bg-[var(--accent)] text-white dark:text-[var(--surface)] text-xs font-bold rounded-lg hover:opacity-80">
+                                                                Link
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-[var(--text-secondary)] text-xs opacity-50">-</span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            }
+                                            if (col.key === 'caption') {
+                                                return (
+                                                    <td key={col.key} className="px-3 py-2 max-w-[300px] truncate" title={video.caption}>
+                                                        {video.caption}
+                                                    </td>
+                                                );
+                                            }
+                                            if (col.key === 'date') {
+                                                return <td key={col.key} className="px-3 py-2 whitespace-nowrap">{video.date}</td>;
+                                            }
+                                            // Numeric column
+                                            const val = video[col.key] ?? 0;
+                                            const isMainMetric = col.key === 'views';
+                                            return (
+                                                <td key={col.key} className={`px-3 py-2 text-right ${isMainMetric ? 'font-semibold text-[var(--text-primary)]' : ''}`}>
+                                                    {(typeof val === 'number' ? val : 0).toLocaleString('hu-HU')}
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 ))}
                             </tbody>
