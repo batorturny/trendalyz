@@ -336,9 +336,9 @@ export default class ChartGenerator {
 
     // ===== FACEBOOK CHARTS =====
 
-    generate_fb_page_reach() { return this.dailyMultiMetric(this.daily, [['reach', 'El\u00e9r\u00e9s'], ['impressions', 'Impresszi\u00f3k']]); }
+    generate_fb_page_reach() { return this.dailyMultiMetric(this.daily, [['page_impressions_unique', 'El\u00e9r\u00e9s'], ['page_impressions', 'Impresszi\u00f3k']]); }
     generate_fb_page_fans() { return this.dailyMax(this.daily, 'page_fans', 'K\u00f6vet\u0151k'); }
-    generate_fb_engagement() { return this.dailyMultiMetric(this.daily, [['reactions', 'Reakci\u00f3k'], ['comments', 'Kommentek'], ['shares', 'Megoszt\u00e1sok']]); }
+    generate_fb_engagement() { return this.dailyMultiMetric(this.daily, [['page_post_engagements', 'Engagement']]); }
     generate_fb_post_engagement() { return this.dailyMultiMetric(this.daily, [['post_reactions', 'Reakci\u00f3k'], ['post_comments', 'Kommentek'], ['post_shares', 'Megoszt\u00e1sok'], ['post_clicks', 'Kattint\u00e1sok']]); }
     generate_fb_video_views() { return this.dailyMetric(this.daily, 'page_video_views', 'Vide\u00f3 megtekint\u00e9sek'); }
     generate_fb_follows_trend() { return this.dailyMultiMetric(this.daily, [['page_daily_follows', '\u00daj k\u00f6vet\u0151k'], ['page_daily_unfollows', 'K\u00f6vet\u00e9st\u00f6rl\u00e9s']]); }
@@ -369,7 +369,7 @@ export default class ChartGenerator {
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
-    generate_fb_engaged_users() { return this.dailyMetric(this.daily, 'engaged_users', 'Elk\u00f6telezett felhaszn\u00e1l\u00f3k'); }
+    generate_fb_engaged_users() { return this.dailyMetric(this.daily, 'page_post_engagements', 'Poszt engagement'); }
     generate_fb_page_views() { return this.dailyMetric(this.daily, 'page_views_total', 'Oldal megtekint\u00e9sek'); }
 
     generate_fb_engagement_rate() {
@@ -377,19 +377,16 @@ export default class ChartGenerator {
         const labels = Object.keys(grouped).sort();
         const data = labels.map(date => {
             const items = grouped[date];
-            return this.engagementRate(
-                this.sumField(items, 'reactions'),
-                this.sumField(items, 'comments'),
-                this.sumField(items, 'shares'),
-                this.sumField(items, 'reach') || 1
-            );
+            const engagement = this.sumField(items, 'page_post_engagements');
+            const reach = this.sumField(items, 'page_impressions_unique') || 1;
+            return parseFloat(((engagement / reach) * 100).toFixed(2));
         });
         return { labels, series: [{ name: 'ER %', data }] };
     }
 
     // New Facebook charts
-    generate_fb_impressions_breakdown() { return this.dailyMultiMetric(this.daily, [['impressions', 'Impressziók']]); }
-    generate_fb_page_actions() { return this.dailyMultiMetric(this.daily, [['page_total_actions', '\u00d6sszes akci\u00f3'], ['page_post_engagements', 'Poszt engagement']]); }
+    generate_fb_impressions_breakdown() { return this.dailyMultiMetric(this.daily, [['page_impressions', 'Impressziók']]); }
+    generate_fb_page_actions() { return this.dailyMultiMetric(this.daily, [['page_post_engagements', 'Poszt engagement']]); }
     generate_fb_reels_plays() { return this.dailyMultiMetric(this.daily, [['blue_reels_play_count', 'Reels lej\u00e1tsz\u00e1s'], ['fb_reels_total_plays', '\u00d6sszes Reels']]); }
     generate_fb_post_clicks_breakdown() { return this.dailyMultiMetric(this.daily, [['post_clicks_by_type_photo_view', 'Fot\u00f3'], ['post_clicks_by_type_video_play', 'Vide\u00f3']]); }
     generate_fb_fans_country() { return this._aggregateByField(this.data, 'page_fans_country_name', 'page_fans_country_value', 'K\u00f6vet\u0151k', false, 10); }

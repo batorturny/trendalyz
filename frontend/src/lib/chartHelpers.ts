@@ -288,44 +288,42 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const posts = findChart(results, 'fb_all_posts');
       const follows = findChart(results, 'fb_follows_trend');
       const videoViews = findChart(results, 'fb_video_views');
-
-      const engagedUsers = findChart(results, 'fb_engaged_users');
       const pageViews = findChart(results, 'fb_page_views');
-      const erChart = findChart(results, 'fb_engagement_rate');
 
+      // fb_page_reach: series[0] = page_impressions_unique (reach), series[1] = page_impressions
       const totalReach = sumSeries(reach, 0);
-      const totalReactions = sumSeries(engagement, 0);
-      const totalComments = sumSeries(engagement, 1);
-      const totalShares = sumSeries(engagement, 2);
-      const totalInteractions = totalReactions + totalComments + totalShares;
+      const totalImpressions = sumSeries(reach, 1);
+      // fb_engagement: series[0] = page_post_engagements
+      const totalEngagement = sumSeries(engagement, 0);
       const postRows = getTableData(posts);
       const postCount = postRows.length;
+
+      // Post-level metrics (from post data, not daily)
+      const totalPostReactions = postRows.reduce((s, r) => s + (Number(r.reactions) || 0), 0);
+      const totalPostComments = postRows.reduce((s, r) => s + (Number(r.comments) || 0), 0);
+      const totalPostShares = postRows.reduce((s, r) => s + (Number(r.shares) || 0), 0);
 
       return addDescriptions([
         // Alap metrikák
         { key: 'fb_followers', label: 'Követők', value: lastValue(fans), agg: 'last' },
         { key: 'fb_reach', label: 'Elérés', value: totalReach },
-        { key: 'fb_impressions', label: 'Impressziók', value: sumSeries(reach, 1) },
-        { key: 'fb_reactions', label: 'Reakciók', value: totalReactions },
-        { key: 'fb_comments', label: 'Kommentek', value: totalComments },
-        { key: 'fb_shares', label: 'Megosztások', value: totalShares },
+        { key: 'fb_impressions', label: 'Impressziók', value: totalImpressions },
+        { key: 'fb_engagement', label: 'Engagement', value: totalEngagement },
+        { key: 'fb_reactions', label: 'Reakciók (posztok)', value: totalPostReactions },
+        { key: 'fb_comments', label: 'Kommentek (posztok)', value: totalPostComments },
+        { key: 'fb_shares', label: 'Megosztások (posztok)', value: totalPostShares },
         { key: 'fb_posts', label: 'Posztok', value: postCount },
         { key: 'fb_new_follows', label: 'Napi új követők', value: sumSeries(follows, 0) },
         { key: 'fb_video_views', label: 'Videó nézések', value: sumSeries(videoViews) },
-        { key: 'fb_engaged_users', label: 'Elkötelezett felhasználók', value: sumSeries(engagedUsers) },
         { key: 'fb_page_views', label: 'Oldal megtekintések', value: sumSeries(pageViews) },
         // Arány metrikák
-        { key: 'fb_interactions_total', label: 'Összes interakció', value: totalInteractions },
-        { key: 'fb_reaction_per_reach', label: 'Reakció / elérés', value: fmtPct(totalReach > 0 ? totalReactions / totalReach * 100 : 0), agg: 'avg' },
-        { key: 'fb_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalInteractions / totalReach * 100 : 0), agg: 'avg' },
+        { key: 'fb_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalEngagement / totalReach * 100 : 0), agg: 'avg' },
         // Átlag poszt KPI-ok
         { key: 'fb_avg_reach_post', label: 'Átl. elérés/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reach') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reactions') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount) : 0, agg: 'avg' },
         { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'clicks') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_total_impressions', label: 'Összes impresszió', value: sumSeries(findChart(results, 'fb_impressions_breakdown'), 0) },
-        { key: 'fb_page_actions_total', label: 'Oldal akciók', value: sumSeries(findChart(results, 'fb_page_actions'), 0) },
         { key: 'fb_reels_plays_total', label: 'Reels lejátszások', value: sumSeries(findChart(results, 'fb_reels_plays')) },
       ]);
     }

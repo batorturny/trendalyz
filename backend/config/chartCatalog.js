@@ -144,7 +144,7 @@ const chartCatalog = [
         type: 'line',
         color: '#4d96ff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['reach', 'impressions', 'date']
+        windsorFields: ['page_impressions_unique', 'page_impressions', 'date']
     },
     {
         key: 'fb_page_fans',
@@ -159,12 +159,12 @@ const chartCatalog = [
     {
         key: 'fb_engagement',
         title: 'Facebook engagement',
-        description: 'Reakciók, kommentek és megosztások',
+        description: 'Poszt engagement',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
         color: '#bc6aff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['reactions', 'comments', 'shares', 'date']
+        windsorFields: ['page_post_engagements', 'date']
     },
     {
         key: 'fb_post_engagement',
@@ -681,7 +681,7 @@ const chartCatalog = [
         type: 'line',
         color: '#ff6b9d',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['engaged_users', 'date']
+        windsorFields: ['page_post_engagements', 'date']
     },
     {
         key: 'fb_page_views',
@@ -696,12 +696,12 @@ const chartCatalog = [
     {
         key: 'fb_engagement_rate',
         title: 'Facebook engagement rate',
-        description: '(Reakciók + Kommentek + Megosztások) / Elérés %',
+        description: 'Engagement / Elérés %',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
         color: '#ff6b9d',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['reactions', 'comments', 'shares', 'reach', 'date'],
+        windsorFields: ['page_post_engagements', 'page_impressions_unique', 'date'],
         calculated: true
     },
 
@@ -790,7 +790,7 @@ const chartCatalog = [
     { key: 'tt_phone_clicks', title: 'Telefonszám kattintások', description: 'Telefonszám kattintások trendje', category: CHART_CATEGORIES.TREND, type: 'line', color: '#ff6b9d', platform: 'TIKTOK_ORGANIC', windsorFields: ['phone_number_clicks', 'date'] },
 
     // ========== FACEBOOK ORGANIC (NEW WINDSOR FIELDS) ==========
-    { key: 'fb_impressions_breakdown', title: 'Impressziók', description: 'Impressziók trendje', category: CHART_CATEGORIES.TREND, type: 'line', color: '#4d96ff', platform: 'FACEBOOK_ORGANIC', windsorFields: ['impressions', 'date'] },
+    { key: 'fb_impressions_breakdown', title: 'Impressziók', description: 'Impressziók trendje', category: CHART_CATEGORIES.TREND, type: 'line', color: '#4d96ff', platform: 'FACEBOOK_ORGANIC', windsorFields: ['page_impressions', 'date'] },
     { key: 'fb_post_clicks_breakdown', title: 'Kattintás típusok', description: 'Poszt kattintások típus szerinti bontásban', category: CHART_CATEGORIES.ENGAGEMENT, type: 'bar', color: '#ffce44', platform: 'FACEBOOK_ORGANIC', windsorFields: ['post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play', 'date'] },
     { key: 'fb_fans_country', title: 'Követők országonként', description: 'Oldal követők megoszlása országonként', category: CHART_CATEGORIES.AUDIENCE, type: 'bar', color: '#00d4aa', platform: 'FACEBOOK_ORGANIC', windsorFields: ['page_fans_country_name', 'page_fans_country_value'] },
     { key: 'fb_fans_city', title: 'Követők városonként', description: 'Oldal követők megoszlása városonként', category: CHART_CATEGORIES.AUDIENCE, type: 'bar', color: '#9d4edd', platform: 'FACEBOOK_ORGANIC', windsorFields: ['page_fans_city_name', 'page_fans_city_value'] },

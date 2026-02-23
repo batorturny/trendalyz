@@ -145,7 +145,7 @@ export const chartCatalog = [
         type: 'line',
         color: '#4d96ff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['reach', 'impressions', 'date']
+        windsorFields: ['page_impressions_unique', 'page_impressions', 'date']
     },
     {
         key: 'fb_page_fans',
@@ -160,12 +160,12 @@ export const chartCatalog = [
     {
         key: 'fb_engagement',
         title: 'Facebook engagement',
-        description: 'Reakci\u00f3k, kommentek \u00e9s megoszt\u00e1sok',
+        description: 'Poszt engagement',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
         color: '#bc6aff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['reactions', 'comments', 'shares', 'date']
+        windsorFields: ['page_post_engagements', 'date']
     },
     {
         key: 'fb_post_engagement',
@@ -682,7 +682,7 @@ export const chartCatalog = [
         type: 'line',
         color: '#ff6b9d',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['engaged_users', 'date']
+        windsorFields: ['page_post_engagements', 'date']
     },
     {
         key: 'fb_page_views',
@@ -697,12 +697,12 @@ export const chartCatalog = [
     {
         key: 'fb_engagement_rate',
         title: 'Facebook engagement rate',
-        description: '(Reakci\u00f3k + Kommentek + Megoszt\u00e1sok) / El\u00e9r\u00e9s %',
+        description: 'Engagement / El\u00e9r\u00e9s %',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
         color: '#ff6b9d',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['reactions', 'comments', 'shares', 'reach', 'date'],
+        windsorFields: ['page_post_engagements', 'page_impressions_unique', 'date'],
         calculated: true
     },
 
@@ -856,13 +856,13 @@ export const chartCatalog = [
     // ========== FACEBOOK ORGANIC (NEW WINDSOR FIELDS) ==========
     {
         key: 'fb_impressions_breakdown',
-        title: 'Organikus vs fizetett impresszi\u00f3k',
-        description: 'Impresszi\u00f3k bont\u00e1sa organikus \u00e9s fizetett',
+        title: 'Impresszi\u00f3k',
+        description: 'Impresszi\u00f3k trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
         color: '#4d96ff',
         platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['impressions', 'date']
+        windsorFields: ['page_impressions', 'date']
     },
     {
         key: 'fb_post_clicks_breakdown',

@@ -105,11 +105,10 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       {
         name: 'daily',
         fields: [
-          'date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total',
-          'reactions', 'comments', 'shares',
+          'date', 'page_impressions', 'page_impressions_unique', 'page_fans', 'page_views_total',
           'page_follows', 'page_daily_follows', 'page_daily_unfollows',
           'page_video_views', 'page_video_view_time',
-          'page_total_actions', 'page_post_engagements',
+          'page_post_engagements',
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
       },
