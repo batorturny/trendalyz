@@ -46,6 +46,9 @@ const PLATFORM_CONFIG = {
   },
   FACEBOOK_ORGANIC: {
     endpoint: 'facebook_organic',
+    accountIdField: 'page_id',
+    accountNameField: 'page_name',
+    discoverFields: ['page_id', 'page_name', 'date'],
     dailyFields: ['date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total', 'reactions', 'comments', 'shares'],
     contentFields: ['date', 'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink'],
     audienceFields: ['date', 'page_fans_city', 'page_fans_country', 'page_fans_gender_age'],
@@ -252,8 +255,10 @@ class WindsorMultiPlatform {
     const dateTo = now.toISOString().split('T')[0];
     const dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    // Request account_id + account_name + a couple of daily fields, WITHOUT select_accounts
-    const fields = ['account_id', 'account_name', ...config.dailyFields.slice(0, 3)];
+    // Use platform-specific account discovery fields (Facebook uses page_id/page_name)
+    const idField = config.accountIdField || 'account_id';
+    const nameField = config.accountNameField || 'account_name';
+    const fields = config.discoverFields || [idField, nameField, ...config.dailyFields.slice(0, 3)];
     const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields.join(',')}`;
 
     try {
@@ -261,11 +266,11 @@ class WindsorMultiPlatform {
       const rawData = response.data;
       const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
 
-      // Extract unique accounts from the data, keyed by account_id
+      // Extract unique accounts from the data
       const accountMap = new Map();
       for (const row of rows) {
-        const id = row.account_id;
-        const name = row.account_name;
+        const id = row[idField];
+        const name = row[nameField];
         if (!id) continue;
         if (!accountMap.has(id)) {
           accountMap.set(id, { accountName: name || id, rowCount: 0 });

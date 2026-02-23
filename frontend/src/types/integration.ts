@@ -22,6 +22,9 @@ export const PROVIDERS = [
     windsorEndpoint: 'tiktok_organic',
     description: 'TikTok organikus tartalom és követők',
     supportsOAuth: true,
+    discoverFields: 'account_id,account_name,date',
+    accountIdField: 'account_id',
+    accountNameField: 'account_name',
   },
   {
     key: 'FACEBOOK_ORGANIC' as const,
@@ -30,6 +33,9 @@ export const PROVIDERS = [
     windsorEndpoint: 'facebook_organic',
     description: 'Facebook oldal organikus tartalom',
     supportsOAuth: true,
+    discoverFields: 'page_id,page_name,date',
+    accountIdField: 'page_id',
+    accountNameField: 'page_name',
   },
   {
     key: 'YOUTUBE' as const,
@@ -38,6 +44,9 @@ export const PROVIDERS = [
     windsorEndpoint: 'youtube',
     description: 'YouTube csatorna és videók',
     supportsOAuth: true,
+    discoverFields: 'account_id,account_name,date',
+    accountIdField: 'account_id',
+    accountNameField: 'account_name',
   },
   {
     key: 'INSTAGRAM_ORGANIC' as const,
@@ -46,6 +55,9 @@ export const PROVIDERS = [
     windsorEndpoint: 'instagram',
     description: 'Instagram üzleti fiók és tartalom',
     supportsOAuth: true,
+    discoverFields: 'account_id,account_name,date',
+    accountIdField: 'account_id',
+    accountNameField: 'account_name',
   },
   {
     key: 'TIKTOK_ADS' as const,
@@ -54,6 +66,9 @@ export const PROVIDERS = [
     windsorEndpoint: 'tiktok',
     description: 'TikTok fizetett hirdetések',
     supportsOAuth: true,
+    discoverFields: 'account_id,account_name,date',
+    accountIdField: 'account_id',
+    accountNameField: 'account_name',
   },
 ] as const;
 

@@ -377,7 +377,10 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const platformResults = await Promise.all(
     PROVIDERS.map(async (p): Promise<PlatformDiscoveryResult> => {
       try {
-        const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=account_id,account_name,date`;
+        const fields = p.discoverFields || 'account_id,account_name,date';
+        const idField = p.accountIdField || 'account_id';
+        const nameField = p.accountNameField || 'account_name';
+        const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
         const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
 
         if (!res.ok) {
@@ -389,8 +392,9 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
 
         const accountMap = new Map<string, string>();
         for (const row of rows) {
-          if (row.account_id && !accountMap.has(row.account_id)) {
-            accountMap.set(row.account_id, row.account_name || row.account_id);
+          const accId = row[idField];
+          if (accId && !accountMap.has(accId)) {
+            accountMap.set(accId, row[nameField] || accId);
           }
         }
 
