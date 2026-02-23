@@ -112,12 +112,19 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
       },
-      // Per-post data
+      // Per-post content (identity + text)
       {
-        name: 'posts',
+        name: 'post_content',
         fields: [
-          'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach',
-          'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink',
+          'post_id', 'post_message', 'post_created_time', 'post_permalink',
+        ],
+      },
+      // Per-post metrics (separate API call — Windsor requires this split)
+      {
+        name: 'post_metrics',
+        fields: [
+          'post_id', 'post_impressions', 'post_reach',
+          'post_reactions', 'post_comments', 'post_shares', 'post_clicks',
           'post_video_views',
         ],
       },
@@ -226,10 +233,16 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         ],
       },
       {
-        name: 'posts',
+        name: 'post_content',
         fields: [
-          'post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach',
-          'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink',
+          'post_id', 'post_message', 'post_created_time', 'post_permalink',
+        ],
+      },
+      {
+        name: 'post_metrics',
+        fields: [
+          'post_id', 'post_impressions', 'post_reach',
+          'post_reactions', 'post_comments', 'post_shares', 'post_clicks',
         ],
       },
     ],
@@ -274,6 +287,35 @@ async function fetchWindsorRaw(apiKey: string, endpoint: string, accountId: stri
   return Array.isArray(raw) ? (raw[0]?.data || []) : (raw?.data || []);
 }
 
+/** Merge rows that share the same key field (e.g. post_id) so content + metrics become one row */
+function mergeRowsByKey(data: any[], keyField: string): any[] {
+  const keyed = new Map<string, any>();
+  const other: any[] = [];
+
+  for (const row of data) {
+    const key = row[keyField];
+    if (key) {
+      if (keyed.has(key)) {
+        // Merge: later values overwrite earlier, but skip empty/zero to preserve existing data
+        const existing = keyed.get(key);
+        for (const [k, v] of Object.entries(row)) {
+          if (v !== null && v !== undefined && v !== '' && v !== '0' && v !== 0) {
+            existing[k] = v;
+          } else if (!(k in existing)) {
+            existing[k] = v;
+          }
+        }
+      } else {
+        keyed.set(key, { ...row });
+      }
+    } else {
+      other.push(row);
+    }
+  }
+
+  return [...other, ...Array.from(keyed.values())];
+}
+
 async function fetchWindsorChartData(apiKey: string, platform: string, accountId: string, dateFrom: string, dateTo: string) {
   const config = PLATFORM_CONFIG[platform];
   if (!config) throw new Error(`Unknown platform: ${platform}`);
@@ -301,8 +343,14 @@ async function fetchWindsorChartData(apiKey: string, platform: string, accountId
   }
 
   const results = await Promise.all(promises);
-  // Merge all result arrays into one dataset
-  return results.flat();
+  let merged = results.flat();
+
+  // For Facebook: merge post content rows with post metric rows by post_id
+  if (platform === 'FACEBOOK_ORGANIC' || platform === 'FACEBOOK') {
+    merged = mergeRowsByKey(merged, 'post_id');
+  }
+
+  return merged;
 }
 
 export async function POST(req: Request) {

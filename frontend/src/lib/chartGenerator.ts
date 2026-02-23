@@ -355,12 +355,13 @@ export default class ChartGenerator {
         const tableData = posts.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            impressions: parseInt(p.post_impressions) || 0, reach: parseInt(p.post_reach) || 0,
-            reactions: parseInt(p.post_reactions) || 0, comments: parseInt(p.post_comments) || 0,
-            shares: parseInt(p.post_shares) || 0, clicks: parseInt(p.post_clicks) || 0,
+            views: parseInt(p.post_impressions) || 0,
+            likes: parseInt(p.post_reactions) || 0,
+            comments: parseInt(p.post_comments) || 0,
+            shares: parseInt(p.post_shares) || 0,
             link: p.post_permalink || '#'
         }));
-        return { labels: ['D\u00e1tum', '\u00dczenet', 'Impresszi\u00f3k', 'El\u00e9r\u00e9s', 'Reakci\u00f3k', 'Kommentek', 'Megoszt\u00e1sok', 'Kattint\u00e1sok', 'Link'], series: [{ name: 'Posts', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Posts', data: tableData }] };
     }
 
     generate_fb_worst_3_posts() {
@@ -398,11 +399,12 @@ export default class ChartGenerator {
         const tableData = sorted.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            videoViews: parseInt(p.post_video_views) || 0, reactions: parseInt(p.post_reactions) || 0,
+            views: parseInt(p.post_video_views) || 0,
+            likes: parseInt(p.post_reactions) || 0,
             comments: parseInt(p.post_comments) || 0, shares: parseInt(p.post_shares) || 0,
             link: p.post_permalink || '#'
         }));
-        return { labels: ['D\u00e1tum', '\u00dczenet', 'Vide\u00f3 n\u00e9z\u00e9sek', 'Reakci\u00f3k', 'Kommentek', 'Megoszt\u00e1sok', 'Link'], series: [{ name: 'Reels', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Videó nézések', 'Reakciók', 'Kommentek', 'Megosztások', 'Link'], series: [{ name: 'Reels', data: tableData }] };
     }
 
     // ===== INSTAGRAM CHARTS =====

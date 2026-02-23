@@ -342,12 +342,13 @@ class ChartGenerator {
         const tableData = posts.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            impressions: parseInt(p.post_impressions) || 0, reach: parseInt(p.post_reach) || 0,
-            reactions: parseInt(p.post_reactions) || 0, comments: parseInt(p.post_comments) || 0,
-            shares: parseInt(p.post_shares) || 0, clicks: parseInt(p.post_clicks) || 0,
+            views: parseInt(p.post_impressions) || 0,
+            likes: parseInt(p.post_reactions) || 0,
+            comments: parseInt(p.post_comments) || 0,
+            shares: parseInt(p.post_shares) || 0,
             link: p.post_permalink || '#'
         }));
-        return { labels: ['Dátum', 'Üzenet', 'Impressziók', 'Elérés', 'Reakciók', 'Kommentek', 'Megosztások', 'Kattintások', 'Link'], series: [{ name: 'Posts', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Posts', data: tableData }] };
     }
 
     generate_fb_worst_3_posts() {
@@ -380,7 +381,8 @@ class ChartGenerator {
         const tableData = sorted.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            videoViews: parseInt(p.post_video_views) || 0, reactions: parseInt(p.post_reactions) || 0,
+            views: parseInt(p.post_video_views) || 0,
+            likes: parseInt(p.post_reactions) || 0,
             comments: parseInt(p.post_comments) || 0, shares: parseInt(p.post_shares) || 0,
             link: p.post_permalink || '#'
         }));
