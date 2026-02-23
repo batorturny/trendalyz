@@ -694,17 +694,6 @@ export const chartCatalog = [
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_views_total', 'date']
     },
-    {
-        key: 'fb_engagement_rate',
-        title: 'Facebook engagement rate',
-        description: 'Engagement / El\u00e9r\u00e9s %',
-        category: CHART_CATEGORIES.ENGAGEMENT,
-        type: 'line',
-        color: '#ff6b9d',
-        platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['page_post_engagements', 'page_impressions_unique', 'date'],
-        calculated: true
-    },
 
     // ========== INSTAGRAM PUBLIC (MORE) ==========
     {

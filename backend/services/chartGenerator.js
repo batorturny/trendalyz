@@ -330,7 +330,15 @@ class ChartGenerator {
     generate_fb_video_views() { return this.dailyMetric(this.daily, 'page_video_views', 'Videó megtekintések'); }
     generate_fb_follows_trend() { return this.dailyMultiMetric(this.daily, [['page_daily_follows', 'Új követők'], ['page_daily_unfollows', 'Követéstörlés']]); }
     generate_fb_reaction_breakdown() { return this.dailyMultiMetric(this.daily, [['post_reactions_like_total', 'Like'], ['post_reactions_love_total', 'Love'], ['post_reactions_wow_total', 'Wow'], ['post_reactions_haha_total', 'Haha']]); }
-    generate_fb_page_video_time() { return this.dailyMetric(this.daily, 'page_video_view_time', 'Nézési idő'); }
+    generate_fb_page_video_time() {
+        const grouped = this.groupByDate(this.daily, 'date');
+        const labels = Object.keys(grouped).sort();
+        const data = labels.map(d => {
+            const ms = this.sumField(grouped[d], 'page_video_view_time');
+            return parseFloat((ms / 3600000).toFixed(1));
+        });
+        return { labels, series: [{ name: 'Nézési idő (óra)', data }] };
+    }
 
     generate_fb_all_posts() { return this.generateFacebookPostTable(this.video); }
     generate_fb_top_3_posts() {
@@ -366,8 +374,7 @@ class ChartGenerator {
         const tableData = sorted.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            views: this._fbVideoViews(p),
-            autoplay: parseInt(p.post_video_views_autoplayed) || 0,
+            views: parseInt(p.post_video_views_autoplayed) || 0,
             clickToPlay: parseInt(p.post_video_views_clicked_to_play) || 0,
             organic: parseInt(p.post_video_views_organic) || 0,
             unique: parseInt(p.post_video_views_unique) || 0,
@@ -376,7 +383,7 @@ class ChartGenerator {
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
             link: this._fbPostLink(p.post_id)
         }));
-        return { labels: ['Dátum', 'Üzenet', 'Videó nézés', 'Autoplay', 'Kattintásra', 'Organikus', 'Egyedi', 'Reakció', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Reels', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Autoplay', 'Kattintásra', 'Organikus', 'Egyedi', 'Reakció', 'Komment', 'Megosztás', 'Link'], series: [{ name: 'Reels', data: tableData }] };
     }
 
     /** Build Facebook post URL from post_id (format: pageId_postId) */
@@ -396,20 +403,7 @@ class ChartGenerator {
     generate_fb_engaged_users() { return this.dailyMetric(this.daily, 'engaged_users', 'Elkötelezett felhasználók'); }
     generate_fb_page_views() { return this.dailyMetric(this.daily, 'page_views_total', 'Oldal megtekintések'); }
 
-    generate_fb_engagement_rate() {
-        const grouped = this.groupByDate(this.daily, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            return this.engagementRate(
-                this.sumField(items, 'reactions'),
-                this.sumField(items, 'comments'),
-                this.sumField(items, 'shares'),
-                this.sumField(items, 'reach') || 1
-            );
-        });
-        return { labels, series: [{ name: 'ER %', data }] };
-    }
+    // fb_engagement_rate removed — KPI-ban megjelenik, de chartként nem releváns
 
     generate_fb_reel_performance() {
         return this.generateFacebookReelTable(this.video);

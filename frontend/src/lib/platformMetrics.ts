@@ -157,7 +157,6 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'fb_page_video_time', label: 'Videó nézési idő', chartKeys: ['fb_page_video_time'] },
       { key: 'fb_engaged_users', label: 'Elkötelezett felhasználók', chartKeys: ['fb_engaged_users'] },
       { key: 'fb_page_views', label: 'Oldal megtekintések', chartKeys: ['fb_page_views'] },
-      { key: 'fb_engagement_rate', label: 'Engagement rate trend', chartKeys: ['fb_engagement_rate'] },
       { key: 'fb_impressions_breakdown', label: 'Organikus vs fizetett', chartKeys: ['fb_impressions_breakdown'] },
       { key: 'fb_post_clicks_breakdown', label: 'Kattintás típusok', chartKeys: ['fb_post_clicks_breakdown'] },
       { key: 'fb_page_actions', label: 'Oldal akciók', chartKeys: ['fb_page_actions'] },
