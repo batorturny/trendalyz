@@ -254,18 +254,21 @@ export async function POST(req: Request) {
       chartsByPlatform.get(platform)!.push(chartReq);
     }
 
-    // Get Windsor API key
+    // Get Windsor API key (admin's own key OR central WINDSOR_API_KEY fallback)
     const adminId = session.user.role === 'ADMIN' ? session.user.id : company.adminId;
     const adminUser = await prisma.user.findUnique({
       where: { id: adminId! },
       select: { windsorApiKeyEnc: true },
     });
 
-    if (!adminUser?.windsorApiKeyEnc) {
+    let windsorApiKey: string;
+    if (adminUser?.windsorApiKeyEnc) {
+      windsorApiKey = decrypt(adminUser.windsorApiKeyEnc);
+    } else if (process.env.WINDSOR_API_KEY) {
+      windsorApiKey = process.env.WINDSOR_API_KEY;
+    } else {
       return NextResponse.json({ error: 'Windsor API key not configured' }, { status: 400 });
     }
-
-    const windsorApiKey = decrypt(adminUser.windsorApiKeyEnc);
 
     // Fetch data and generate charts per platform in parallel
     const platformPromises = Array.from(chartsByPlatform.entries()).map(async ([platform, platformCharts]) => {
