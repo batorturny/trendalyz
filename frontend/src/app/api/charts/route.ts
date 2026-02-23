@@ -133,9 +133,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         ],
         optional: true,
       },
-      // Demographics
-      { name: 'fans_country', fields: ['page_fans_country_name', 'page_fans_country_value'], optional: true },
-      { name: 'fans_city', fields: ['page_fans_city_name', 'page_fans_city_value'], optional: true },
     ],
   },
   INSTAGRAM_ORGANIC: {
