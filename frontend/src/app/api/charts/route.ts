@@ -101,7 +101,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   FACEBOOK_ORGANIC: {
     endpoint: 'facebook_organic',
     fieldGroups: [
-      // 1. Daily page metrics
+      // 1. Daily page metrics (page-level, keyed by date)
       {
         name: 'daily',
         fields: [
@@ -112,53 +112,18 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
       },
-      // 2. Post content (identity + text)
+      // 2. ALL post metrics in ONE call (content + activity + impressions + video + clicks)
       {
-        name: 'post_content',
+        name: 'posts',
         fields: [
           'post_id', 'post_message', 'post_created_time',
+          'post_activity_by_action_type_like', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
+          'post_impressions', 'post_impressions_unique', 'post_impressions_fan', 'post_impressions_organic',
+          'post_video_views', 'post_video_views_autoplayed', 'post_video_views_clicked_to_play', 'post_video_views_organic', 'post_video_views_unique',
+          'post_clicks', 'post_clicks_by_type_other_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play', 'post_clicks_by_type_link_clicks',
         ],
       },
-      // 3. Post activity metrics (likes, comments, shares)
-      {
-        name: 'post_activity',
-        fields: [
-          'post_id',
-          'post_activity_by_action_type_like',
-          'post_activity_by_action_type_comment',
-          'post_activity_by_action_type_share',
-        ],
-      },
-      // 4. Post impressions & reach
-      {
-        name: 'post_impressions',
-        fields: [
-          'post_id',
-          'post_impressions', 'post_impressions_unique',
-          'post_impressions_fan', 'post_impressions_organic',
-        ],
-      },
-      // 5. Post video views (reels + video posts)
-      {
-        name: 'post_video',
-        fields: [
-          'post_id',
-          'post_video_views', 'post_video_views_autoplayed',
-          'post_video_views_clicked_to_play',
-          'post_video_views_organic', 'post_video_views_unique',
-        ],
-      },
-      // 6. Post clicks breakdown
-      {
-        name: 'post_clicks',
-        fields: [
-          'post_id',
-          'post_clicks', 'post_clicks_by_type_other_clicks',
-          'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play',
-          'post_clicks_by_type_link_clicks',
-        ],
-      },
-      // 7. Reaction breakdown (daily dimension)
+      // 3. Reaction breakdown (daily dimension)
       {
         name: 'reactions',
         fields: [
@@ -257,24 +222,14 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         ],
       },
       {
-        name: 'post_content',
-        fields: ['post_id', 'post_message', 'post_created_time'],
-      },
-      {
-        name: 'post_activity',
-        fields: ['post_id', 'post_activity_by_action_type_like', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share'],
-      },
-      {
-        name: 'post_impressions',
-        fields: ['post_id', 'post_impressions', 'post_impressions_unique'],
-      },
-      {
-        name: 'post_video',
-        fields: ['post_id', 'post_video_views', 'post_video_views_unique'],
-      },
-      {
-        name: 'post_clicks',
-        fields: ['post_id', 'post_clicks'],
+        name: 'posts',
+        fields: [
+          'post_id', 'post_message', 'post_created_time',
+          'post_activity_by_action_type_like', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
+          'post_impressions', 'post_impressions_unique',
+          'post_video_views', 'post_video_views_unique',
+          'post_clicks',
+        ],
       },
     ],
   },

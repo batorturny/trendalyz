@@ -351,6 +351,13 @@ export default class ChartGenerator {
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
+    _fbVideoViews(p) {
+        const v = parseInt(p.post_video_views) || 0;
+        if (v > 0) return v;
+        // Fallback: sum autoplayed + clicked_to_play (post_video_views can be 0 even when these are not)
+        return (parseInt(p.post_video_views_autoplayed) || 0) + (parseInt(p.post_video_views_clicked_to_play) || 0);
+    }
+
     generateFacebookPostTable(posts) {
         const tableData = posts.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
@@ -361,19 +368,19 @@ export default class ChartGenerator {
             comments: parseInt(p.post_activity_by_action_type_comment) || 0,
             shares: parseInt(p.post_activity_by_action_type_share) || 0,
             clicks: parseInt(p.post_clicks) || 0,
-            videoViews: parseInt(p.post_video_views) || 0,
+            videoViews: this._fbVideoViews(p),
             link: this._fbPostLink(p.post_id)
         }));
         return { labels: ['Dátum', 'Üzenet', 'Impresszió', 'Elérés', 'Reakció', 'Komment', 'Megosztás', 'Kattintás', 'Videó nézés', 'Link'], series: [{ name: 'Posts', data: tableData }] };
     }
 
     generateFacebookReelTable(posts) {
-        const reels = posts.filter(p => (parseInt(p.post_video_views) || 0) > 0);
-        const sorted = [...reels].sort((a, b) => (parseInt(b.post_video_views) || 0) - (parseInt(a.post_video_views) || 0));
+        const reels = posts.filter(p => this._fbVideoViews(p) > 0);
+        const sorted = [...reels].sort((a, b) => this._fbVideoViews(b) - this._fbVideoViews(a));
         const tableData = sorted.map(p => ({
             id: p.post_id, caption: p.post_message || '-',
             date: p.post_created_time ? p.post_created_time.substring(0, 10) : '-',
-            views: parseInt(p.post_video_views) || 0,
+            views: this._fbVideoViews(p),
             autoplay: parseInt(p.post_video_views_autoplayed) || 0,
             clickToPlay: parseInt(p.post_video_views_clicked_to_play) || 0,
             organic: parseInt(p.post_video_views_organic) || 0,
