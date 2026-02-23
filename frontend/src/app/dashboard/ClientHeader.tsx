@@ -13,9 +13,8 @@ import { Settings, Menu, X } from 'lucide-react';
 const platformTabs = [
   { href: '/dashboard/tiktok', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
   { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'] },
-  { href: '/dashboard/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_PUBLIC'] },
+  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'] },
   { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'] },
-  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'], disabled: true },
   { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'] },
 ];
 
@@ -49,15 +48,14 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
               {platformTabs.map(tab => {
                 const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
 
-                const isEnabled = !tab.disabled &&
-                  tab.providers.some(p => connectedProviders.includes(p));
+                const isEnabled = tab.providers.some(p => connectedProviders.includes(p));
 
                 if (!isEnabled) {
                   return (
                     <span
                       key={tab.href}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
-                      title={tab.disabled ? "Hamarosan érkezik" : "Nem konfigurált"}
+                      title="Nem konfigurált"
                     >
                       <PlatformIcon platform={tab.platform} className="w-4 h-4 grayscale" />
                       {tab.label}
@@ -139,7 +137,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
               <p className="px-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Platformok</p>
               {platformTabs.map(tab => {
                 const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
-                const isEnabled = !tab.disabled && tab.providers.some(p => connectedProviders.includes(p));
+                const isEnabled = tab.providers.some(p => connectedProviders.includes(p));
 
                 if (!isEnabled) {
                   return (

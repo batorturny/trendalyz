@@ -627,7 +627,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
         color: '#e040fb',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_like_count', 'media_comments_count', 'date']
     },
     {
@@ -637,7 +637,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
         color: '#bc6aff',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['likes_per_post', 'comments_per_post', 'date'],
         calculated: true
     },
@@ -648,7 +648,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.MEDIA,
         type: 'table',
         color: '#00d4ff',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
     },
     {
@@ -658,7 +658,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.MEDIA,
         type: 'table',
         color: '#00ff95',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
     },
 
@@ -713,7 +713,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.MEDIA,
         type: 'table',
         color: '#ff6b6b',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
     },
     {
@@ -723,7 +723,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.TREND,
         type: 'line',
         color: '#00ff95',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['profile_followers_count', 'date']
     },
     {
@@ -733,7 +733,7 @@ const chartCatalog = [
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
         color: '#ff6b9d',
-        platform: 'INSTAGRAM_PUBLIC',
+        platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_like_count', 'media_comments_count', 'profile_followers_count', 'date'],
         calculated: true
     },

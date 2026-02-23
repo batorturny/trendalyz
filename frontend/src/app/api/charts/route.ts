@@ -7,7 +7,7 @@ import ChartGenerator from '@/lib/chartGenerator';
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
 
-const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string[] }> = {
+const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string[]; secondaryEndpoint?: string; secondaryFields?: string[] }> = {
   TIKTOK_ORGANIC: {
     endpoint: 'tiktok_organic',
     allChartFields: [
@@ -55,6 +55,13 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'media_reel_video_views', 'media_reel_avg_watch_time',
       'story_reach', 'story_views', 'story_exits',
     ],
+    secondaryEndpoint: 'instagram_public',
+    secondaryFields: [
+      'date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username',
+      'media_id', 'media_caption', 'media_like_count', 'media_comments_count',
+      'media_type', 'media_permalink', 'media_timestamp',
+      'likes_per_post', 'comments_per_post',
+    ],
   },
   INSTAGRAM: {
     endpoint: 'instagram',
@@ -62,15 +69,6 @@ const PLATFORM_CONFIG: Record<string, { endpoint: string; allChartFields: string
       'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
       'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
       'media_url', 'permalink',
-    ],
-  },
-  INSTAGRAM_PUBLIC: {
-    endpoint: 'instagram_public',
-    allChartFields: [
-      'date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username',
-      'media_id', 'media_caption', 'media_like_count', 'media_comments_count',
-      'media_type', 'media_permalink', 'media_timestamp',
-      'likes_per_post', 'comments_per_post',
     ],
   },
   FACEBOOK: {
@@ -124,7 +122,7 @@ async function fetchWindsorChartData(apiKey: string, platform: string, accountId
   );
   const mainFields = config.allChartFields.filter(f => !demographicsFields.has(f));
 
-  // Fetch main data + demographics in parallel
+  // Fetch main data + demographics + secondary endpoint in parallel
   const promises: Promise<any[]>[] = [
     fetchWindsorRaw(apiKey, config.endpoint, accountId, dateFrom, dateTo, mainFields.join(',')),
   ];
@@ -133,6 +131,16 @@ async function fetchWindsorChartData(apiKey: string, platform: string, accountId
     promises.push(
       fetchWindsorRaw(apiKey, config.endpoint, accountId, dateFrom, dateTo, dq.fields).catch(err => {
         console.warn(`[Windsor] Demographics fetch failed for ${platform}:`, err.message);
+        return [];
+      })
+    );
+  }
+
+  // Fetch secondary endpoint data (e.g. instagram_public for INSTAGRAM_ORGANIC)
+  if (config.secondaryEndpoint && config.secondaryFields) {
+    promises.push(
+      fetchWindsorRaw(apiKey, config.secondaryEndpoint, accountId, dateFrom, dateTo, config.secondaryFields.join(',')).catch(err => {
+        console.warn(`[Windsor] Secondary endpoint fetch failed for ${platform}:`, err.message);
         return [];
       })
     );

@@ -579,7 +579,7 @@ export async function addConnection(
 ) {
   await requireCompanyOwnership(companyId);
 
-  const validProviders = ['TIKTOK_ORGANIC', 'TIKTOK_ADS', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'INSTAGRAM_PUBLIC', 'YOUTUBE', 'FACEBOOK'];
+  const validProviders = ['TIKTOK_ORGANIC', 'TIKTOK_ADS', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'INSTAGRAM', 'YOUTUBE', 'FACEBOOK'];
   if (!validProviders.includes(provider)) {
     throw new Error('Érvénytelen platform');
   }

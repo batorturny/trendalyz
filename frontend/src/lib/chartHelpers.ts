@@ -308,6 +308,12 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const saveRate = findChart(results, 'ig_save_rate');
       const storyOverview = findChart(results, 'ig_story_overview');
 
+      // IG Public data (merged)
+      const igpubEngagement = findChart(results, 'igpub_engagement_overview');
+      const igpubAvgEng = findChart(results, 'igpub_avg_engagement');
+      const igpubAllMedia = findChart(results, 'igpub_all_media');
+      const igpubFollowersTrend = findChart(results, 'igpub_followers_trend');
+
       const totalReach = sumSeries(reach, 0);
       const totalLikes = sumSeries(engagement, 0);
       const totalComments = sumSeries(engagement, 1);
@@ -316,6 +322,11 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const totalInteractions = totalLikes + totalComments + totalShares + totalSaves;
       const mediaRows = getTableData(media);
       const mediaCount = mediaRows.length;
+
+      const igpubTotalLikes = sumSeries(igpubEngagement, 0);
+      const igpubTotalComments = sumSeries(igpubEngagement, 1);
+      const igpubFollowers = lastValue(igpubFollowersTrend);
+      const igpubTotalInteractions = igpubTotalLikes + igpubTotalComments;
 
       return addDescriptions([
         // Alap metrikák
@@ -341,30 +352,16 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'ig_avg_comments_media', label: 'Átl. komment/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'comments') / mediaCount) : 0, agg: 'avg' },
         { key: 'ig_avg_saves_media', label: 'Átl. mentés/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'saved') / mediaCount) : 0, agg: 'avg' },
         { key: 'ig_avg_shares_media', label: 'Átl. megosztás/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'shares') / mediaCount) : 0, agg: 'avg' },
-      ]);
-    }
-    case 'INSTAGRAM_PUBLIC': {
-      const engagement = findChart(results, 'igpub_engagement_overview');
-      const avgEng = findChart(results, 'igpub_avg_engagement');
-      const allMedia = findChart(results, 'igpub_all_media');
-      const followersTrend = findChart(results, 'igpub_followers_trend');
-      const erChart = findChart(results, 'igpub_engagement_rate');
-
-      const totalLikes = sumSeries(engagement, 0);
-      const totalComments = sumSeries(engagement, 1);
-      const followers = lastValue(followersTrend);
-      const totalInteractions = totalLikes + totalComments;
-
-      return addDescriptions([
-        { key: 'igpub_followers', label: 'Követők', value: followers, agg: 'last' },
-        { key: 'igpub_likes', label: 'Like-ok', value: totalLikes },
-        { key: 'igpub_comments', label: 'Kommentek', value: totalComments },
-        { key: 'igpub_avg_likes', label: 'Átl. like/poszt', value: fmtDec1(avgSeries(avgEng, 0)), agg: 'avg' },
-        { key: 'igpub_avg_comments', label: 'Átl. komment/poszt', value: fmtDec1(avgSeries(avgEng, 1)), agg: 'avg' },
-        { key: 'igpub_media', label: 'Tartalmak', value: tableCount(allMedia) },
-        { key: 'igpub_interactions', label: 'Összes interakció', value: totalInteractions },
-        { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt', value: fmtDec1(avgSeries(avgEng, 0) + avgSeries(avgEng, 1)), agg: 'avg' },
-        { key: 'igpub_er', label: 'Engagement rate%', value: fmtPct(followers > 0 ? totalInteractions / followers * 100 : 0), agg: 'avg' },
+        // IG Public metrikák (publikus profil adatok)
+        { key: 'igpub_followers', label: 'Publikus követők', value: igpubFollowers, agg: 'last' },
+        { key: 'igpub_likes', label: 'Publikus like-ok', value: igpubTotalLikes },
+        { key: 'igpub_comments', label: 'Publikus kommentek', value: igpubTotalComments },
+        { key: 'igpub_avg_likes', label: 'Átl. like/poszt (pub)', value: fmtDec1(avgSeries(igpubAvgEng, 0)), agg: 'avg' },
+        { key: 'igpub_avg_comments', label: 'Átl. komment/poszt (pub)', value: fmtDec1(avgSeries(igpubAvgEng, 1)), agg: 'avg' },
+        { key: 'igpub_media', label: 'Publikus tartalmak', value: tableCount(igpubAllMedia) },
+        { key: 'igpub_interactions', label: 'Publikus interakciók', value: igpubTotalInteractions },
+        { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt (pub)', value: fmtDec1(avgSeries(igpubAvgEng, 0) + avgSeries(igpubAvgEng, 1)), agg: 'avg' },
+        { key: 'igpub_er', label: 'Pub. ER%', value: fmtPct(igpubFollowers > 0 ? igpubTotalInteractions / igpubFollowers * 100 : 0), agg: 'avg' },
       ]);
     }
     case 'YOUTUBE': {

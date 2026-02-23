@@ -36,14 +36,6 @@ export const ADMIN_PLATFORM_CONFIGS: Record<string, AdminPlatformConfig> = {
     borderColor: '#a855f7',
     description: 'Instagram havi riport generálása',
   },
-  'instagram-public': {
-    platformKey: 'INSTAGRAM_PUBLIC',
-    label: 'Instagram Public',
-    gradient: 'from-purple-500 to-pink-500',
-    headerGradient: 'from-purple-500/20 to-pink-500/15',
-    borderColor: 'var(--platform-instagram)',
-    description: 'Instagram publikus profil elemzés (versenytárs)',
-  },
   youtube: {
     platformKey: 'YOUTUBE',
     label: 'YouTube',
@@ -86,14 +78,6 @@ export const CLIENT_PLATFORM_CONFIGS: Record<string, ClientPlatformConfig> = {
     gradient: 'from-purple-500 to-pink-500',
     headerGradient: 'from-purple-500/20 to-pink-500/15',
     borderColor: '#a855f7',
-  },
-  'instagram-public': {
-    platformKey: 'INSTAGRAM_PUBLIC',
-    label: 'Instagram Public',
-    platformIcon: 'instagram',
-    gradient: 'from-purple-500 to-pink-500',
-    headerGradient: 'from-purple-500/20 to-pink-500/15',
-    borderColor: '#e040fb',
   },
   youtube: {
     platformKey: 'YOUTUBE',

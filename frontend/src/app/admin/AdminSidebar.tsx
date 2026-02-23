@@ -20,11 +20,9 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; dis
 const platformItems = [
   { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
   { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)' },
-  { href: '/admin/reports/instagram-public', label: 'IG Public', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
+  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
   { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)' },
-  // Fejlesztés alatt — legalul
-  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', disabled: true },
-  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', disabled: true },
+  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
 ];
 
 function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
@@ -79,21 +77,6 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
         <div className="pt-4 mt-4 border-t border-[var(--border)]">
           <p className="px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Riportok</p>
           {platformItems.map((item) => {
-            if (item.disabled) {
-              return (
-                <span
-                  key={item.href}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed group relative"
-                  title="Fejlesztés alatt"
-                >
-                  <PlatformIcon platform={item.platform} className="w-4 h-4 grayscale" />
-                  {item.label}
-                  <span className="ml-auto text-[8px] uppercase font-bold tracking-wider text-[var(--text-secondary)]">Hamarosan</span>
-                </span>
-              );
-            }
-
-
             const isActive = pathname === item.href;
 
             return (

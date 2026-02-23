@@ -54,7 +54,6 @@ const PLATFORM_CHART_KEYS: Record<string, string[]> = {
   TIKTOK_ADS: ['ttads_spend_trend', 'ttads_impressions_clicks', 'ttads_ctr_trend', 'ttads_cpc_cpm', 'ttads_conversions', 'ttads_cost_per_conversion'],
   FACEBOOK_ORGANIC: ['fb_page_reach', 'fb_page_fans', 'fb_engagement', 'fb_all_posts', 'fb_follows_trend', 'fb_video_views'],
   INSTAGRAM_ORGANIC: ['ig_reach', 'ig_follower_growth', 'ig_engagement', 'ig_profile_activity', 'ig_all_media', 'ig_daily_followers', 'ig_save_rate', 'ig_story_overview'],
-  INSTAGRAM_PUBLIC: ['igpub_engagement_overview', 'igpub_avg_engagement', 'igpub_all_media'],
   YOUTUBE: ['yt_subscribers_growth', 'yt_views_trend', 'yt_watch_time', 'yt_daily_engagement', 'yt_engagement_rate', 'yt_all_videos', 'yt_avg_view_pct', 'yt_playlist_adds'],
 };
 
@@ -147,18 +146,6 @@ function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { label: 'Story elérés', value: sumSeries(storyOverview, 0) },
       ];
     }
-    case 'INSTAGRAM_PUBLIC': {
-      const engagement = find(results, 'igpub_engagement_overview');
-      const avgEng = find(results, 'igpub_avg_engagement');
-      const allMedia = find(results, 'igpub_all_media');
-      return [
-        { label: 'Like-ok', value: sumSeries(engagement, 0) },
-        { label: 'Kommentek', value: sumSeries(engagement, 1) },
-        { label: 'Átl. like/poszt', value: `${avgSeries(avgEng, 0).toFixed(1)}` },
-        { label: 'Átl. komment/poszt', value: `${avgSeries(avgEng, 1).toFixed(1)}` },
-        { label: 'Tartalmak', value: tableCount(allMedia) },
-      ];
-    }
     case 'YOUTUBE': {
       const subs = find(results, 'yt_subscribers_growth');
       const views = find(results, 'yt_views_trend');
@@ -191,7 +178,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   TIKTOK_ADS: 'TikTok Ads',
   FACEBOOK_ORGANIC: 'Facebook',
   INSTAGRAM_ORGANIC: 'Instagram',
-  INSTAGRAM_PUBLIC: 'Instagram Public',
   YOUTUBE: 'YouTube',
 };
 

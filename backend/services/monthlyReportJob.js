@@ -217,7 +217,6 @@ async function runMonthlyReports({ currentDay, currentHour } = {}) {
     TIKTOK_ORGANIC: 'TikTok',
     FACEBOOK_ORGANIC: 'Facebook',
     INSTAGRAM_ORGANIC: 'Instagram',
-    INSTAGRAM_PUBLIC: 'Instagram Public',
     YOUTUBE: 'YouTube',
   };
 

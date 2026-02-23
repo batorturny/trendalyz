@@ -8,7 +8,6 @@ const PLATFORM_COLORS = {
   TIKTOK_ADS: '#ec4899',
   FACEBOOK_ORGANIC: '#3b82f6',
   INSTAGRAM_ORGANIC: '#a855f7',
-  INSTAGRAM_PUBLIC: '#a855f7',
   YOUTUBE: '#ef4444',
 };
 
@@ -17,7 +16,6 @@ const PLATFORM_LABELS = {
   TIKTOK_ADS: 'TikTok Ads',
   FACEBOOK_ORGANIC: 'Facebook',
   INSTAGRAM_ORGANIC: 'Instagram',
-  INSTAGRAM_PUBLIC: 'Instagram Public',
   YOUTUBE: 'YouTube',
 };
 

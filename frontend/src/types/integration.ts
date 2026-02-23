@@ -1,4 +1,4 @@
-export type ConnectionProvider = 'TIKTOK_ORGANIC' | 'TIKTOK_ADS' | 'FACEBOOK_ORGANIC' | 'INSTAGRAM_ORGANIC' | 'INSTAGRAM' | 'INSTAGRAM_PUBLIC' | 'YOUTUBE' | 'FACEBOOK';
+export type ConnectionProvider = 'TIKTOK_ORGANIC' | 'TIKTOK_ADS' | 'FACEBOOK_ORGANIC' | 'INSTAGRAM_ORGANIC' | 'INSTAGRAM' | 'YOUTUBE' | 'FACEBOOK';
 export type ConnectionStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR' | 'PENDING';
 
 export interface IntegrationConnection {
@@ -40,21 +40,12 @@ export const PROVIDERS = [
     supportsOAuth: true,
   },
   {
-    key: 'INSTAGRAM_PUBLIC' as const,
-    label: 'Instagram Public',
-    color: 'from-purple-500 to-pink-500',
-    windsorEndpoint: 'instagram_public',
-    description: 'Instagram publikus profil elemzés (versenytárs)',
-    supportsOAuth: false, // Windsor doesn't support OAuth for this yet?
-  },
-  {
     key: 'INSTAGRAM_ORGANIC' as const,
     label: 'Instagram',
     color: 'from-purple-500 to-pink-500',
     windsorEndpoint: 'instagram',
     description: 'Instagram üzleti fiók és tartalom',
     supportsOAuth: true,
-    isDev: true,
   },
   {
     key: 'TIKTOK_ADS' as const,
@@ -63,7 +54,6 @@ export const PROVIDERS = [
     windsorEndpoint: 'tiktok',
     description: 'TikTok fizetett hirdetések',
     supportsOAuth: true,
-    isDev: true,
   },
 ] as const;
 

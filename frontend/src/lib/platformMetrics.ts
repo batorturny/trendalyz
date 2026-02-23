@@ -181,33 +181,9 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'ig_media_type_breakdown', label: 'Tartalom típus megoszlás', chartKeys: ['ig_media_type_breakdown'] },
       { key: 'ig_all_media', label: 'Összes tartalom', chartKeys: ['ig_all_media'] },
       { key: 'ig_top_3_media', label: 'Top 3 tartalom', chartKeys: ['ig_top_3_media'] },
-    ],
-  },
-  INSTAGRAM_PUBLIC: {
-    label: 'IG Public',
-    color: 'var(--platform-instagram)',
-    platform: 'instagram',
-    kpis: [
-      { key: 'igpub_followers', label: 'Követők', chartKeys: ['igpub_followers_trend'] },
-      { key: 'igpub_likes', label: 'Like-ok', chartKeys: ['igpub_engagement_overview'] },
-      { key: 'igpub_comments', label: 'Kommentek', chartKeys: ['igpub_engagement_overview'] },
-      { key: 'igpub_avg_likes', label: 'Átl. like/poszt', chartKeys: ['igpub_avg_engagement'] },
-      { key: 'igpub_avg_comments', label: 'Átl. komment/poszt', chartKeys: ['igpub_avg_engagement'] },
-      { key: 'igpub_media', label: 'Tartalmak', chartKeys: ['igpub_all_media'] },
-      { key: 'igpub_interactions', label: 'Összes interakció', chartKeys: ['igpub_engagement_overview'] },
-      { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt', chartKeys: ['igpub_avg_engagement'] },
-      { key: 'igpub_er', label: 'Engagement rate%', chartKeys: ['igpub_engagement_overview', 'igpub_followers_trend'] },
-    ],
-    daily: [
-      { key: 'igpub_followers_trend', label: 'Követők trend', chartKeys: ['igpub_followers_trend'] },
-      { key: 'igpub_engagement_overview', label: 'Engagement áttekintés', chartKeys: ['igpub_engagement_overview'] },
-      { key: 'igpub_avg_engagement', label: 'Átlag engagement', chartKeys: ['igpub_avg_engagement'] },
-      { key: 'igpub_engagement_rate', label: 'Engagement rate trend', chartKeys: ['igpub_engagement_rate'] },
-    ],
-    distributions: [
-      { key: 'igpub_all_media', label: 'Összes tartalom', chartKeys: ['igpub_all_media'] },
-      { key: 'igpub_top_3_media', label: 'Top 3 tartalom', chartKeys: ['igpub_top_3_media'] },
-      { key: 'igpub_worst_3_media', label: 'Leggyengébb 3 tartalom', chartKeys: ['igpub_worst_3_media'] },
+      { key: 'igpub_all_media', label: 'Publikus tartalmak', chartKeys: ['igpub_all_media'] },
+      { key: 'igpub_top_3_media', label: 'Top 3 publikus tartalom', chartKeys: ['igpub_top_3_media'] },
+      { key: 'igpub_worst_3_media', label: 'Leggyengébb 3 publikus tartalom', chartKeys: ['igpub_worst_3_media'] },
     ],
   },
   YOUTUBE: {
@@ -254,9 +230,9 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
   },
 };
 
-export const PLATFORM_ORDER = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_PUBLIC', 'YOUTUBE', 'TIKTOK_ADS', 'INSTAGRAM_ORGANIC'];
+export const PLATFORM_ORDER = ['TIKTOK_ORGANIC', 'FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'YOUTUBE', 'TIKTOK_ADS'];
 
-export const DISABLED_PLATFORMS = new Set(['TIKTOK_ADS', 'INSTAGRAM_ORGANIC']);
+export const DISABLED_PLATFORMS = new Set<string>([]);
 
 /**
  * Collect all chart keys needed for a given set of KPI keys and chart keys.

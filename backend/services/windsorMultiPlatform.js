@@ -89,19 +89,6 @@ const PLATFORM_CONFIG = {
       'media_url', 'permalink',
     ],
   },
-  INSTAGRAM_PUBLIC: {
-    endpoint: 'instagram_public',
-    dailyFields: ['date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username'],
-    contentFields: ['date', 'media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp', 'likes_per_post', 'comments_per_post'],
-    audienceFields: ['date'],
-    demographicFields: null,
-    allChartFields: [
-      'date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username',
-      'media_id', 'media_caption', 'media_like_count', 'media_comments_count',
-      'media_type', 'media_permalink', 'media_timestamp',
-      'likes_per_post', 'comments_per_post',
-    ],
-  },
   FACEBOOK: {
     endpoint: 'facebook',
     dailyFields: ['date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total', 'reactions', 'comments', 'shares'],
