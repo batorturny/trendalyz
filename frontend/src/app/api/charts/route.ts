@@ -38,14 +38,14 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'engaged_audience', 'daily_lost_followers', 'phone_number_clicks',
         ],
       },
-      // Per-video metrics
+      // Per-video metrics (separate API call — incompatible dimension with daily)
       {
         name: 'videos',
         fields: [
           'video_id', 'video_caption', 'video_create_datetime', 'video_embed_url',
           'video_views_count', 'video_reach', 'video_likes', 'video_comments',
           'video_shares', 'video_new_followers', 'video_full_watched_rate',
-          'video_average_time_watched', 'video_total_time_watched', 'video_duration',
+          'video_average_time_watched_non_aggregated', 'video_total_time_watched',
         ],
       },
       // Audience activity (hourly breakdown — separate dimension)

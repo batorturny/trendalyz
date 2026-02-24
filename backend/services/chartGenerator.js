@@ -153,10 +153,10 @@ class ChartGenerator {
     generate_tt_bio_link_clicks() { return this.dailyMetric(this.daily, 'bio_link_clicks', 'Bio link kattintások'); }
 
     generate_tt_video_watch_time() {
-        const videos = this.video.filter(v => v.video_average_time_watched);
+        const videos = this.video.filter(v => v.video_average_time_watched_non_aggregated || v.video_average_time_watched);
         return {
             labels: videos.map(v => (v.video_caption || '').substring(0, 30) || v.video_id || '-'),
-            series: [{ name: 'Átl. nézési idő (mp)', data: videos.map(v => parseFloat(v.video_average_time_watched) || 0) }]
+            series: [{ name: 'Átl. nézési idő (mp)', data: videos.map(v => parseFloat(v.video_average_time_watched_non_aggregated) || parseFloat(v.video_average_time_watched) || 0) }]
         };
     }
 

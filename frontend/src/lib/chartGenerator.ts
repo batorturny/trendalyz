@@ -154,10 +154,10 @@ export default class ChartGenerator {
     generate_tt_bio_link_clicks() { return this.dailyMetric(this.daily, 'bio_link_clicks', 'Bio link kattint\u00e1sok'); }
 
     generate_tt_video_watch_time() {
-        const videos = this.video.filter(v => v.video_average_time_watched);
+        const videos = this.video.filter(v => v.video_average_time_watched_non_aggregated || v.video_average_time_watched);
         return {
             labels: videos.map(v => (v.video_caption || '').substring(0, 30) || v.video_id || '-'),
-            series: [{ name: '\u00c1tl. n\u00e9z\u00e9si id\u0151 (mp)', data: videos.map(v => parseFloat(v.video_average_time_watched) || 0) }]
+            series: [{ name: '\u00c1tl. n\u00e9z\u00e9si id\u0151 (mp)', data: videos.map(v => parseFloat(v.video_average_time_watched_non_aggregated) || parseFloat(v.video_average_time_watched) || 0) }]
         };
     }
 

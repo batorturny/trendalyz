@@ -1,11 +1,13 @@
 import { Video } from '@/lib/api';
 
-// Maps Hungarian column labels to data object property names
+// Maps column labels (Hungarian + English) to data object property names
 const LABEL_TO_KEY: Record<string, string> = {
+    // Hungarian labels
     'Dátum': 'date',
     'Üzenet': 'caption',
-    'Cím': 'caption',
+    'Cím': 'title',
     'Impresszió': 'views',
+    'Impressziók': 'impressions',
     'Megtekintés': 'views',
     'Elérés': 'reach',
     'Reakció': 'likes',
@@ -14,14 +16,37 @@ const LABEL_TO_KEY: Record<string, string> = {
     'Megosztás': 'shares',
     'Kattintás': 'clicks',
     'Videó nézés': 'videoViews',
-    'Autoplay': 'autoplay',
+    'Autoplay': 'views',
     'Kattintásra': 'clickToPlay',
     'Organikus': 'organic',
     'Egyedi': 'unique',
+    'Új követők': 'newFollowers',
+    'Végignézés%': 'fullWatchRate',
+    'Átl. nézési idő': 'avgWatchTime',
+    'ER%': 'engagementRate',
+    'Nézési%': 'avgViewPercentage',
+    'Mentések': 'saved',
+    'Típus': 'type',
+    'Like-ok': 'likes',
+    'Kommentek': 'comments',
+    'Megosztások': 'shares',
+    // English labels (from TikTok/YouTube video tables)
+    'Caption': 'caption',
+    'Views': 'views',
+    'Likes': 'likes',
+    'Comments': 'comments',
+    'Shares': 'shares',
     'Link': 'link',
+    // TikTok Ads table labels
+    'Kampány': 'campaign',
+    'Csoport': 'adgroup',
+    'Konverziók': 'conversions',
+    'CPC': 'cpc',
+    'CTR%': 'ctr',
+    'Költés': 'spend',
 };
 
-const TEXT_COLUMNS = new Set(['date', 'caption', 'link']);
+const TEXT_COLUMNS = new Set(['date', 'caption', 'link', 'type', 'title']);
 
 interface VideoTableProps {
     videos?: Video[];
@@ -34,11 +59,14 @@ interface VideoTableProps {
 export function VideoTable({ videos, chartVideos, chartLabels, title, color }: VideoTableProps) {
     // Chart table mode - video data from chart API
     if (chartVideos !== undefined) {
-        const filtered = chartVideos.filter(v => (v.views ?? 0) > 0 || (v.caption && v.caption !== '-'));
+        const filtered = chartVideos.filter(v =>
+            (v.views ?? 0) > 0 || (v.reach ?? 0) > 0 || (v.likes ?? 0) > 0 ||
+            (v.impressions ?? 0) > 0 || (v.caption && v.caption !== '-') || (v.title && v.title !== '-')
+        );
 
         // Build columns from labels if provided, otherwise use defaults
         const columns = chartLabels
-            ? chartLabels.map(label => ({ label, key: LABEL_TO_KEY[label] || label }))
+            ? chartLabels.map(label => ({ label, key: LABEL_TO_KEY[label] || label.toLowerCase() }))
             : [
                 { label: 'Dátum', key: 'date' },
                 { label: 'Caption', key: 'caption' },
@@ -64,7 +92,7 @@ export function VideoTable({ videos, chartVideos, chartLabels, title, color }: V
                                     {columns.map(col => (
                                         <th
                                             key={col.key}
-                                            className={`px-3 py-2 ${col.key === 'caption' ? 'max-w-[300px]' : ''} ${!TEXT_COLUMNS.has(col.key) ? 'text-right' : ''}`}
+                                            className={`px-3 py-2 ${col.key === 'caption' || col.key === 'title' ? 'max-w-[300px]' : ''} ${!TEXT_COLUMNS.has(col.key) ? 'text-right' : ''}`}
                                         >
                                             {col.label}
                                         </th>
@@ -89,10 +117,11 @@ export function VideoTable({ videos, chartVideos, chartLabels, title, color }: V
                                                     </td>
                                                 );
                                             }
-                                            if (col.key === 'caption') {
+                                            if (col.key === 'caption' || col.key === 'title') {
+                                                const text = video[col.key] || '-';
                                                 return (
-                                                    <td key={col.key} className="px-3 py-2 max-w-[300px] truncate" title={video.caption}>
-                                                        {video.caption}
+                                                    <td key={col.key} className="px-3 py-2 max-w-[300px] truncate" title={text}>
+                                                        {text}
                                                     </td>
                                                 );
                                             }
