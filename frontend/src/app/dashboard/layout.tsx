@@ -16,18 +16,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let connectedProviders: string[] = [];
 
   if (session.user.companyId) {
-    const company = await prisma.company.findUnique({
-      where: { id: session.user.companyId },
-      select: { name: true, status: true },
-    });
+    const [company, dbConnections] = await Promise.all([
+      prisma.company.findUnique({
+        where: { id: session.user.companyId },
+        select: { name: true, status: true },
+      }),
+      prisma.integrationConnection.findMany({
+        where: { companyId: session.user.companyId },
+        select: { provider: true },
+      }),
+    ]);
     companyName = company?.name || '';
     companyStatus = company?.status || 'ACTIVE';
-
-    const dbConnections = await prisma.integrationConnection.findMany({
-      where: { companyId: session.user.companyId },
-      select: { provider: true },
-    });
-
     connectedProviders = dbConnections.map((c) => c.provider);
   }
 
@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         userEmail={session.user.email || ''}
         connectedProviders={connectedProviders}
       />
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-8">
         {companyStatus === 'INACTIVE' ? (
           <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
             <Lock className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />

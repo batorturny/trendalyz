@@ -289,8 +289,8 @@ export function ClientPlatformPage({
   return (
     <div>
       {/* Controls */}
-      <div data-no-print className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-8 shadow-[var(--shadow-card)]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div data-no-print className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-[var(--shadow-card)]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
             <MonthPicker value={selectedMonth} onChange={setSelectedMonth} periodMonths={periodMonths} onPeriodChange={setPeriodMonths} />
@@ -341,14 +341,23 @@ export function ClientPlatformPage({
             {(() => {
               const displayKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
               return displayKpis.length > 0 ? (
-                <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
+                <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-4 md:p-6">
                   {periodMonths > 1 && (
                     <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
                       Összesített KPI-ok ({aggregatedCount} hónap)
                     </p>
                   )}
+                  {periodMonths === 1 && selectedMonth && (() => {
+                    const [y, mo] = selectedMonth.split('-').map(Number);
+                    const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+                    return (
+                      <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
+                        {y}. {MONTHS[mo - 1]} számai
+                      </p>
+                    );
+                  })()}
                   <div
-                    className="grid gap-3"
+                    className="kpi-grid grid gap-2 md:gap-3"
                     style={{ gridTemplateColumns: `repeat(${bestCols(displayKpis.length)}, minmax(0, 1fr))` }}
                   >
                     {displayKpis.map((kpi) => (
@@ -362,10 +371,10 @@ export function ClientPlatformPage({
             {/* Chart Sections - only for single month */}
             {periodMonths === 1 && sections.map(({ category, label, charts }) => (
               <section key={category}>
-                <h3 className="text-xl font-bold mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
+                <h3 className="text-base md:text-xl font-bold mb-3 md:mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                   {label}
                 </h3>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-3 md:gap-4">
                   {charts.map((chart) => {
                     if (chart.type === 'table') {
                       return (

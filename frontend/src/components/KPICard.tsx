@@ -30,13 +30,13 @@ export function KPICard({ label, value, change, icon, description }: KPICardProp
 
     // Auto-size: shrink text for long values
     const valueLen = String(formattedValue).length;
-    const textSize = valueLen > 10 ? 'text-lg' : valueLen > 7 ? 'text-xl' : 'text-3xl';
+    const textSize = valueLen > 10 ? 'text-base md:text-lg' : valueLen > 7 ? 'text-lg md:text-xl' : 'text-2xl md:text-3xl';
 
     return (
         <>
             <div
                 onClick={() => description && setOpen(true)}
-                className={`relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-5 text-center shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-md)] transition-all min-h-[100px] flex flex-col items-center justify-center ${description ? 'cursor-pointer group' : ''
+                className={`relative bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-3 md:p-5 text-center shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-md)] transition-all min-h-[88px] md:min-h-[100px] flex flex-col items-center justify-center ${description ? 'cursor-pointer group' : ''
                     }`}
             >
                 {change !== null && change !== undefined && (

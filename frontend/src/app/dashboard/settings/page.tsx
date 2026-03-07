@@ -9,9 +9,9 @@ export default async function DashboardSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)]">Beállítások</h1>
+    <div className="max-w-2xl mx-auto p-4 md:p-8">
+      <header className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">Beállítások</h1>
         <p className="text-[var(--text-secondary)] mt-1">Fiók beállítások kezelése</p>
       </header>
 

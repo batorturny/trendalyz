@@ -116,7 +116,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 top-full mt-2 left-0 w-72 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-lg)] overflow-hidden">
+        <div className="absolute z-50 top-full mt-2 left-0 w-72 max-w-[calc(100vw-24px)] bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-lg)] overflow-hidden">
           {/* Year navigation */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <button

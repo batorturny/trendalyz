@@ -148,6 +148,16 @@
   body { overflow-x: hidden; }
   a, button, [role="button"], input, select, textarea { min-height: 44px; min-width: 44px; }
   a:not([class]), span > a { min-height: auto; min-width: auto; }
+
+  /* KPI grid: max 2 columns on mobile */
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Horizontal scroll containers */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Touch device optimizations */
