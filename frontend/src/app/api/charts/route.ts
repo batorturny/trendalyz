@@ -6,30 +6,24 @@ import { chartCatalog, validateChartKeys } from '@/lib/chartCatalog';
 import ChartGenerator from '@/lib/chartGenerator';
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
+const WINDSOR_TIMEOUT = 30000; // 30s per API call
 
 // Each platform's fields are split into groups — each group becomes a separate
-// Windsor API call.  This prevents mixing incompatible dimension types (daily
-// account metrics vs per-video rows vs demographic breakdowns) in one request.
+// Windsor API call so incompatible dimensions don't mix.
 interface FieldGroup {
-  /** Human-readable label for logging */
   name: string;
   fields: string[];
-  /** If true, failure of this group won't fail the whole platform */
-  optional?: boolean;
 }
 
 interface PlatformConfig {
   endpoint: string;
   fieldGroups: FieldGroup[];
-  secondaryEndpoint?: string;
-  secondaryFields?: string[];
 }
 
 const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   TIKTOK_ORGANIC: {
     endpoint: 'tiktok_organic',
     fieldGroups: [
-      // Daily account-level metrics (verified against Windsor API)
       {
         name: 'daily',
         fields: [
@@ -38,7 +32,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'engaged_audience', 'daily_lost_followers', 'phone_number_clicks',
         ],
       },
-      // Per-video metrics (separate API call — incompatible dimension with daily)
       {
         name: 'videos',
         fields: [
@@ -48,29 +41,17 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'video_average_time_watched_non_aggregated', 'video_total_time_watched',
         ],
       },
-      // Audience activity (hourly breakdown — separate dimension)
-      {
-        name: 'activity',
-        fields: ['audience_activity_hour', 'audience_activity_count'],
-        optional: true,
-      },
-      // Traffic / impression sources (separate dimension)
-      {
-        name: 'sources',
-        fields: ['video_impression_sources_impression_source', 'video_impression_sources_percentage'],
-        optional: true,
-      },
-      // Demographics — each is a separate dimension
-      { name: 'demo_age', fields: ['audience_ages_age', 'audience_ages_percentage', 'date'], optional: true },
-      { name: 'demo_gender', fields: ['video_audience_genders_gender', 'video_audience_genders_percentage', 'date'], optional: true },
-      { name: 'demo_country', fields: ['audience_country', 'audience_country_percentage', 'date'], optional: true },
-      { name: 'demo_city', fields: ['audience_cities_city', 'audience_cities_percentage', 'date'], optional: true },
+      { name: 'activity', fields: ['audience_activity_hour', 'audience_activity_count'] },
+      { name: 'sources', fields: ['video_impression_sources_impression_source', 'video_impression_sources_percentage'] },
+      { name: 'demo_age', fields: ['audience_ages_age', 'audience_ages_percentage', 'date'] },
+      { name: 'demo_gender', fields: ['video_audience_genders_gender', 'video_audience_genders_percentage', 'date'] },
+      { name: 'demo_country', fields: ['audience_country', 'audience_country_percentage', 'date'] },
+      { name: 'demo_city', fields: ['audience_cities_city', 'audience_cities_percentage', 'date'] },
     ],
   },
   TIKTOK_ADS: {
     endpoint: 'tiktok',
     fieldGroups: [
-      // Core ad metrics (daily)
       {
         name: 'daily',
         fields: [
@@ -84,24 +65,13 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'billed_cost', 'reach',
         ],
       },
-      // Campaign breakdown (separate dimension)
-      {
-        name: 'campaigns',
-        fields: ['campaign_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions'],
-        optional: true,
-      },
-      // Adgroup breakdown (separate dimension)
-      {
-        name: 'adgroups',
-        fields: ['adgroup_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions'],
-        optional: true,
-      },
+      { name: 'campaigns', fields: ['campaign_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions'] },
+      { name: 'adgroups', fields: ['adgroup_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions'] },
     ],
   },
   FACEBOOK_ORGANIC: {
     endpoint: 'facebook_organic',
     fieldGroups: [
-      // 1. Daily page metrics (page-level, keyed by date)
       {
         name: 'daily',
         fields: [
@@ -112,7 +82,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'blue_reels_play_count', 'fb_reels_total_plays',
         ],
       },
-      // 2. ALL post metrics in ONE call (content + activity + impressions + video + clicks)
       {
         name: 'posts',
         fields: [
@@ -123,7 +92,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'post_clicks', 'post_clicks_by_type_other_clicks', 'post_clicks_by_type_photo_view', 'post_clicks_by_type_video_play', 'post_clicks_by_type_link_clicks',
         ],
       },
-      // 3. Reaction breakdown (daily dimension)
       {
         name: 'reactions',
         fields: [
@@ -131,41 +99,35 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'post_reactions_wow_total', 'post_reactions_haha_total',
           'post_reactions_sorry_total', 'post_reactions_anger_total',
         ],
-        optional: true,
       },
     ],
   },
   INSTAGRAM_ORGANIC: {
     endpoint: 'instagram',
     fieldGroups: [
-      // Daily account metrics
       {
         name: 'daily',
         fields: [
-          'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
-          'likes', 'comments', 'shares', 'saved',
-          'follower_count_1d',
-          'clicks', 'email_contacts_1d', 'phone_call_clicks_1d', 'website_clicks_1d',
+          'date', 'impressions', 'reach', 'profile_views',
+          'website_clicks_1d',
+          'media_like_count', 'media_comments_count', 'media_shares', 'media_saved',
+          'media_reach', 'media_engagement',
+          'email_contacts_1d', 'phone_call_clicks_1d',
           'get_directions_clicks_1d', 'text_message_clicks_1d',
         ],
       },
-      // Per-media data
+      // follower_count only supports last 30 days in Windsor API
+      { name: 'followers', fields: ['date', 'follower_count_1d'] },
       {
         name: 'media',
         fields: [
-          'media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved',
-          'media_url', 'permalink',
-          'media_engagement', 'media_reach', 'media_saved', 'media_shares',
-          'media_all_plays', 'media_plays', 'media_video_views',
+          'date', 'media_id', 'media_caption', 'timestamp', 'media_type',
+          'media_reach', 'media_like_count', 'media_comments_count',
+          'media_shares', 'media_saved',
+          'media_url', 'media_permalink',
+          'media_engagement', 'media_views',
         ],
       },
-      // Reel metrics
-      {
-        name: 'reels',
-        fields: ['date', 'media_reel_video_views', 'media_reel_avg_watch_time'],
-        optional: true,
-      },
-      // Story metrics
       {
         name: 'stories',
         fields: [
@@ -173,67 +135,16 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'story_interactions', 'story_replies', 'story_shares',
           'story_taps_forward', 'story_taps_back', 'story_swipe_forward',
         ],
-        optional: true,
       },
-      // Demographics — each is a separate dimension
-      { name: 'demo_age', fields: ['audience_age_name', 'audience_age_size', 'date'], optional: true },
-      { name: 'demo_gender', fields: ['audience_gender_name', 'audience_gender_size', 'date'], optional: true },
-      { name: 'demo_country', fields: ['audience_country_name', 'audience_country_size', 'date'], optional: true },
-      { name: 'demo_city', fields: ['city', 'audience_city_size', 'date'], optional: true },
-    ],
-    secondaryEndpoint: 'instagram_public',
-    secondaryFields: [
-      'date', 'profile_followers_count', 'profile_follows_count', 'profile_media_count', 'profile_username',
-      'media_id', 'media_caption', 'media_like_count', 'media_comments_count',
-      'media_type', 'media_permalink', 'media_timestamp',
-      'likes_per_post', 'comments_per_post',
-    ],
-  },
-  INSTAGRAM: {
-    endpoint: 'instagram',
-    fieldGroups: [
-      {
-        name: 'daily',
-        fields: [
-          'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
-          'likes', 'comments', 'shares', 'saved',
-        ],
-      },
-      {
-        name: 'media',
-        fields: [
-          'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
-          'media_url', 'permalink',
-        ],
-      },
-    ],
-  },
-  FACEBOOK: {
-    endpoint: 'facebook',
-    fieldGroups: [
-      {
-        name: 'daily',
-        fields: [
-          'date', 'impressions', 'reach', 'engaged_users', 'page_fans', 'page_views_total',
-          'reactions', 'comments', 'shares',
-        ],
-      },
-      {
-        name: 'posts',
-        fields: [
-          'post_id', 'post_message', 'post_created_time',
-          'post_activity_by_action_type_like', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share',
-          'post_impressions', 'post_impressions_unique',
-          'post_video_views', 'post_video_views_unique',
-          'post_clicks',
-        ],
-      },
+      { name: 'demo_age', fields: ['audience_age_name', 'audience_age_size', 'date'] },
+      { name: 'demo_gender', fields: ['audience_gender_name', 'audience_gender_size', 'date'] },
+      { name: 'demo_country', fields: ['audience_country_name', 'audience_country_size', 'date'] },
+      { name: 'demo_city', fields: ['city', 'audience_city_size', 'date'] },
     ],
   },
   YOUTUBE: {
     endpoint: 'youtube',
     fieldGroups: [
-      // Daily channel metrics
       {
         name: 'daily',
         fields: [
@@ -245,7 +156,6 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
           'card_clicks', 'card_impressions', 'card_click_rate',
         ],
       },
-      // Per-video data
       {
         name: 'videos',
         fields: [
@@ -258,44 +168,38 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   },
 };
 
-async function fetchWindsorRaw(apiKey: string, endpoint: string, accountId: string, dateFrom: string, dateTo: string, fields: string) {
+/** Fetch a single field group from Windsor. Always resolves (returns [] on error). */
+async function fetchWindsorGroup(apiKey: string, endpoint: string, accountId: string, dateFrom: string, dateTo: string, fields: string, groupName: string): Promise<any[]> {
   const url = `${WINDSOR_BASE}/${endpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}&select_accounts=${accountId}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(120000) });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    console.error(`Windsor ${res.status} for ${endpoint}:`, text.slice(0, 200));
-    throw new Error(`Windsor API error: ${res.status}`);
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(WINDSOR_TIMEOUT) });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.warn(`[Windsor] Group "${groupName}" failed (${res.status}):`, text.slice(0, 150));
+      return [];
+    }
+    const raw = await res.json();
+    return Array.isArray(raw) ? (raw[0]?.data || []) : (raw?.data || []);
+  } catch (err: any) {
+    console.warn(`[Windsor] Group "${groupName}" error:`, err.message);
+    return [];
   }
-  const raw = await res.json();
-  return Array.isArray(raw) ? (raw[0]?.data || []) : (raw?.data || []);
 }
 
-/** Merge rows that share the same key field (e.g. post_id) so content + metrics become one row */
+/** Merge rows by key field (e.g. post_id) — later non-empty values overwrite earlier ones */
 function mergeRowsByKey(data: any[], keyField: string): any[] {
   const keyed = new Map<string, any>();
   const other: any[] = [];
 
   for (const row of data) {
     const key = row[keyField];
-    if (key) {
-      if (keyed.has(key)) {
-        // Merge: later values overwrite earlier, but skip empty/zero to preserve existing data
-        const existing = keyed.get(key);
-        for (const [k, v] of Object.entries(row)) {
-          if (v !== null && v !== undefined && v !== '' && v !== '0' && v !== 0) {
-            existing[k] = v;
-          } else if (!(k in existing)) {
-            existing[k] = v;
-          }
-        }
-      } else {
-        keyed.set(key, { ...row });
-      }
-    } else {
-      other.push(row);
+    if (!key) { other.push(row); continue; }
+    if (!keyed.has(key)) { keyed.set(key, { ...row }); continue; }
+    const existing = keyed.get(key);
+    for (const [k, v] of Object.entries(row)) {
+      if (v != null && v !== '') existing[k] = v;
     }
   }
-
   return [...other, ...Array.from(keyed.values())];
 }
 
@@ -303,37 +207,299 @@ async function fetchWindsorChartData(apiKey: string, platform: string, accountId
   const config = PLATFORM_CONFIG[platform];
   if (!config) throw new Error(`Unknown platform: ${platform}`);
 
-  // Fetch each field group as a separate API call
-  const promises: Promise<any[]>[] = config.fieldGroups.map(group => {
-    const p = fetchWindsorRaw(apiKey, config.endpoint, accountId, dateFrom, dateTo, group.fields.join(','));
-    if (group.optional) {
-      return p.catch(err => {
-        console.warn(`[Windsor] Optional group "${group.name}" failed for ${platform}:`, err.message);
-        return [];
-      });
-    }
-    return p;
-  });
+  // All groups fetched in parallel — each one is fault-tolerant
+  const results = await Promise.all(
+    config.fieldGroups.map(group =>
+      fetchWindsorGroup(apiKey, config.endpoint, accountId, dateFrom, dateTo, group.fields.join(','), group.name)
+    )
+  );
 
-  // Fetch secondary endpoint data (e.g. instagram_public for INSTAGRAM_ORGANIC)
-  if (config.secondaryEndpoint && config.secondaryFields) {
-    promises.push(
-      fetchWindsorRaw(apiKey, config.secondaryEndpoint, accountId, dateFrom, dateTo, config.secondaryFields.join(',')).catch(err => {
-        console.warn(`[Windsor] Secondary endpoint fetch failed for ${platform}:`, err.message);
-        return [];
-      })
-    );
-  }
-
-  const results = await Promise.all(promises);
   let merged = results.flat();
 
-  // For Facebook: merge post content rows with post metric rows by post_id
-  if (platform === 'FACEBOOK_ORGANIC' || platform === 'FACEBOOK') {
+  if (platform === 'FACEBOOK_ORGANIC') {
     merged = mergeRowsByKey(merged, 'post_id');
   }
 
   return merged;
+}
+
+const META_GRAPH_BASE = 'https://graph.facebook.com/v19.0';
+const META_DIRECT_PROVIDERS = new Set(['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC']);
+
+async function fetchMetaDirectData(provider: string, connection: { externalAccountId: string; metadata: any }, dateFrom: string, dateTo: string): Promise<any[] | null> {
+  const meta = connection.metadata as any;
+  if (!meta?.encryptedAccessToken) return null;
+  const token = meta.encryptedPageAccessToken
+    ? decrypt(meta.encryptedPageAccessToken as string)
+    : decrypt(meta.encryptedAccessToken as string);
+  if (provider === 'FACEBOOK_ORGANIC') return fetchFacebookDirectData(connection.externalAccountId, token, dateFrom, dateTo);
+  if (provider === 'INSTAGRAM_ORGANIC') return fetchInstagramDirectData(connection.externalAccountId, token, dateFrom, dateTo);
+  return null;
+}
+
+async function fetchFacebookDirectData(pageId: string, token: string, dateFrom: string, dateTo: string): Promise<any[]> {
+  const rows: any[] = [];
+
+  // 1. Daily page-level insights (Windsor-compatible field names)
+  const dailyMetrics = [
+    'page_impressions', 'page_impressions_unique', 'page_views_total',
+    'page_post_engagements', 'page_daily_follows', 'page_daily_unfollows',
+    'page_video_views', 'page_video_view_time',
+  ].join(',');
+  try {
+    const url = `${META_GRAPH_BASE}/${pageId}/insights?metric=${dailyMetrics}&period=day&since=${dateFrom}&until=${dateTo}&access_token=${token}`;
+    const json = await fetch(url, { signal: AbortSignal.timeout(30000) }).then(r => r.json()) as any;
+    if (!json.error && Array.isArray(json.data)) {
+      const byDate = new Map<string, any>();
+      for (const m of json.data) {
+        for (const pt of (m.values || [])) {
+          const d = (pt.end_time as string).slice(0, 10);
+          if (!byDate.has(d)) byDate.set(d, { date: d });
+          byDate.get(d)![m.name] = pt.value ?? 0;
+        }
+      }
+      // Fetch page_fans (lifetime metric — single current value)
+      let fanCount = 0;
+      try {
+        const fansJson = await fetch(
+          `${META_GRAPH_BASE}/${pageId}?fields=fan_count&access_token=${token}`,
+          { signal: AbortSignal.timeout(10000) }
+        ).then(r => r.json()) as any;
+        if (!fansJson.error) fanCount = fansJson.fan_count ?? 0;
+      } catch { /* ignore */ }
+
+      for (const [, day] of byDate) {
+        rows.push({
+          date: day.date,
+          page_impressions: day.page_impressions ?? 0,
+          page_impressions_unique: day.page_impressions_unique ?? 0,
+          page_post_engagements: day.page_post_engagements ?? 0,
+          page_fans: fanCount,
+          page_views_total: day.page_views_total ?? 0,
+          page_daily_follows: day.page_daily_follows ?? 0,
+          page_daily_unfollows: day.page_daily_unfollows ?? 0,
+          page_video_views: day.page_video_views ?? 0,
+          page_video_view_time: day.page_video_view_time ?? 0,
+        });
+      }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] FB daily error:', e.message); }
+
+  // 2. Post-level insights
+  const postRows: any[] = [];
+  try {
+    const postsJson = await fetch(
+      `${META_GRAPH_BASE}/${pageId}/posts?fields=id,message,created_time,permalink_url&since=${dateFrom}&until=${dateTo}&limit=100&access_token=${token}`,
+      { signal: AbortSignal.timeout(30000) }
+    ).then(r => r.json()) as any;
+    if (!postsJson.error && Array.isArray(postsJson.data)) {
+      const fetched = await Promise.all(postsJson.data.map(async (post: any) => {
+        try {
+          const insJson = await fetch(
+            `${META_GRAPH_BASE}/${post.id}/insights?metric=post_impressions,post_impressions_unique,post_reactions_by_type_total,post_clicks,post_shares,post_stories_by_action_type&access_token=${token}`,
+            { signal: AbortSignal.timeout(15000) }
+          ).then(r => r.json()) as any;
+          const m: any = {};
+          if (!insJson.error && Array.isArray(insJson.data)) {
+            for (const metric of insJson.data) m[metric.name] = metric.values?.[0]?.value ?? null;
+          }
+          const reactions = m.post_reactions_by_type_total || {};
+          const stories = m.post_stories_by_action_type || {};
+          const likeCount = reactions.LIKE ?? stories.like ?? 0;
+          const commentCount = stories.comment ?? 0;
+          const shareCount = typeof m.post_shares === 'object' ? (m.post_shares?.count ?? 0) : (m.post_shares ?? stories.share ?? 0);
+          const totalReactions = Object.values(reactions).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+          return {
+            date: (post.created_time as string).slice(0, 10),
+            post_id: post.id,
+            post_message: post.message || '',
+            post_created_time: post.created_time,
+            post_permalink: post.permalink_url ?? null,
+            post_impressions: m.post_impressions ?? null,
+            post_impressions_unique: m.post_impressions_unique ?? null,
+            post_clicks: m.post_clicks ?? null,
+            // Windsor-compatible individual reaction fields:
+            post_reactions_like_total: reactions.LIKE ?? 0,
+            post_reactions_love_total: reactions.LOVE ?? 0,
+            post_reactions_wow_total: reactions.WOW ?? 0,
+            post_reactions_haha_total: reactions.HAHA ?? 0,
+            post_reactions_sorry_total: reactions.SORRY ?? reactions.SAD ?? 0,
+            post_reactions_anger_total: reactions.ANGER ?? reactions.ANGRY ?? 0,
+            // Windsor action-type fields (used by post table):
+            post_activity_by_action_type_like: likeCount,
+            post_activity_by_action_type_comment: commentCount,
+            post_activity_by_action_type_share: shareCount,
+            post_reactions: totalReactions,
+            post_comments: commentCount,
+            post_shares: shareCount,
+            post_video_views: 0,
+          };
+        } catch { return null; }
+      }));
+      for (const p of fetched) { if (p) postRows.push(p); }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] FB posts error:', e.message); }
+
+  // Aggregate post reactions by date → add as daily rows for fb_reaction_breakdown chart
+  const reactionsByDate = new Map<string, any>();
+  for (const p of postRows) {
+    if (!p.date) continue;
+    if (!reactionsByDate.has(p.date)) reactionsByDate.set(p.date, { date: p.date, post_reactions_like_total: 0, post_reactions_love_total: 0, post_reactions_wow_total: 0, post_reactions_haha_total: 0 });
+    const agg = reactionsByDate.get(p.date)!;
+    agg.post_reactions_like_total += p.post_reactions_like_total ?? 0;
+    agg.post_reactions_love_total += p.post_reactions_love_total ?? 0;
+    agg.post_reactions_wow_total += p.post_reactions_wow_total ?? 0;
+    agg.post_reactions_haha_total += p.post_reactions_haha_total ?? 0;
+  }
+  for (const [, agg] of reactionsByDate) rows.push(agg);
+  for (const p of postRows) rows.push(p);
+
+  // 3. Demographics (fans by country and city) — lifetime metrics
+  try {
+    const demoJson = await fetch(
+      `${META_GRAPH_BASE}/${pageId}/insights?metric=page_fans_country,page_fans_city&period=lifetime&access_token=${token}`,
+      { signal: AbortSignal.timeout(15000) }
+    ).then(r => r.json()) as any;
+    if (!demoJson.error && Array.isArray(demoJson.data)) {
+      for (const metric of demoJson.data) {
+        // Use most recent snapshot
+        const value = metric.values?.[metric.values.length - 1]?.value ?? metric.values?.[0]?.value ?? {};
+        const entries = Object.entries(value) as [string, any][];
+        if (metric.name === 'page_fans_country') {
+          for (const [name, val] of entries) rows.push({ page_fans_country_name: name, page_fans_country_value: Number(val) });
+        } else if (metric.name === 'page_fans_city') {
+          for (const [name, val] of entries) rows.push({ page_fans_city_name: name, page_fans_city_value: Number(val) });
+        }
+      }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] FB demographics error:', e.message); }
+
+  return rows;
+}
+
+async function fetchInstagramDirectData(igUserId: string, token: string, dateFrom: string, dateTo: string): Promise<any[]> {
+  const rows: any[] = [];
+  const since = Math.floor(new Date(dateFrom).getTime() / 1000);
+  const until = Math.floor(new Date(dateTo).getTime() / 1000) + 86400;
+
+  // 1. Daily page-level insights
+  const byDate = new Map<string, any>();
+  try {
+    const dailyMetrics = ['impressions', 'reach', 'profile_views', 'website_clicks', 'email_contacts', 'phone_call_clicks'].join(',');
+    const json = await fetch(
+      `${META_GRAPH_BASE}/${igUserId}/insights?metric=${dailyMetrics}&period=day&since=${since}&until=${until}&access_token=${token}`,
+      { signal: AbortSignal.timeout(30000) }
+    ).then(r => r.json()) as any;
+    if (!json.error && Array.isArray(json.data)) {
+      for (const m of json.data) {
+        for (const pt of (m.values || [])) {
+          const d = (pt.end_time as string).slice(0, 10);
+          if (!byDate.has(d)) byDate.set(d, { date: d });
+          byDate.get(d)![m.name] = pt.value ?? 0;
+        }
+      }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] IG daily error:', e.message); }
+
+  // 2. Follower count (total + daily new followers)
+  let totalFollowers = 0;
+  try {
+    const [accountJson, newFollowersJson] = await Promise.all([
+      fetch(`${META_GRAPH_BASE}/${igUserId}?fields=followers_count&access_token=${token}`, { signal: AbortSignal.timeout(10000) }).then(r => r.json()),
+      fetch(`${META_GRAPH_BASE}/${igUserId}/insights?metric=follower_count&period=day&since=${since}&until=${until}&access_token=${token}`, { signal: AbortSignal.timeout(20000) }).then(r => r.json()),
+    ]) as any[];
+    if (!accountJson.error) totalFollowers = accountJson.followers_count ?? 0;
+    if (!newFollowersJson.error && Array.isArray(newFollowersJson.data)) {
+      for (const m of newFollowersJson.data) {
+        for (const pt of (m.values || [])) {
+          const d = (pt.end_time as string).slice(0, 10);
+          if (!byDate.has(d)) byDate.set(d, { date: d });
+          byDate.get(d)!['follower_count_1d'] = pt.value ?? 0;
+        }
+      }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] IG followers error:', e.message); }
+
+  for (const [, day] of byDate) {
+    rows.push({
+      date: day.date,
+      impressions: day.impressions ?? 0,
+      reach: day.reach ?? 0,
+      profile_views: day.profile_views ?? 0,
+      follower_count: totalFollowers,
+      follower_count_1d: day.follower_count_1d ?? 0,
+      website_clicks_1d: day.website_clicks ?? 0,
+      email_contacts_1d: day.email_contacts ?? 0,
+      phone_call_clicks_1d: day.phone_call_clicks ?? 0,
+    });
+  }
+
+  // 3. Media insights
+  try {
+    const mediaJson = await fetch(
+      `${META_GRAPH_BASE}/${igUserId}/media?fields=id,caption,timestamp,media_type,permalink,media_url&since=${since}&until=${until}&limit=50&access_token=${token}`,
+      { signal: AbortSignal.timeout(30000) }
+    ).then(r => r.json()) as any;
+    if (!mediaJson.error && Array.isArray(mediaJson.data)) {
+      const mediaRows = await Promise.all(mediaJson.data.map(async (item: any) => {
+        try {
+          const metricsForType = item.media_type === 'VIDEO' ? 'reach,likes,comments,shares,saved,plays' : 'reach,likes,comments,shares,saved,impressions';
+          const insJson = await fetch(
+            `${META_GRAPH_BASE}/${item.id}/insights?metric=${metricsForType}&access_token=${token}`,
+            { signal: AbortSignal.timeout(15000) }
+          ).then(r => r.json()) as any;
+          const m: any = {};
+          if (!insJson.error && Array.isArray(insJson.data)) {
+            for (const metric of insJson.data) m[metric.name] = metric.values?.[0]?.value ?? null;
+          }
+          return {
+            date: (item.timestamp as string).slice(0, 10),
+            media_id: item.id,
+            media_caption: item.caption || '',
+            timestamp: item.timestamp,
+            media_type: item.media_type ?? null,
+            media_reach: m.reach ?? null,
+            media_like_count: m.likes ?? 0,
+            media_comments_count: m.comments ?? 0,
+            media_shares: m.shares ?? null,
+            media_saved: m.saved ?? null,
+            media_url: item.media_url ?? null,
+            media_permalink: item.permalink ?? null,
+            media_views: m.plays ?? m.impressions ?? null,
+            media_reel_video_views: m.plays ?? null,
+          };
+        } catch { return null; }
+      }));
+      for (const m of mediaRows) { if (m) rows.push(m); }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] IG media error:', e.message); }
+
+  // 4. Audience demographics (age, gender, country, city)
+  try {
+    const demoJson = await fetch(
+      `${META_GRAPH_BASE}/${igUserId}/insights?metric=follower_demographics&period=lifetime&breakdown=age,gender,country,city&access_token=${token}`,
+      { signal: AbortSignal.timeout(15000) }
+    ).then(r => r.json()) as any;
+    if (!demoJson.error && Array.isArray(demoJson.data)) {
+      for (const item of demoJson.data) {
+        const breakdowns = item.total_value?.breakdowns ?? [];
+        for (const bd of breakdowns) {
+          const dim = bd.dimension_keys?.[0];
+          const results: any[] = bd.results ?? [];
+          for (const r of results) {
+            const val = r.dimension_values?.[0];
+            const count = r.value ?? 0;
+            if (dim === 'age') rows.push({ audience_age_name: val, audience_age_size: count });
+            else if (dim === 'gender') rows.push({ audience_gender_name: val, audience_gender_size: count });
+            else if (dim === 'country') rows.push({ audience_country_name: val, audience_country_size: count });
+            else if (dim === 'city') rows.push({ city: val, audience_city_size: count });
+          }
+        }
+      }
+    }
+  } catch (e: any) { console.warn('[Meta Direct] IG demographics error:', e.message); }
+
+  return rows;
 }
 
 export async function POST(req: Request) {
@@ -343,26 +509,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { accountId, startDate, endDate, charts, forceRefresh } = await req.json();
+    const { accountId, startDate, endDate, charts } = await req.json();
 
     if (!accountId || !startDate || !endDate || !charts || !Array.isArray(charts)) {
       return NextResponse.json({ error: 'accountId, startDate, endDate, and charts array are required' }, { status: 400 });
     }
 
-    // Validate chart keys — skip unknown ones
-    const chartKeys = charts.map((c: any) => c.key);
-    const validation = validateChartKeys(chartKeys);
-    let validCharts = charts;
-    if (!validation.valid) {
-      console.warn('[CHART API] Skipping invalid chart keys:', validation.invalidKeys);
-      const validKeySet = new Set(chartCatalog.map(c => c.key));
-      validCharts = charts.filter((c: any) => validKeySet.has(c.key));
-      if (validCharts.length === 0) {
-        return NextResponse.json({
-          error: 'No valid chart keys provided',
-          invalidKeys: validation.invalidKeys,
-        }, { status: 400 });
-      }
+    // Validate chart keys
+    const validation = validateChartKeys(charts.map((c: any) => c.key));
+    const validKeySet = new Set(chartCatalog.map(c => c.key));
+    const validCharts = charts.filter((c: any) => validKeySet.has(c.key));
+    if (validCharts.length === 0) {
+      return NextResponse.json({ error: 'No valid chart keys', invalidKeys: validation.invalidKeys }, { status: 400 });
     }
 
     // Access check
@@ -378,90 +536,89 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
-    // Resolve platform accounts
+    // Resolve platform accounts — include Meta ERROR connections that have a stored token
     const connections = await prisma.integrationConnection.findMany({
-      where: { companyId: accountId },
-      select: { provider: true, externalAccountId: true },
+      where: {
+        companyId: accountId,
+        OR: [
+          { status: 'CONNECTED' },
+          { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
+        ],
+      },
+      select: { provider: true, externalAccountId: true, metadata: true },
     });
-
-    const platformAccounts = new Map<string, string>();
-    for (const conn of connections) {
-      platformAccounts.set(conn.provider, conn.externalAccountId);
+    const platformConnections = new Map<string, { externalAccountId: string; metadata: any }>(
+      connections.map(c => [c.provider, { externalAccountId: c.externalAccountId, metadata: c.metadata }])
+    );
+    if (!platformConnections.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
+      platformConnections.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null });
     }
-    // Legacy TikTok fallback
-    if (!platformAccounts.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
-      platformAccounts.set('TIKTOK_ORGANIC', company.tiktokAccountId);
-    }
+    // Keep backward-compat map for Windsor
+    const platformAccounts = new Map<string, string>(
+      Array.from(platformConnections.entries()).map(([p, c]) => [p, c.externalAccountId])
+    );
 
-    // Group requested charts by platform
+    // Group charts by platform
     const chartsByPlatform = new Map<string, any[]>();
     for (const chartReq of validCharts) {
       const def = chartCatalog.find(c => c.key === chartReq.key);
-      const platform = def?.platform || 'TIKTOK_ORGANIC';
-      if (!chartsByPlatform.has(platform)) chartsByPlatform.set(platform, []);
-      chartsByPlatform.get(platform)!.push(chartReq);
+      const plat = def?.platform || 'TIKTOK_ORGANIC';
+      if (!chartsByPlatform.has(plat)) chartsByPlatform.set(plat, []);
+      chartsByPlatform.get(plat)!.push(chartReq);
     }
 
-    // Get Windsor API key (admin's own key OR central WINDSOR_API_KEY fallback)
+    // Windsor API key (only needed for non-Meta platforms)
     const adminId = session.user.role === 'ADMIN' ? session.user.id : company.adminId;
     const adminUser = await prisma.user.findUnique({
       where: { id: adminId! },
       select: { windsorApiKeyEnc: true },
     });
+    const windsorApiKey = adminUser?.windsorApiKeyEnc
+      ? decrypt(adminUser.windsorApiKeyEnc)
+      : process.env.WINDSOR_API_KEY;
 
-    let windsorApiKey: string;
-    if (adminUser?.windsorApiKeyEnc) {
-      windsorApiKey = decrypt(adminUser.windsorApiKeyEnc);
-    } else if (process.env.WINDSOR_API_KEY) {
-      windsorApiKey = process.env.WINDSOR_API_KEY;
-    } else {
-      return NextResponse.json({ error: 'Windsor API key not configured' }, { status: 400 });
-    }
+    // Fetch + generate charts per platform in parallel
+    const platformResults = await Promise.all(
+      Array.from(chartsByPlatform.entries()).map(async ([platform, platformCharts]) => {
+        const connection = platformConnections.get(platform);
+        if (!connection) {
+          return platformCharts.map((c: any) => ({ key: c.key, empty: true, error: 'Nincs kapcsolat ehhez a platformhoz' }));
+        }
+        try {
+          let data: any[];
 
-    // Fetch data and generate charts per platform in parallel
-    const platformPromises = Array.from(chartsByPlatform.entries()).map(async ([platform, platformCharts]) => {
-      const platformAccountId = platformAccounts.get(platform);
-
-      if (!platformAccountId) {
-        return platformCharts.map((chartReq: any) => ({
-          key: chartReq.key,
-          empty: true,
-          error: 'Nincs kapcsolat ehhez a platformhoz'
-        }));
-      }
-
-      try {
-        const windsorData = await fetchWindsorChartData(windsorApiKey, platform, platformAccountId, startDate, endDate);
-        const generator = new ChartGenerator(windsorData, startDate, endDate);
-
-        return platformCharts.map((chartReq: any) => {
-          try {
-            return generator.generate(chartReq.key, chartReq.params || {});
-          } catch (error: any) {
-            return { key: chartReq.key, error: error.message, empty: true };
+          if (META_DIRECT_PROVIDERS.has(platform) && (connection.metadata as any)?.encryptedAccessToken) {
+            // Use Meta Graph API directly
+            console.log(`[Chart API] Meta direct fetch for ${platform}`);
+            data = (await fetchMetaDirectData(platform, connection, startDate, endDate)) ?? [];
+          } else {
+            if (!windsorApiKey) {
+              return platformCharts.map((c: any) => ({ key: c.key, empty: true, error: 'Windsor API key not configured' }));
+            }
+            console.log(`[Chart API] Windsor fetch for ${platform}`);
+            data = await fetchWindsorChartData(windsorApiKey, platform, connection.externalAccountId, startDate, endDate);
           }
-        });
-      } catch (error: any) {
-        console.error(`[CHART API] ${platform} fetch error:`, error.message);
-        return platformCharts.map((chartReq: any) => ({
-          key: chartReq.key,
-          error: `Platform data fetch failed: ${error.message}`,
-          empty: true
-        }));
-      }
-    });
 
-    const platformResults = await Promise.all(platformPromises);
+          const generator = new ChartGenerator(data, startDate, endDate);
+          return platformCharts.map((c: any) => {
+            try { return generator.generate(c.key, c.params || {}); }
+            catch (e: any) { return { key: c.key, error: e.message, empty: true }; }
+          });
+        } catch (e: any) {
+          console.error(`[CHART API] ${platform} error:`, e.message);
+          return platformCharts.map((c: any) => ({ key: c.key, error: e.message, empty: true }));
+        }
+      })
+    );
+
     const results = platformResults.flat();
-
     return NextResponse.json({
       account: { id: company.id, name: company.name },
       dateRange: { from: startDate, to: endDate },
       chartsRequested: validCharts.length,
       chartsGenerated: results.filter((r: any) => !r.error).length,
-      charts: results
+      charts: results,
     });
-
   } catch (error: any) {
     console.error('Chart generation error:', error);
     return NextResponse.json({ error: 'Failed to generate charts', details: error.message }, { status: 500 });

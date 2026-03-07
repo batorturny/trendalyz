@@ -434,13 +434,18 @@ export default class ChartGenerator {
     // ===== INSTAGRAM CHARTS =====
 
     generate_ig_reach() { return this.dailyMultiMetric(this.daily, [['reach', 'El\u00e9r\u00e9s'], ['impressions', 'Impresszi\u00f3k']]); }
-    generate_ig_follower_growth() { return this.dailyMax(this.daily, 'follower_count', 'K\u00f6vet\u0151k'); }
-    generate_ig_engagement() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['comments', 'Kommentek'], ['shares', 'Megoszt\u00e1sok'], ['saved', 'Ment\u00e9sek']]); }
-    generate_ig_profile_activity() { return this.dailyMultiMetric(this.daily, [['profile_views', 'Profiln\u00e9zetek'], ['website_clicks', 'Weboldal kattint\u00e1sok']]); }
-    generate_ig_daily_followers() { return this.dailyMetric(this.daily, 'follower_count_1d', 'Napi \u00faj k\u00f6vet\u0151k'); }
+    generate_ig_follower_growth() { return this.dailyMetric(this.daily, 'follower_count_1d', 'Napi \u00faj k\u00f6vet\u0151k'); }
+    generate_ig_engagement() {
+        // Windsor: aggregate daily rows have media_like_count; Meta direct: per-media rows
+        const hasDailyEngagement = this.daily.some(d => (parseInt(d.media_like_count) || 0) > 0);
+        const source = hasDailyEngagement ? this.daily : this.video;
+        return this.dailyMultiMetric(source, [['media_like_count', 'Like-ok'], ['media_comments_count', 'Kommentek'], ['media_shares', 'Megoszt\u00e1sok'], ['media_saved', 'Ment\u00e9sek']]);
+    }
+    generate_ig_profile_activity() { return this.dailyMultiMetric(this.daily, [['profile_views', 'Profiln\u00e9zetek'], ['website_clicks_1d', 'Weboldal kattint\u00e1sok']]); }
+    generate_ig_daily_followers() { return this.dailyMax(this.daily, 'follower_count', 'Összes követő'); }
 
     generate_ig_save_rate() {
-        const grouped = this.groupByDate(this.daily, 'date');
+        const grouped = this.groupByDate(this.video, 'date');
         const labels = Object.keys(grouped).sort();
         const data = labels.map(date => {
             const items = grouped[date];
@@ -456,10 +461,15 @@ export default class ChartGenerator {
     generate_ig_story_interactions() { return this.dailyMultiMetric(this.daily, [['story_interactions', 'Interakci\u00f3k'], ['story_replies', 'V\u00e1laszok'], ['story_shares', 'Megoszt\u00e1sok']]); }
     generate_ig_story_navigation() { return this.dailyMultiMetric(this.daily, [['story_taps_forward', 'El\u0151re'], ['story_taps_back', 'H\u00e1tra'], ['story_swipe_forward', 'Sw\u00e1jp']]); }
     generate_ig_clicks() { return this.dailyMultiMetric(this.daily, [['email_contacts_1d', 'Email'], ['phone_call_clicks_1d', 'Telefon'], ['get_directions_clicks_1d', '\u00datvonal'], ['text_message_clicks_1d', '\u00dczenet']]); }
-    generate_ig_audience_age() { return this._aggregateByField(this.data, 'audience_age_name', 'audience_age_size', 'K\u00f6z\u00f6ns\u00e9g', true); }
-    generate_ig_audience_gender() { return this._aggregateByField(this.data, 'audience_gender_name', 'audience_gender_size', 'K\u00f6z\u00f6ns\u00e9g'); }
-    generate_ig_audience_country() { return this._aggregateByField(this.data, 'audience_country_name', 'audience_country_size', 'K\u00f6z\u00f6ns\u00e9g', false, 10); }
-    generate_ig_audience_city() { return this._aggregateByField(this.data, 'city', 'audience_city_size', 'K\u00f6z\u00f6ns\u00e9g', false, 10); }
+    generate_ig_audience_age() { return this._aggregateByField(this.data, 'audience_age_name', 'audience_age_size', 'Ar\u00e1ny %', true, 0, 1, true); }
+    generate_ig_audience_gender() {
+        const result = this._aggregateByField(this.data, 'audience_gender_name', 'audience_gender_size', 'Ar\u00e1ny %', false, 0, 1, true);
+        const nameMap = { 'F': 'N\u0151', 'M': 'F\u00e9rfi', 'U': 'Egy\u00e9b' };
+        result.labels = result.labels.map(l => nameMap[l] || l);
+        return result;
+    }
+    generate_ig_audience_country() { return this._aggregateByField(this.data, 'audience_country_name', 'audience_country_size', 'Ar\u00e1ny %', false, 15, 1, true); }
+    generate_ig_audience_city() { return this._aggregateByField(this.data, 'city', 'audience_city_size', 'Ar\u00e1ny %', false, 15, 1, true); }
 
     generate_ig_media_type_breakdown() {
         const typeMap = {};
@@ -467,8 +477,8 @@ export default class ChartGenerator {
             const type = m.media_type || 'OTHER';
             if (!typeMap[type]) typeMap[type] = { count: 0, likes: 0, comments: 0 };
             typeMap[type].count++;
-            typeMap[type].likes += parseInt(m.likes) || 0;
-            typeMap[type].comments += parseInt(m.comments) || 0;
+            typeMap[type].likes += parseInt(m.media_like_count) || 0;
+            typeMap[type].comments += parseInt(m.media_comments_count) || 0;
         });
         const labels = Object.keys(typeMap);
         return {
@@ -482,89 +492,32 @@ export default class ChartGenerator {
     }
 
     generate_ig_reel_performance() {
-        const grouped = this.groupByDate(this.daily, 'date');
+        // Use per-media data for VIDEO type content (reel views)
+        const reels = this.video.filter(v => v.media_type === 'VIDEO');
+        const grouped = this.groupByDate(reels, 'date');
         const labels = Object.keys(grouped).sort();
-        const views = labels.map(date => this.sumField(grouped[date], 'media_reel_video_views'));
-        const watchTime = labels.map(date => {
-            const items = grouped[date];
-            const avg = items.reduce((s, i) => s + (parseFloat(i.media_reel_avg_watch_time) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
-        });
-        return { labels, series: [{ name: 'Reel n\u00e9z\u00e9sek', data: views }, { name: '\u00c1tl. n\u00e9z\u00e9si id\u0151', data: watchTime }] };
+        const views = labels.map(date => this.sumField(grouped[date], 'media_views'));
+        const reach = labels.map(date => this.sumField(grouped[date], 'media_reach'));
+        return { labels, series: [{ name: 'Reel n\u00e9z\u00e9sek', data: views }, { name: 'El\u00e9r\u00e9s', data: reach }] };
     }
 
     generate_ig_all_media() { return this.generateInstagramMediaTable(this.video); }
     generate_ig_top_3_media() {
-        const sorted = [...this.video].sort((a, b) => (parseInt(b.reach) || 0) - (parseInt(a.reach) || 0));
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.media_reach) || 0) - (parseInt(a.media_reach) || 0));
         return this.generateInstagramMediaTable(sorted.slice(0, 3));
     }
 
     generateInstagramMediaTable(media) {
-        const tableData = media.map(m => ({
-            id: m.media_id, caption: m.caption || '-',
-            date: m.timestamp ? m.timestamp.substring(0, 10) : '-',
-            impressions: parseInt(m.impressions) || 0, reach: parseInt(m.reach) || 0,
-            likes: parseInt(m.likes) || 0, comments: parseInt(m.comments) || 0,
-            shares: parseInt(m.shares) || 0, saved: parseInt(m.saved) || 0,
-            link: m.permalink || '#'
-        }));
-        return { labels: ['D\u00e1tum', 'Caption', 'Impresszi\u00f3k', 'El\u00e9r\u00e9s', 'Like-ok', 'Kommentek', 'Megoszt\u00e1sok', 'Ment\u00e9sek', 'Link'], series: [{ name: 'Media', data: tableData }] };
-    }
-
-    // ===== INSTAGRAM PUBLIC =====
-
-    generate_igpub_engagement_overview() { return this.dailyMultiMetric(this.data, [['media_like_count', 'Like-ok'], ['media_comments_count', 'Kommentek']]); }
-
-    generate_igpub_avg_engagement() {
-        const grouped = this.groupByDate(this.data, 'date');
-        const labels = Object.keys(grouped).sort();
-        const avgField = (items, field) => {
-            const avg = items.reduce((s, i) => s + (parseFloat(i[field]) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
-        };
-        return {
-            labels,
-            series: [
-                { name: '\u00c1tl. like/poszt', data: labels.map(d => avgField(grouped[d], 'likes_per_post')) },
-                { name: '\u00c1tl. komment/poszt', data: labels.map(d => avgField(grouped[d], 'comments_per_post')) }
-            ]
-        };
-    }
-
-    generate_igpub_followers_trend() { return this.dailyMax(this.daily, 'profile_followers_count', 'K\u00f6vet\u0151k'); }
-
-    generate_igpub_engagement_rate() {
-        const grouped = this.groupByDate(this.data, 'date');
-        const labels = Object.keys(grouped).sort();
-        const data = labels.map(date => {
-            const items = grouped[date];
-            const likes = this.sumField(items, 'media_like_count');
-            const comments = this.sumField(items, 'media_comments_count');
-            const followers = Math.max(...items.map(i => parseInt(i.profile_followers_count) || 0));
-            return followers > 0 ? parseFloat(((likes + comments) / followers * 100).toFixed(2)) : 0;
-        });
-        return { labels, series: [{ name: 'ER %', data }] };
-    }
-
-    generate_igpub_all_media() { return this.generateIGPublicMediaTable(this.video); }
-    generate_igpub_top_3_media() {
-        const sorted = [...this.video].sort((a, b) => (parseInt(b.media_like_count) || 0) - (parseInt(a.media_like_count) || 0));
-        return this.generateIGPublicMediaTable(sorted.slice(0, 3));
-    }
-    generate_igpub_worst_3_media() {
-        const sorted = [...this.video].filter(m => parseInt(m.media_like_count) > 0)
-            .sort((a, b) => (parseInt(a.media_like_count) || 0) - (parseInt(b.media_like_count) || 0));
-        return this.generateIGPublicMediaTable(sorted.slice(0, 3));
-    }
-
-    generateIGPublicMediaTable(media) {
+        const typeMap: Record<string, string> = { 'VIDEO': 'Reels', 'IMAGE': 'K\u00e9p', 'CAROUSEL_ALBUM': 'Carousel', 'STORY': 'Story' };
         const tableData = media.map(m => ({
             id: m.media_id, caption: m.media_caption || '-',
-            date: m.media_timestamp ? m.media_timestamp.substring(0, 10) : '-',
+            type: typeMap[m.media_type] || m.media_type || '-',
+            impressions: parseInt(m.media_views) || 0, reach: parseInt(m.media_reach) || 0,
             likes: parseInt(m.media_like_count) || 0, comments: parseInt(m.media_comments_count) || 0,
-            type: m.media_type || '-', link: m.media_permalink || '#'
+            shares: parseInt(m.media_shares) || 0, saved: parseInt(m.media_saved) || 0,
+            link: m.media_permalink || '#'
         }));
-        return { labels: ['D\u00e1tum', 'Caption', 'Like-ok', 'Kommentek', 'T\u00edpus', 'Link'], series: [{ name: 'Media', data: tableData }] };
+        return { labels: ['T\u00edpus', 'Caption', 'Impresszi\u00f3k', 'El\u00e9r\u00e9s', 'Like-ok', 'Kommentek', 'Megoszt\u00e1sok', 'Ment\u00e9sek', 'Link'], series: [{ name: 'Media', data: tableData }] };
     }
 
     // ===== YOUTUBE CHARTS =====
@@ -739,7 +692,15 @@ export default class ChartGenerator {
         if (sortAlpha) sorted.sort((a, b) => a[0].localeCompare(b[0]));
         else sorted.sort((a, b) => b[1] - a[1]);
 
-        if (limit > 0) sorted = sorted.slice(0, limit);
+        if (limit > 0 && sorted.length > limit) {
+            const top = sorted.slice(0, limit);
+            if (normalize && total > 0) {
+                const topSum = top.reduce((s, [, v]) => s + v, 0);
+                const rest = total - topSum;
+                if (rest > 0) top.push(['Egy\u00e9b', rest]);
+            }
+            sorted = top;
+        }
 
         return {
             labels: sorted.map(([k]) => k),
@@ -747,7 +708,7 @@ export default class ChartGenerator {
                 name: seriesName,
                 data: sorted.map(([, v]) => {
                     if (normalize && total > 0) {
-                        return parseFloat(((v / total) * 100).toFixed(2));
+                        return parseFloat(((v / total) * 100).toFixed(1));
                     }
                     return parseFloat((v * multiplier).toFixed(2));
                 })
