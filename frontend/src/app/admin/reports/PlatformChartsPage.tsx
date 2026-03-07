@@ -480,6 +480,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                   Összesített KPI-ok ({aggregatedCount} hónap)
                 </p>
               )}
+              {periodMonths === 1 && !isAllCompanies && selectedMonth && (() => {
+                const [y, mo] = selectedMonth.split('-').map(Number);
+                const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+                return (
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
+                    {y}. {MONTHS[mo - 1]} számai
+                  </p>
+                );
+              })()}
               <div
                 className="grid gap-3"
                 style={{ gridTemplateColumns: `repeat(${bestCols(displayKpis.length)}, minmax(0, 1fr))` }}
@@ -517,11 +526,16 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                       );
                     }
 
-                    // Render demographics charts as tables
-                    const isDemographics = chart.key.includes('demographics') || chart.key.includes('gender');
+                    // Render demographics/audience charts as tables
+                    const isDemographics = chart.key.includes('demographics') || chart.key.includes('gender') || chart.key.includes('audience') || chart.key.includes('country') || chart.key.includes('city');
                     if (isDemographics && chart.data?.labels && chart.data?.series?.[0]?.data) {
                       const labels = chart.data.labels;
                       const values = chart.data.series[0].data as number[];
+                      const headerLabel = chart.key.includes('gender') ? 'Nem'
+                        : chart.key.includes('age') ? 'Korcsoport'
+                        : chart.key.includes('country') ? 'Ország'
+                        : chart.key.includes('city') ? 'Város'
+                        : 'Kategória';
                       return (
                         <div key={chart.key} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
                           <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">{chart.title}</h4>
@@ -529,13 +543,13 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                             <thead>
                               <tr className="border-b border-[var(--border)]">
                                 <th className="text-left py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">
-                                  {chart.key.includes('gender') ? 'Nem' : 'Korcsoport'}
+                                  {headerLabel}
                                 </th>
                                 <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">Megoszlás</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {labels.map((label, i) => (
+                              {labels.map((label: string, i: number) => (
                                 <tr key={label} className="border-b border-[var(--border)] last:border-0">
                                   <td className="py-2.5 px-3 font-medium text-[var(--text-primary)]">{label}</td>
                                   <td className="py-2.5 px-3 text-right font-semibold text-[var(--text-primary)]">

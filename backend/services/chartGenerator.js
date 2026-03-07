@@ -412,13 +412,13 @@ class ChartGenerator {
     // ===== INSTAGRAM CHARTS =====
 
     generate_ig_reach() { return this.dailyMultiMetric(this.daily, [['reach', 'Elérés'], ['impressions', 'Impressziók']]); }
-    generate_ig_follower_growth() { return this.dailyMax(this.daily, 'follower_count', 'Követők'); }
-    generate_ig_engagement() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['comments', 'Kommentek'], ['shares', 'Megosztások'], ['saved', 'Mentések']]); }
-    generate_ig_profile_activity() { return this.dailyMultiMetric(this.daily, [['profile_views', 'Profilnézetek'], ['website_clicks', 'Weboldal kattintások']]); }
-    generate_ig_daily_followers() { return this.dailyMetric(this.daily, 'follower_count_1d', 'Napi új követők'); }
+    generate_ig_follower_growth() { return this.dailyMetric(this.daily, 'follower_count_1d', 'Napi új követők'); }
+    generate_ig_engagement() { return this.dailyMultiMetric(this.video, [['media_like_count', 'Like-ok'], ['media_comments_count', 'Kommentek'], ['media_shares', 'Megosztások'], ['media_saved', 'Mentések']]); }
+    generate_ig_profile_activity() { return this.dailyMultiMetric(this.daily, [['profile_views', 'Profilnézetek'], ['website_clicks_1d', 'Weboldal kattintások']]); }
+    generate_ig_daily_followers() { return this.dailyMax(this.daily, 'follower_count', 'Összes követő'); }
 
     generate_ig_save_rate() {
-        const grouped = this.groupByDate(this.daily, 'date');
+        const grouped = this.groupByDate(this.video, 'date');
         const labels = Object.keys(grouped).sort();
         const data = labels.map(date => {
             const items = grouped[date];
@@ -437,8 +437,8 @@ class ChartGenerator {
             const type = m.media_type || 'OTHER';
             if (!typeMap[type]) typeMap[type] = { count: 0, likes: 0, comments: 0 };
             typeMap[type].count++;
-            typeMap[type].likes += parseInt(m.likes) || 0;
-            typeMap[type].comments += parseInt(m.comments) || 0;
+            typeMap[type].likes += parseInt(m.media_like_count) || 0;
+            typeMap[type].comments += parseInt(m.media_comments_count) || 0;
         });
         const labels = Object.keys(typeMap);
         return {
@@ -465,18 +465,72 @@ class ChartGenerator {
 
     generate_ig_all_media() { return this.generateInstagramMediaTable(this.video); }
     generate_ig_top_3_media() {
-        const sorted = [...this.video].sort((a, b) => (parseInt(b.reach) || 0) - (parseInt(a.reach) || 0));
+        const sorted = [...this.video].sort((a, b) => (parseInt(b.media_reach) || 0) - (parseInt(a.media_reach) || 0));
         return this.generateInstagramMediaTable(sorted.slice(0, 3));
+    }
+
+    // ===== INSTAGRAM DEMOGRAPHICS & AUDIENCE =====
+
+    generate_ig_audience_age() {
+        return this._aggregateByField(this.data, 'audience_age_name', 'audience_age_size', 'Arány %', true, 0, 1, true);
+    }
+
+    generate_ig_audience_gender() {
+        const result = this._aggregateByField(this.data, 'audience_gender_name', 'audience_gender_size', 'Arány %', false, 0, 1, true);
+        const nameMap = { 'F': 'Nő', 'M': 'Férfi', 'U': 'Egyéb' };
+        result.labels = result.labels.map(l => nameMap[l] || l);
+        return result;
+    }
+
+    generate_ig_audience_country() {
+        return this._aggregateByField(this.data, 'audience_country_name', 'audience_country_size', 'Arány %', false, 15, 1, true);
+    }
+
+    generate_ig_audience_city() {
+        return this._aggregateByField(this.data, 'city', 'audience_city_size', 'Arány %', false, 15, 1, true);
+    }
+
+    // ===== INSTAGRAM STORY DETAILS =====
+
+    generate_ig_story_interactions() {
+        return this.dailyMultiMetric(this.daily, [
+            ['story_interactions', 'Interakciók'],
+            ['story_replies', 'Válaszok'],
+            ['story_shares', 'Megosztások']
+        ]);
+    }
+
+    generate_ig_story_navigation() {
+        return this.dailyMultiMetric(this.daily, [
+            ['story_taps_forward', 'Előre'],
+            ['story_taps_back', 'Hátra'],
+            ['story_swipe_forward', 'Kilépés']
+        ]);
+    }
+
+    // ===== INSTAGRAM CLICKS =====
+
+    generate_ig_website_clicks_trend() {
+        return this.dailyMetric(this.daily, 'website_clicks_1d', 'Weboldal kattintások');
+    }
+
+    generate_ig_clicks() {
+        return this.dailyMultiMetric(this.daily, [
+            ['email_contacts_1d', 'Email'],
+            ['phone_call_clicks_1d', 'Telefon'],
+            ['get_directions_clicks_1d', 'Útvonal'],
+            ['text_message_clicks_1d', 'Üzenet']
+        ]);
     }
 
     generateInstagramMediaTable(media) {
         const tableData = media.map(m => ({
-            id: m.media_id, caption: m.caption || '-',
+            id: m.media_id, caption: m.media_caption || '-',
             date: m.timestamp ? m.timestamp.substring(0, 10) : '-',
-            impressions: parseInt(m.impressions) || 0, reach: parseInt(m.reach) || 0,
-            likes: parseInt(m.likes) || 0, comments: parseInt(m.comments) || 0,
-            shares: parseInt(m.shares) || 0, saved: parseInt(m.saved) || 0,
-            link: m.permalink || '#'
+            impressions: parseInt(m.media_views) || 0, reach: parseInt(m.media_reach) || 0,
+            likes: parseInt(m.media_like_count) || 0, comments: parseInt(m.media_comments_count) || 0,
+            shares: parseInt(m.media_shares) || 0, saved: parseInt(m.media_saved) || 0,
+            link: m.media_permalink || '#'
         }));
         return { labels: ['Dátum', 'Caption', 'Impressziók', 'Elérés', 'Like-ok', 'Kommentek', 'Megosztások', 'Mentések', 'Link'], series: [{ name: 'Media', data: tableData }] };
     }

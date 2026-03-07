@@ -7,6 +7,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator frontendClient {
+  provider = "prisma-client-js"
+  output   = "../frontend/node_modules/.prisma/client"
+}
+
 enum Role {
   ADMIN
   CLIENT
@@ -70,6 +75,8 @@ model User {
   sessions      Session[]
   ownedCompanies Company[] @relation("AdminCompanies")
   subscription  Subscription?
+  messages          Message[]
+  messageReadStatuses MessageReadStatus[]
 
   @@index([companyId])
   @@index([email])
@@ -93,6 +100,8 @@ model Company {
   connections     IntegrationConnection[]
   reportSummaries ReportSummary[]
   reportCaches    ReportCache[]
+  messages        Message[]
+  messageReadStatuses MessageReadStatus[]
 
   @@index([adminId])
 }
@@ -200,4 +209,30 @@ model Subscription {
   cancelAtPeriodEnd    Boolean            @default(false)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
+}
+
+
+model Message {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([senderId])
+}
+
+model MessageReadStatus {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lastSeenAt DateTime @default(now())
+
+  @@unique([userId, companyId])
+  @@index([companyId])
 }

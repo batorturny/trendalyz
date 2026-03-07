@@ -305,14 +305,10 @@ function GroupCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.companyName);
-  const [showAssign, setShowAssign] = useState(false);
 
-  const unassignedCompanies = existingCompanies.filter(
-    c => !allGroups.some(g => g.existingCompanyId === c.id && g.id !== group.id)
-  );
 
   return (
-    <div className={`border rounded-2xl overflow-hidden transition-all ${
+    <div className={`border rounded-2xl transition-all ${
       group.skip
         ? 'border-[var(--border)] opacity-50'
         : group.existingCompanyId
@@ -395,34 +391,21 @@ function GroupCard({
           {/* Assign to existing company */}
           <div className="pt-2 border-t border-[var(--border)]">
             {!group.existingCompanyId ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowAssign(!showAssign)}
-                  className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                >
-                  Hozzárendelés meglévő céghez <ChevronDown className="w-3 h-3" />
-                </button>
-                {showAssign && (
-                  <div className="absolute left-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
-                    {unassignedCompanies.length === 0 ? (
-                      <div className="px-3 py-2 text-xs text-[var(--text-secondary)]">Nincs elérhető cég</div>
-                    ) : (
-                      unassignedCompanies.map(c => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            onUpdate(group.id, { existingCompanyId: c.id, companyName: c.name });
-                            setShowAssign(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-raised)] text-[var(--text-primary)] border-b border-[var(--border)] last:border-0"
-                        >
-                          {c.name}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+              <select
+                value=""
+                onChange={(e) => {
+                  const company = existingCompanies.find(c => c.id === e.target.value);
+                  if (company) {
+                    onUpdate(group.id, { existingCompanyId: company.id, companyName: company.name });
+                  }
+                }}
+                className="text-xs bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)] rounded-lg px-2 py-1.5 w-full max-w-xs cursor-pointer hover:border-[var(--accent)] transition-colors"
+              >
+                <option value="" disabled>Hozzárendelés meglévő céghez</option>
+                {existingCompanies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             ) : (
               <button
                 onClick={() => onUpdate(group.id, { existingCompanyId: null })}

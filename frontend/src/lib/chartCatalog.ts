@@ -611,56 +611,13 @@ export const chartCatalog = [
     },
     {
         key: 'ig_daily_followers',
-        title: 'Napi \u00faj k\u00f6vet\u0151k',
-        description: 'Napi k\u00f6vet\u0151sz\u00e1m v\u00e1ltoz\u00e1s',
+        title: '\u00d6sszes k\u00f6vet\u0151',
+        description: '\u00d6sszes k\u00f6vet\u0151sz\u00e1m alakul\u00e1sa',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
         color: '#4d96ff',
         platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['follower_count_1d', 'date']
-    },
-
-    // ========== INSTAGRAM PUBLIC ==========
-    {
-        key: 'igpub_engagement_overview',
-        title: 'Engagement \u00e1ttekint\u00e9s',
-        description: 'Like-ok \u00e9s kommentek \u00f6sszes\u00edtve',
-        category: CHART_CATEGORIES.ENGAGEMENT,
-        type: 'bar',
-        color: '#e040fb',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['media_like_count', 'media_comments_count', 'date']
-    },
-    {
-        key: 'igpub_avg_engagement',
-        title: '\u00c1tlag engagement/poszt',
-        description: '\u00c1tlagos like \u00e9s komment posztonk\u00e9nt',
-        category: CHART_CATEGORIES.ENGAGEMENT,
-        type: 'line',
-        color: '#bc6aff',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['likes_per_post', 'comments_per_post', 'date'],
-        calculated: true
-    },
-    {
-        key: 'igpub_all_media',
-        title: '\u00d6sszes tartalom',
-        description: 'Teljes tartalom lista',
-        category: CHART_CATEGORIES.MEDIA,
-        type: 'table',
-        color: '#00d4ff',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
-    },
-    {
-        key: 'igpub_top_3_media',
-        title: 'Top 3 tartalom',
-        description: 'Legt\u00f6bb like-ot kapott tartalmak',
-        category: CHART_CATEGORIES.MEDIA,
-        type: 'table',
-        color: '#00ff95',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
+        windsorFields: ['follower_count', 'date']
     },
 
     // ========== FACEBOOK (MORE) ==========
@@ -693,39 +650,6 @@ export const chartCatalog = [
         color: '#9d4edd',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_views_total', 'date']
-    },
-
-    // ========== INSTAGRAM PUBLIC (MORE) ==========
-    {
-        key: 'igpub_worst_3_media',
-        title: 'Leggyeng\u00e9bb 3 tartalom',
-        description: 'Legkevesebb like-ot kapott tartalmak',
-        category: CHART_CATEGORIES.MEDIA,
-        type: 'table',
-        color: '#ff6b6b',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['media_id', 'media_caption', 'media_like_count', 'media_comments_count', 'media_type', 'media_permalink', 'media_timestamp']
-    },
-    {
-        key: 'igpub_followers_trend',
-        title: 'K\u00f6vet\u0151k trend',
-        description: 'K\u00f6vet\u0151sz\u00e1m alakul\u00e1sa az id\u0151szakban',
-        category: CHART_CATEGORIES.TREND,
-        type: 'line',
-        color: '#00ff95',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['profile_followers_count', 'date']
-    },
-    {
-        key: 'igpub_engagement_rate',
-        title: 'IG Public engagement rate',
-        description: '(Like-ok + Kommentek) / K\u00f6vet\u0151k %',
-        category: CHART_CATEGORIES.ENGAGEMENT,
-        type: 'line',
-        color: '#ff6b9d',
-        platform: 'INSTAGRAM_ORGANIC',
-        windsorFields: ['media_like_count', 'media_comments_count', 'profile_followers_count', 'date'],
-        calculated: true
     },
 
     // ========== YOUTUBE (NEW) ==========

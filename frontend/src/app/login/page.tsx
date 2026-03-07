@@ -9,7 +9,7 @@ export default function LoginPage() {
         <div className="text-center mb-8 flex flex-col items-center">
           <TrendalyzLogo size="lg" />
           <p className="text-[var(--text-secondary)] text-sm mt-3 max-w-xs">
-            Multi-platform social media analitika és riport dashboard
+            Havi riportok marketing ügynökségeknek — minden partner, egy helyen
           </p>
         </div>
 

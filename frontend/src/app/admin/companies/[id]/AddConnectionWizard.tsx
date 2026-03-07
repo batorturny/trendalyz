@@ -61,7 +61,15 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
     setShowManual(false);
   };
 
-  // Windsor OAuth popup flow
+  // Direct OAuth redirect (Meta: Facebook, Instagram)
+  const handleDirectOAuth = useCallback(() => {
+    if (!selectedProvider) return;
+    // Full page redirect — backend handles token exchange and DB storage,
+    // then redirects back to /admin/companies/{companyId}?oauth=success
+    window.location.href = `/api/oauth/authorize?provider=${encodeURIComponent(selectedProvider)}&companyId=${encodeURIComponent(companyId)}`;
+  }, [selectedProvider, companyId]);
+
+  // Windsor OAuth popup flow (TikTok, YouTube)
   const handleWindsorOAuth = useCallback(async () => {
     if (!selectedProvider) return;
 
@@ -209,8 +217,31 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               <span className="font-semibold text-[var(--text-primary)]">{selectedMeta.label}</span>
             </div>
 
-            {/* Windsor OAuth Connect Button */}
-            {selectedMeta.supportsOAuth && (
+            {/* Direct OAuth (Meta: Facebook, Instagram) — full page redirect, no popup */}
+            {selectedMeta.supportsOAuth && (selectedMeta as any).directOAuth && (
+              <button
+                onClick={handleDirectOAuth}
+                className="flex items-center gap-4 p-4 rounded-xl border border-[var(--accent)] bg-[var(--accent-subtle)] hover:brightness-110 transition-all w-full text-left"
+              >
+                <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                  <PlatformIcon platform={getPlatformFromProvider(selectedMeta.key)} className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-[var(--text-primary)]">
+                    Bejelentkezés {selectedMeta.label}-kal
+                  </div>
+                  <div className="text-xs text-[var(--text-secondary)]">
+                    {selectedMeta.key === 'YOUTUBE'
+                      ? 'Google fiókoddal — automatikusan felismeri a csatornádat'
+                      : 'Facebook fiókkal — automatikusan menti az összes oldalt'}
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+              </button>
+            )}
+
+            {/* Windsor OAuth popup (TikTok, YouTube) */}
+            {selectedMeta.supportsOAuth && !(selectedMeta as any).directOAuth && (
               <button
                 onClick={handleWindsorOAuth}
                 disabled={oauthLoading}
@@ -253,8 +284,8 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               </button>
             )}
 
-            {/* Divider + Account Picker — only shown when picker has results */}
-            {!pickerEmpty && selectedMeta.supportsOAuth && (
+            {/* Divider + Account Picker — only shown when picker has results, and only for Windsor providers */}
+            {!pickerEmpty && selectedMeta.supportsOAuth && !(selectedMeta as any).directOAuth && (
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-[var(--border)]" />
                 <span className="text-xs text-[var(--text-secondary)]">
@@ -264,14 +295,16 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               </div>
             )}
 
-            {/* Windsor Account Picker — refreshes after OAuth done */}
-            <WindsorAccountPicker
-              key={oauthStatus === 'done' ? `refresh-${Date.now()}` : 'initial'}
-              provider={selectedProvider!}
-              existingAccountIds={existingAccountIds}
-              onSelect={handleAccountPicked}
-              onEmpty={() => { setPickerEmpty(true); setShowManual(true); }}
-            />
+            {/* Windsor Account Picker — only for Windsor providers (not directOAuth) */}
+            {!(selectedMeta as any).directOAuth && (
+              <WindsorAccountPicker
+                key={oauthStatus === 'done' ? `refresh-${Date.now()}` : 'initial'}
+                provider={selectedProvider!}
+                existingAccountIds={existingAccountIds}
+                onSelect={handleAccountPicked}
+                onEmpty={() => { setPickerEmpty(true); setShowManual(true); }}
+              />
+            )}
 
             {/* Selected account display */}
             {accountId && !showManual && (

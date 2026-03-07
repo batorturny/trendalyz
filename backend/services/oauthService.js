@@ -19,7 +19,10 @@ const OAUTH_CONFIGS = {
     tokenUrl: 'https://oauth2.googleapis.com/token',
     clientId: () => process.env.GOOGLE_CLIENT_ID,
     clientSecret: () => process.env.GOOGLE_CLIENT_SECRET,
-    scopes: ['https://www.googleapis.com/auth/youtube.readonly'],
+    scopes: [
+      'https://www.googleapis.com/auth/youtube.readonly',
+      'https://www.googleapis.com/auth/yt-analytics.readonly',
+    ],
     windsorConnectorType: 'youtube',
   },
   FACEBOOK_ORGANIC: {
@@ -27,7 +30,16 @@ const OAUTH_CONFIGS = {
     tokenUrl: 'https://graph.facebook.com/v19.0/oauth/access_token',
     clientId: () => process.env.META_APP_ID,
     clientSecret: () => process.env.META_APP_SECRET,
-    scopes: ['pages_show_list', 'pages_read_engagement', 'pages_read_posts', 'read_insights'],
+    // One Meta login covers FB organic + IG organic + Ads
+    scopes: [
+      'pages_show_list',
+      'pages_read_engagement',
+      'pages_read_user_content',
+      'read_insights',
+      'instagram_basic',
+      'instagram_manage_insights',
+      'ads_read',
+    ],
     windsorConnectorType: 'facebook_organic',
   },
   INSTAGRAM_ORGANIC: {
@@ -35,7 +47,11 @@ const OAUTH_CONFIGS = {
     tokenUrl: 'https://graph.facebook.com/v19.0/oauth/access_token',
     clientId: () => process.env.META_APP_ID,
     clientSecret: () => process.env.META_APP_SECRET,
-    scopes: ['instagram_basic', 'instagram_manage_insights', 'pages_show_list'],
+    scopes: [
+      'pages_show_list',
+      'instagram_basic',
+      'instagram_manage_insights',
+    ],
     windsorConnectorType: 'instagram',
   },
 };

@@ -60,6 +60,7 @@ export function ClientPlatformPage({
   const [error, setError] = useState<string | null>(null);
   const [autoLoaded, setAutoLoaded] = useState(false);
   const [prevMonthKpis, setPrevMonthKpis] = useState<KPI[] | null>(null);
+  const [monthlyAnalysis, setMonthlyAnalysis] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const companyId = session?.user?.companyId;
@@ -125,6 +126,7 @@ export function ClientPlatformPage({
     setAggregatedKPIs(null);
     setAggregatedCount(0);
     setPrevMonthKpis(null);
+    setMonthlyAnalysis(null);
 
     try {
       if (periodMonths > 1) {
@@ -192,11 +194,20 @@ export function ClientPlatformPage({
           setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
         }
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Hiba történt');
-    } finally {
-      setLoading(false);
+    // Fetch monthly analysis (only for single month)
+    if (periodMonths === 1) {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const mm = String(month).padStart(2, '0');
+      fetch(`/api/analysis/client?month=${year}-${mm}`)
+        .then(r => r.json())
+        .then(data => setMonthlyAnalysis(data.content ?? null))
+        .catch(() => {});
     }
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Hiba történt');
+  } finally {
+    setLoading(false);
+  }
   }, [companyId, selectedMonth, platformChartKeys, periodMonths, platform.platformKey]);
 
   // Auto-generate on first load
@@ -326,6 +337,23 @@ export function ClientPlatformPage({
       <div ref={reportRef}>
         {results.length > 0 && (
           <div className="space-y-8">
+            {/* Monthly Analysis */}
+            {monthlyAnalysis && (
+              <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 md:p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: platform.borderColor }} />
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                    {(() => {
+                      const [y, mo] = selectedMonth.split('-').map(Number);
+                      const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+                      return `${y}. ${MONTHS[mo - 1]} — havi elemzés`;
+                    })()}
+                  </p>
+                </div>
+                <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{monthlyAnalysis}</p>
+              </div>
+            )}
+
             {/* Admin Note */}
             {adminNote && (
               <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 flex items-start gap-3">

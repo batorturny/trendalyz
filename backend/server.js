@@ -143,19 +143,29 @@ async function resolvePlatformAccounts(company) {
         return cached.value;
     }
 
+    // Fetch full connection rows (including metadata) so Meta adapter can use stored tokens.
+    // For Meta providers, also include ERROR-status connections that have a stored token
+    // (connection test via Windsor sets them to ERROR even though tokens are valid).
     const connections = await prisma.integrationConnection.findMany({
-        where: { companyId: company.id },
-        select: { provider: true, externalAccountId: true },
+        where: {
+            companyId: company.id,
+            OR: [
+                { status: 'CONNECTED' },
+                { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
+            ],
+        },
+        select: { provider: true, externalAccountId: true, metadata: true },
     });
 
     const accounts = new Map();
     for (const conn of connections) {
-        accounts.set(conn.provider, conn.externalAccountId);
+        // Store full connection object so chart endpoint can access tokens for Meta
+        accounts.set(conn.provider, conn);
     }
 
     // Legacy TikTok fallback
     if (!accounts.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
-        accounts.set('TIKTOK_ORGANIC', company.tiktokAccountId);
+        accounts.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null });
     }
 
     platformAccountsCache.set(cacheKey, { value: accounts, time: Date.now() });
@@ -406,7 +416,7 @@ if (ENABLE_MULTI_PLATFORM) {
         }
     });
 
-    // Test a connection via Windsor API
+    // Test a connection via Windsor API (or Meta Graph API for Meta providers)
     app.post('/api/connections/:id/test', requireAdmin, async (req, res) => {
         try {
             const connection = await connectionService.getConnectionById(req.params.id);
@@ -414,9 +424,31 @@ if (ENABLE_MULTI_PLATFORM) {
                 return res.status(404).json({ error: 'Connection not found' });
             }
 
-            const apiKey = await resolveWindsorKey(req);
-            const { windsorMulti: wm } = createWindsorServices(apiKey);
-            const result = await wm.testConnection(connection.provider, connection.externalAccountId);
+            const META_DIRECT = new Set(['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC']);
+            let result;
+
+            if (META_DIRECT.has(connection.provider) && connection.metadata?.encryptedAccessToken) {
+                // Test via Meta Graph API directly
+                const { decrypt } = require('./utils/encryption');
+                const token = connection.metadata.encryptedPageAccessToken
+                    ? decrypt(connection.metadata.encryptedPageAccessToken)
+                    : decrypt(connection.metadata.encryptedAccessToken);
+                try {
+                    const resp = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`);
+                    const data = await resp.json();
+                    if (data.error) {
+                        result = { success: false, message: data.error.message };
+                    } else {
+                        result = { success: true, message: `Kapcsolat OK: ${data.name || data.id}` };
+                    }
+                } catch (err) {
+                    result = { success: false, message: err.message };
+                }
+            } else {
+                const apiKey = await resolveWindsorKey(req);
+                const { windsorMulti: wm } = createWindsorServices(apiKey);
+                result = await wm.testConnection(connection.provider, connection.externalAccountId);
+            }
 
             // Update connection status based on test result
             await connectionService.updateConnectionStatus(
@@ -568,9 +600,24 @@ if (ENABLE_MULTI_PLATFORM) {
             }
 
             // Exchange code for tokens
-            const tokens = await oauthService.exchangeCode(provider, code, redirectUri);
+            let tokens = await oauthService.exchangeCode(provider, code, redirectUri);
 
             const config = oauthService.getConfig(provider);
+
+            // For Meta providers: immediately exchange short-lived token (~1h) for long-lived (~60 days)
+            if (provider === 'FACEBOOK_ORGANIC' || provider === 'INSTAGRAM_ORGANIC') {
+                try {
+                    const longLived = await metaGraphService.exchangeLongLivedToken(tokens.access_token);
+                    tokens = {
+                        ...tokens,
+                        access_token: longLived.access_token,
+                        expires_in: longLived.expires_in,
+                    };
+                    console.log(`Meta long-lived token obtained for ${provider} (expires in ${Math.round(longLived.expires_in / 86400)} days)`);
+                } catch (llErr) {
+                    console.error(`Meta long-lived token exchange failed (non-fatal): ${llErr.message}`);
+                }
+            }
 
             // Resolve Windsor key from the user who initiated the OAuth flow
             const oauthApiKey = await getWindsorApiKey(stateUserId || null);
@@ -625,30 +672,52 @@ if (ENABLE_MULTI_PLATFORM) {
                 }
             }
 
-            // Build encrypted metadata — encryption failure is FATAL
-            const metadata = {};
-            metadata.encryptedAccessToken = encrypt(tokens.access_token);
+            // Build base encrypted metadata — encryption failure is FATAL
+            const baseMetadata = {};
+            baseMetadata.encryptedAccessToken = encrypt(tokens.access_token);
             if (tokens.refresh_token) {
-                metadata.encryptedRefreshToken = encrypt(tokens.refresh_token);
+                baseMetadata.encryptedRefreshToken = encrypt(tokens.refresh_token);
             }
             if (tokens.expires_in) {
-                metadata.tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+                baseMetadata.tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
             }
 
-            // Build externalAccountId with unique fallback
-            const externalAccountId = platformAccounts[0]?.accountId
-                || tokens.open_id
-                || `oauth-${crypto.randomUUID().slice(0, 8)}`;
-            const externalAccountName = platformAccounts[0]?.accountName || null;
+            // For Facebook: store one connection per Page, each with its own page access token.
+            // Page tokens derived from a long-lived user token never expire.
+            let connection;
+            if (provider === 'FACEBOOK_ORGANIC' && platformAccounts.length > 0) {
+                const upserts = platformAccounts.map((page) => {
+                    const pageMetadata = { ...baseMetadata };
+                    if (page.pageAccessToken) {
+                        pageMetadata.encryptedPageAccessToken = encrypt(page.pageAccessToken);
+                        pageMetadata.pageId = page.accountId;
+                    }
+                    return connectionService.upsertConnection({
+                        companyId,
+                        provider,
+                        externalAccountId: page.accountId,
+                        externalAccountName: page.accountName || null,
+                        metadata: pageMetadata,
+                    });
+                });
+                const connections = await Promise.all(upserts);
+                connection = connections[0];
+                console.log(`Stored ${connections.length} Facebook page connection(s) for company ${companyId}`);
+            } else {
+                // TikTok, Instagram, YouTube, Ads — one connection per login
+                const externalAccountId = platformAccounts[0]?.accountId
+                    || tokens.open_id
+                    || `oauth-${crypto.randomUUID().slice(0, 8)}`;
+                const externalAccountName = platformAccounts[0]?.accountName || null;
 
-            // Upsert IntegrationConnection (handles duplicate clicks gracefully)
-            const connection = await connectionService.upsertConnection({
-                companyId,
-                provider,
-                externalAccountId,
-                externalAccountName,
-                metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-            });
+                connection = await connectionService.upsertConnection({
+                    companyId,
+                    provider,
+                    externalAccountId,
+                    externalAccountName,
+                    metadata: Object.keys(baseMetadata).length > 0 ? baseMetadata : undefined,
+                });
+            }
 
             const windsorOnboardUrl = !windsorReady
                 ? `https://onboard.windsor.ai?datasource=${config.windsorConnectorType}`
@@ -750,12 +819,15 @@ if (ENABLE_CHART_API) {
             // Fetch data and generate charts per platform in parallel
             const chartApiKey = await resolveWindsorKey(req);
             const { windsorMulti } = createWindsorServices(chartApiKey);
+            const { fetchMetaChartData } = require('./services/metaDataAdapter');
+
+            const META_DIRECT_PROVIDERS = new Set(['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC']);
 
             const platformPromises = Array.from(chartsByPlatform.entries()).map(async ([platform, platformCharts]) => {
-                const platformAccountId = platformAccounts.get(platform);
+                const connection = platformAccounts.get(platform);
 
                 // No connection for this platform → return empty results
-                if (!platformAccountId) {
+                if (!connection) {
                     console.log(`[CHART API] No connection for ${platform}, returning empty for ${platformCharts.length} charts`);
                     return platformCharts.map(chartReq => ({
                         key: chartReq.key,
@@ -764,22 +836,37 @@ if (ENABLE_CHART_API) {
                     }));
                 }
 
+                const platformAccountId = connection.externalAccountId;
+
                 try {
-                    // Check in-memory cache first
                     const cacheKey = `chart:${platform}:${platformAccountId}:${startDate}:${endDate}`;
-                    let windsorData;
+                    let platformData;
                     const cached = !forceRefresh && windsorDataCache.get(cacheKey);
+
                     if (cached && (Date.now() - cached.ts) < WINDSOR_DATA_CACHE_TTL) {
-                        windsorData = cached.data;
-                        console.log(`[CHART API] Cache HIT for ${platform} (${Array.isArray(windsorData) ? windsorData.length : 0} rows)`);
+                        platformData = cached.data;
+                        console.log(`[CHART API] Cache HIT for ${platform} (${Array.isArray(platformData) ? platformData.length : 0} rows)`);
                     } else {
-                        console.log(`[CHART API] Cache MISS — fetching ${platform} data for account ${platformAccountId}`);
-                        windsorData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
-                        windsorDataCache.set(cacheKey, { data: windsorData, ts: Date.now() });
-                        console.log(`[CHART API] ${platform}: received ${Array.isArray(windsorData) ? windsorData.length : 'invalid'} rows, cached`);
+                        // Use Meta Graph API directly if connection has stored token
+                        const useMetaDirect = META_DIRECT_PROVIDERS.has(platform) && connection.metadata?.encryptedAccessToken;
+
+                        if (useMetaDirect) {
+                            console.log(`[CHART API] Meta direct fetch for ${platform} (account ${platformAccountId})`);
+                            platformData = await fetchMetaChartData(platform, connection, startDate, endDate);
+                            if (!platformData) {
+                                // No token found — fall back to Windsor
+                                platformData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
+                            }
+                        } else {
+                            console.log(`[CHART API] Windsor fetch for ${platform} (account ${platformAccountId})`);
+                            platformData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
+                        }
+
+                        windsorDataCache.set(cacheKey, { data: platformData, ts: Date.now() });
+                        console.log(`[CHART API] ${platform}: ${Array.isArray(platformData) ? platformData.length : 'invalid'} rows cached`);
                     }
 
-                    const generator = new ChartGenerator(windsorData, startDate, endDate);
+                    const generator = new ChartGenerator(platformData, startDate, endDate);
                     return platformCharts.map(chartReq => {
                         try {
                             return generator.generate(chartReq.key, chartReq.params || {});
@@ -1272,6 +1359,14 @@ app.listen(PORT, async () => {
     }
 
     // Start monthly report cron job
+    // Start Meta token refresh job (weekly, keeps long-lived tokens alive)
+    try {
+        const { startMetaTokenRefreshJob } = require('./services/metaTokenRefreshJob');
+        startMetaTokenRefreshJob();
+    } catch (err) {
+        console.error('Failed to start Meta token refresh job:', err.message);
+    }
+
     if (ENABLE_BILLING) {
         try {
             const { startMonthlyReportJob } = require('./services/monthlyReportJob');

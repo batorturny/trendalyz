@@ -180,11 +180,10 @@ export async function exportPdf(container: HTMLElement, filename: string) {
   // Get the container's rendered width for consistent rendering
   const containerWidth = container.offsetWidth;
 
-  // Find top-level sections: the wrapper div.space-y-8 children
-  const wrapper = container.firstElementChild as HTMLElement | null;
-  const sectionEls = wrapper
-    ? Array.from(wrapper.children).filter((c): c is HTMLElement => c instanceof HTMLElement)
-    : [container];
+  // #report-results direct children are the sections (KPI + chart sections)
+  const sectionEls = Array.from(container.children).filter(
+    (c): c is HTMLElement => c instanceof HTMLElement
+  );
 
   let curY = margin;
   let pageNum = 0;
@@ -193,9 +192,19 @@ export async function exportPdf(container: HTMLElement, filename: string) {
   pdf.setFillColor(bgRgb[0], bgRgb[1], bgRgb[2]);
   pdf.rect(0, 0, pdfW, pdfH, 'F');
 
-  for (const sectionEl of sectionEls) {
-    // Render this section to a canvas
-    const canvas = await renderSection(sectionEl, containerWidth, bgHex);
+  console.log('[exportPdf] Found', sectionEls.length, 'sections to render');
+
+  for (let idx = 0; idx < sectionEls.length; idx++) {
+    const sectionEl = sectionEls[idx];
+    console.log(`[exportPdf] Rendering section ${idx + 1}/${sectionEls.length}`, sectionEl.tagName, sectionEl.className.slice(0, 60));
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await renderSection(sectionEl, containerWidth, bgHex);
+    } catch (err) {
+      console.warn(`[exportPdf] Section ${idx + 1} render failed, skipping:`, err);
+      continue;
+    }
 
     const ratio = canvas.height / canvas.width;
     const sectionMmH = contentW * ratio;

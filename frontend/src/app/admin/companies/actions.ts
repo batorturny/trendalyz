@@ -630,6 +630,43 @@ export async function testConnection(connectionId: string): Promise<{ success: b
     return { success: false, message: 'Integráció nem található' };
   }
 
+  const META_DIRECT = new Set(['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC']);
+  const meta = connection.metadata as any;
+
+  // Test Meta connections via Graph API directly if token is stored
+  if (META_DIRECT.has(connection.provider) && meta?.encryptedAccessToken) {
+    try {
+      const token = meta.encryptedPageAccessToken
+        ? decrypt(meta.encryptedPageAccessToken as string)
+        : decrypt(meta.encryptedAccessToken as string);
+
+      const res = await fetch(
+        `https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${token}`,
+        { signal: AbortSignal.timeout(15000) }
+      );
+      const data = await res.json() as any;
+
+      if (data.error) {
+        await prisma.integrationConnection.update({
+          where: { id: connectionId },
+          data: { status: 'ERROR', errorMessage: data.error.message },
+        });
+        return { success: false, message: data.error.message };
+      }
+
+      await prisma.integrationConnection.update({
+        where: { id: connectionId },
+        data: { status: 'CONNECTED', errorMessage: null, lastSyncAt: new Date() },
+      });
+      revalidatePath(`/admin/companies/${connection.companyId}`);
+      return { success: true, message: `Sikeres kapcsolat — ${data.name || data.id}` };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Ismeretlen hiba';
+      return { success: false, message: msg };
+    }
+  }
+
+  // Windsor test for other providers
   let windsorApiKey: string;
   try {
     windsorApiKey = await getAdminWindsorApiKey(session.user.id);
@@ -675,11 +712,7 @@ export async function testConnection(connectionId: string): Promise<{ success: b
 
     await prisma.integrationConnection.update({
       where: { id: connectionId },
-      data: {
-        status: 'CONNECTED',
-        errorMessage: null,
-        lastSyncAt: new Date(),
-      },
+      data: { status: 'CONNECTED', errorMessage: null, lastSyncAt: new Date() },
     });
 
     revalidatePath(`/admin/companies/${connection.companyId}`);

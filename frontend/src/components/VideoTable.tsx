@@ -125,8 +125,8 @@ export function VideoTable({ videos, chartVideos, chartLabels, title, color }: V
                                                     </td>
                                                 );
                                             }
-                                            if (col.key === 'date') {
-                                                return <td key={col.key} className="px-3 py-2 whitespace-nowrap">{video.date}</td>;
+                                            if (col.key === 'date' || col.key === 'type') {
+                                                return <td key={col.key} className="px-3 py-2 whitespace-nowrap">{video[col.key]}</td>;
                                             }
                                             // Numeric column
                                             const val = video[col.key] ?? 0;

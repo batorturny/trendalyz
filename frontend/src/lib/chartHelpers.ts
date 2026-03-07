@@ -125,7 +125,7 @@ const KPI_DESC: Record<string, { title: string; text: string; tip: string }> = {
   ig_saves: { title: 'Mentések', text: 'A tartalmaid mentéseinek száma az adott időszakban. A mentés az Instagram egyik legértékesebb interakciója, mert azt jelzi, hogy a felhasználó annyira hasznosnak találta a tartalmat, hogy később is vissza akar térni hozzá. Az algoritmus kiemelt súllyal kezeli a mentéseket az elérés-elosztásnál.', tip: 'Oktatási tartalmak (tippek, útmutatók, checklisták), inspiráló idézetek és „mentsd el későbbre" típusú carousel posztok kapják a legtöbb mentést. Használj CTA-t a captionban: „Mentsd el, ha hasznos volt!" A carousel formátum különösen hatékony a mentések generálásához.' },
   ig_profile_views: { title: 'Profilnézetek', text: 'Az adott időszakban a profilodat felkereső felhasználók száma. Ez megmutatja, hogy a tartalmaid mennyire keltik fel az érdeklődést — ha valaki a profilodat nézi, az azt jelenti, hogy többet akar megtudni rólad, és potenciálisan követővé válhat.', tip: 'A kiemelt Story-k (Highlights), a letisztult bio és az egységes vizuális arculat növelik a profillátogatásból eredő követővé válás esélyét. Használj link-in-bio eszközöket, és utalj rájuk a tartalmaidban. A Reels videók végén megjelenő profilkép is ide irányítja a nézőket.' },
   ig_media_count: { title: 'Tartalmak', text: 'Az adott időszakban közzétett tartalmak (posztok, Reels, carousel) száma. A rendszeres posztolás kulcsfontosságú az Instagram algoritmusa szempontjából, mert az aktív fiókokat részesíti előnyben az elérés-elosztásnál.', tip: 'A mix tartalom stratégia (Reels + carousel + statikus posztok + Story-k) a leghatékonyabb. Heti 4-7 feed poszt és napi Story-k az ideális frekvencia. A Reels az új közönség eléréséhez, a carousel az oktatáshoz, a Story-k a közösség fenntartásához a legalkalmasabbak.' },
-  ig_new_followers: { title: 'Napi új követők', text: 'Az időszakban szerzett napi új követők összesítése. Ez a növekedési dinamika legfontosabb mutatója — megmutatja, milyen ütemben bővül a közönséged, és segít azonosítani, mely tartalmak vagy kampányok hozzák a legtöbb új követőt.', tip: 'A Reels tartalmak és a Collaboration posztok a legjobb módszerek az új követők szerzéséhez, mert ezek jutnak el a legnagyobb új közönséghez. A konzisztens vizuális arculat és a niche-specifikus hashtagek is segítik az organikus növekedést. Figyeld meg, melyik tartalomtípus hozza a legtöbb új követőt.' },
+  ig_new_followers: { title: 'Új követők', text: 'Az időszakban szerzett napi új követők összesítése. Ez a növekedési dinamika legfontosabb mutatója — megmutatja, milyen ütemben bővül a közönséged, és segít azonosítani, mely tartalmak vagy kampányok hozzák a legtöbb új követőt.', tip: 'A Reels tartalmak és a Collaboration posztok a legjobb módszerek az új követők szerzéséhez, mert ezek jutnak el a legnagyobb új közönséghez. A konzisztens vizuális arculat és a niche-specifikus hashtagek is segítik az organikus növekedést. Figyeld meg, melyik tartalomtípus hozza a legtöbb új követőt.' },
   ig_save_rate_kpi: { title: 'Mentési arány', text: 'A mentések százalékos aránya az eléréshez képest. Ez az egyik legmegbízhatóbb tartalomminőségi mutató, mert megmutatja, hogy az elérésed mekkora hányada tartja annyira értékesnek a tartalmadat, hogy elmentse. Az algoritmus kiemelt figyelmet fordít erre a mutatóra.', tip: '2-3% feletti mentési arány kiváló eredménynek számít Instagramon. A mentési arány növeléséhez készíts „reference" típusú tartalmakat (checklisták, tippgyűjtemények, step-by-step útmutatók), amelyekhez a követők vissza akarnak térni. A carousel formátum jellemzően magasabb mentési arányt ér el.' },
   ig_story_reach: { title: 'Story elérés', text: 'Az Instagram Story-k összesített elérése az adott időszakban. A Story-k fontos szerepet játszanak a közönség fenntartásában és az interakció ösztönzésében, bár jellemzően kisebb elérést generálnak, mint a feed posztok. A Story elérés mutatja, mennyire követik aktívan a mindennapi tartalmaidat.', tip: 'A rendszeres (napi 3-5) Story használat fenntartja az érdeklődést és az algoritmus is előnyben részesíti az aktív fiókokat. Használj interaktív elemeket: szavazásokat, kérdésdobozt, kvízeket, visszaszámlálókat. A Story-k kulisszák mögötti tartalmakhoz, gyors frissítésekhez és közönség-bevonáshoz ideálisak.' },
   ig_interactions_total: { title: 'Összes interakció', text: 'A like-ok, kommentek, megosztások és mentések havi összesítése egyetlen számban. Ez a tartalomstratégia átfogó hatékonysági mutatója Instagramon. Fontos kiemelni, hogy az algoritmus nem egyformán súlyozza ezeket — a mentések és megosztások nagyobb hatással vannak az elérésre, mint a like-ok.', tip: 'A mentés és megosztás nagyobb súllyal esik latba az algoritmusnál, mint az egyszerű like. Ezért a tartalomstratégiát érdemes úgy alakítani, hogy a „mentsd el" és „küldd el" típusú interakciókat ösztönözze — oktatási, hasznos és relatable tartalmakkal.' },
@@ -138,16 +138,6 @@ const KPI_DESC: Record<string, { title: string; text: string; tip: string }> = {
   ig_avg_shares_media: { title: 'Átl. megosztás/tartalom', text: 'Az egy tartalomra jutó átlagos megosztásszám (DM és Story megosztás). A megosztás a tartalom virális potenciáljának mutatója, és az algoritmus az egyik legerősebb pozitív jelzésként értékeli.', tip: 'A relatable mémek, idézetek, és a „küld el annak, akire ez igaz" típusú tartalmak kapják a legtöbb DM-megosztást. A hasznos, „mentsd el és oszd meg" jellegű carousel posztok szintén magas megosztási számot érhetnek el. Gondolj arra, hogy a közönséged kinek és miért küldené el a posztod.' },
   ig_website_clicks_total: { title: 'Weboldal kattintások', text: 'A profilodban található weboldal linkre kattintások összesített száma. Ez az egyik legfontosabb konverziós mutató, mert közvetlenül méri a platformon kívüli forgalom-generálást.', tip: 'Használj link-in-bio eszközöket (Linktree, Later, stb.) és utalj rájuk a tartalmaidban. A Story-kban a link sticker közvetlenül is növelheti a weboldal-forgalmat. Az erős CTA („Link a biomban!") elengedhetetlen.' },
   ig_total_clicks: { title: 'Összes profil kattintás', text: 'Az összes profil-kattintás összesítése (email, telefon, útvonal, SMS). Ez a közönség közvetlen cselekvési szándékát méri, és az egyik legfontosabb mutató üzleti fiókok számára.', tip: 'A megfelelő kontaktadatok megadása és a CTA gombok aktiválása az Instagram Business fiókban növeli a kattintásokat. A tartalmaidban és Story-kban történő hivatkozás a profil kontakt lehetőségeire szintén segít.' },
-  // IG Public
-  igpub_likes: { title: 'Like-ok', text: 'A nyilvánosan elérhető like-ok száma az elemzett fiók tartalmain. A publikus like-adatok jó alapot nyújtanak a versenytárs-elemzéshez és az iparági benchmark-ok felállításához, bár a teljes kép érdekében a privát metrikák (elérés, mentés) is fontosak lennének.', tip: 'A publikus like-adatok jó kiindulópontot jelentenek, de a pontos, részletes elemzéshez Instagram Business fiók és a hozzáférés engedélyezése szükséges. Hasonlítsd össze a versenytársak like-számát a sajátoddal, és figyeld meg, milyen tartalomtípusok kapják a legtöbb interakciót.' },
-  igpub_comments: { title: 'Kommentek', text: 'A nyilvánosan látható kommentek száma az elemzett fiók tartalmain. A kommentek mennyisége mellett érdemes a kommentek minőségét és hangulatát is vizsgálni — a pozitív, tartalmas kommentek erős közösséget jeleznek, míg a negatív vagy spam kommentek problémát jelezhetnek.', tip: 'A kommentek hangulata és mélysége is fontos, nem csak a szám. Elemezd, milyen kérdéseket tesznek fel a követők a kommentekben — ezek jó tartalomötletek lehetnek számodra is. A versenytársak komment-szekciója értékes piackutatási forrás.' },
-  igpub_avg_likes: { title: 'Átl. like/poszt', text: 'Az elemzett fiók egy posztjára jutó átlagos like szám. Ez jó benchmark a saját tartalmaid tervezéséhez és az iparági átlagok összehasonlításához. Az átlagtól való eltérések (kiugróan magas vagy alacsony like-ok) segítenek azonosítani a sikeres tartalomformátumokat.', tip: 'Használd ezt az értéket benchmark-ként a saját tartalmaid tervezéséhez. Figyeld meg, mely típusú tartalmak kapnak az átlagnál jóval több like-ot, és adaptáld a bevált formátumokat a saját stratégiádba. Az iparági átlag ismerete reális elvárásokat állít.' },
-  igpub_avg_comments: { title: 'Átl. komment/poszt', text: 'Az elemzett fiók egy posztjára jutó átlagos kommentszám. A magas kommentátlag aktív, elkötelezett közösséget jelez. A kommentek mélysége és témái is fontosak — a tartalmas, kérdező kommentek értékesebbek az emoji-válaszoknál.', tip: 'A kommentek mélysége és tartalma is fontos mutató, nem csak a mennyiség. Vizsgáld meg, milyen kérdéseket tesznek fel a versenytárs követői — ezekből tartalomötleteket meríthetsz. A magas kommentátlag általában jó közösségmenedzsmentet és interaktív tartalomstratégiát jelez.' },
-  igpub_media: { title: 'Tartalmak', text: 'Az elemzett fiók által az adott időszakban közzétett tartalmak száma. Ez megmutatja a versenytárs posztolási frekvenciáját és tartalmi aktivitását. A rendszeresség és a konzisztencia az Instagram sikertényezőinek egyike.', tip: 'A rendszeresség fontosabb, mint a mennyiség — jobb heti 3-4 jó minőségű posztot feltölteni, mint naponta gyenge tartalmakat. Figyeld meg a versenytárs posztolási frekvenciáját és formátum-mixét, és vond le a tanulságokat a saját stratégiádhoz.' },
-  igpub_interactions: { title: 'Összes interakció', text: 'A like-ok és kommentek összesítése (a publikusan elérhető interakciók). Ez átfogó képet ad a fiók tartalmi teljesítményéről, bár a privát metrikák (mentések, megosztások) nélkül nem teljes a kép. A versenytárs-összehasonlításhoz ez a legjobb publikusan elérhető mutató.', tip: 'A publikus interakció-adatok kiváló alapot nyújtanak a versenytárs-elemzéshez. Hasonlítsd össze a saját interakcióidat a hasonló méretű fiókokéval, és azonosítsd a fejlődési területeket. Ne feledd: a nem-publikus metrikák (mentés, megosztás) is nagyon fontosak.' },
-  igpub_avg_interaction: { title: 'Átl. interakció/poszt', text: 'Az elemzett fiók egy posztjára jutó átlagos interakciószám (like + komment). Ez a legmegbízhatóbb publikusan elérhető tartalomteljesítmény-mutató, amely lehetővé teszi a különböző fiókok összehasonlítását méretfüggetlenül.', tip: 'Hasonlítsd össze az iparági átlaggal és a hasonló méretű versenytársakkal. Ha az átlagos interakció jóval az iparági átlag alatt van, a tartalomstratégia felülvizsgálata szükséges. Az átlag feletti teljesítmény esetén elemezd, mi teszi sikeressé a tartalmat.' },
-  igpub_followers: { title: 'Követők', text: 'Az elemzett fiók aktuális követőinek száma a publikus adatok alapján. A követőszám önmagában nem mond el mindent — a valódi érték az elköteleződésben (engagement) rejlik. Egy 10K-s fiók erős engagement-tel értékesebb, mint egy 100K-s fiók gyenge interakciókkal.', tip: 'A követőszám és az engagement rate együttes vizsgálata adja a legjobb képet. A magas követőszám alacsony ER-rel vásárolt követőkre vagy inaktív közönségre utalhat. A valódi, organikus növekedés lassabb, de fenntarthatóbb és értékesebb hosszú távon.' },
-  igpub_er: { title: 'Engagement rate%', text: 'Az összes interakció (like + komment) százalékos aránya a követőszámhoz képest. Ez a leggyakrabban használt Instagram teljesítménymutató a versenytárs-elemzésben, mert méretfüggetlenül összehasonlíthatóvá teszi a fiókokat. Magasabb ER aktívabb, elkötelezetebb közösséget jelez.', tip: '3-6% közötti ER jónak számít Instagramon. A kisebb fiókok (10K alatt) jellemzően magasabb ER-t produkálnak. Ha a versenytárs ER-je jóval az átlag felett van, vizsgáld meg a tartalmait és a közösségkezelési stratégiáját — tanulhatsz belőle.' },
   // YouTube
   yt_subs: { title: 'Új feliratkozók', text: 'Az adott időszakban szerzett új feliratkozók száma. A feliratkozók a csatorna legértékesebb közönsége, mert ők kapnak értesítést az új videókról és jellemzően magasabb interakciós arányt mutatnak. A stabil feliratkozó-növekedés a csatorna egészségének jele.', tip: 'A videó végén használj feliratkozási CTA-t és End Screen elemeket. A „Csengő ikon" bekapcsolására való emlékeztetés is hatékony. A sorozat-tartalmak (epizódok) különösen ösztönzik a feliratkozást, mert a nézők nem akarnak lemaradni a folytatásról.' },
   yt_views_kpi: { title: 'Megtekintések', text: 'Az összes videómegtekintés az adott időszakban. A megtekintések a YouTube egyik legfontosabb mutatója, amely közvetlenül befolyásolja a csatorna bevételét és az algoritmus általi ajánlás esélyét. Egy megtekintés akkor számít, ha a néző legalább 30 másodpercig nézte a videót.', tip: 'A megtekintések legfontosabb hajtóereje az optimális cím és thumbnail — ezek döntenek arról, hogy a néző rákattint-e a videóra. Készíts figyelemfelkeltő, de nem megtévesztő thumbnaileket. A SEO (keresőoptimalizálás) és a kulcsszavak a leírásban és a címben szintén növelik a megtekintéseket.' },
@@ -330,19 +320,13 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
     }
     case 'INSTAGRAM_ORGANIC': {
       const reach = findChart(results, 'ig_reach');
-      const followers = findChart(results, 'ig_follower_growth');
+      const totalFollowers = findChart(results, 'ig_daily_followers');
+      const newFollowers = findChart(results, 'ig_follower_growth');
       const engagement = findChart(results, 'ig_engagement');
       const profile = findChart(results, 'ig_profile_activity');
       const media = findChart(results, 'ig_all_media');
-      const dailyFollowers = findChart(results, 'ig_daily_followers');
       const saveRate = findChart(results, 'ig_save_rate');
       const storyOverview = findChart(results, 'ig_story_overview');
-
-      // IG Public data (merged)
-      const igpubEngagement = findChart(results, 'igpub_engagement_overview');
-      const igpubAvgEng = findChart(results, 'igpub_avg_engagement');
-      const igpubAllMedia = findChart(results, 'igpub_all_media');
-      const igpubFollowersTrend = findChart(results, 'igpub_followers_trend');
 
       const totalReach = sumSeries(reach, 0);
       const totalLikes = sumSeries(engagement, 0);
@@ -353,14 +337,9 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const mediaRows = getTableData(media);
       const mediaCount = mediaRows.length;
 
-      const igpubTotalLikes = sumSeries(igpubEngagement, 0);
-      const igpubTotalComments = sumSeries(igpubEngagement, 1);
-      const igpubFollowers = lastValue(igpubFollowersTrend);
-      const igpubTotalInteractions = igpubTotalLikes + igpubTotalComments;
-
       return addDescriptions([
         // Alap metrikák
-        { key: 'ig_followers', label: 'Követők', value: lastValue(followers), agg: 'last' },
+        { key: 'ig_followers', label: 'Követők', value: lastValue(totalFollowers), agg: 'last' },
         { key: 'ig_reach_kpi', label: 'Elérés', value: totalReach },
         { key: 'ig_impressions', label: 'Impressziók', value: sumSeries(reach, 1) },
         { key: 'ig_likes', label: 'Like-ok', value: totalLikes },
@@ -369,7 +348,7 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'ig_saves', label: 'Mentések', value: totalSaves },
         { key: 'ig_profile_views', label: 'Profilnézetek', value: sumSeries(profile, 0) },
         { key: 'ig_media_count', label: 'Tartalmak', value: mediaCount },
-        { key: 'ig_new_followers', label: 'Napi új követők', value: sumSeries(dailyFollowers) },
+        { key: 'ig_new_followers', label: 'Új követők', value: sumSeries(newFollowers) },
         { key: 'ig_save_rate_kpi', label: 'Mentési arány', value: fmtPct(avgSeries(saveRate)), agg: 'avg' },
         { key: 'ig_story_reach', label: 'Story elérés', value: sumSeries(storyOverview, 0) },
         // Arány metrikák
@@ -382,16 +361,6 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'ig_avg_comments_media', label: 'Átl. komment/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'comments') / mediaCount) : 0, agg: 'avg' },
         { key: 'ig_avg_saves_media', label: 'Átl. mentés/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'saved') / mediaCount) : 0, agg: 'avg' },
         { key: 'ig_avg_shares_media', label: 'Átl. megosztás/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'shares') / mediaCount) : 0, agg: 'avg' },
-        // IG Public metrikák (publikus profil adatok)
-        { key: 'igpub_followers', label: 'Publikus követők', value: igpubFollowers, agg: 'last' },
-        { key: 'igpub_likes', label: 'Publikus like-ok', value: igpubTotalLikes },
-        { key: 'igpub_comments', label: 'Publikus kommentek', value: igpubTotalComments },
-        { key: 'igpub_avg_likes', label: 'Átl. like/poszt (pub)', value: fmtDec1(avgSeries(igpubAvgEng, 0)), agg: 'avg' },
-        { key: 'igpub_avg_comments', label: 'Átl. komment/poszt (pub)', value: fmtDec1(avgSeries(igpubAvgEng, 1)), agg: 'avg' },
-        { key: 'igpub_media', label: 'Publikus tartalmak', value: tableCount(igpubAllMedia) },
-        { key: 'igpub_interactions', label: 'Publikus interakciók', value: igpubTotalInteractions },
-        { key: 'igpub_avg_interaction', label: 'Átl. interakció/poszt (pub)', value: fmtDec1(avgSeries(igpubAvgEng, 0) + avgSeries(igpubAvgEng, 1)), agg: 'avg' },
-        { key: 'igpub_er', label: 'Pub. ER%', value: fmtPct(igpubFollowers > 0 ? igpubTotalInteractions / igpubFollowers * 100 : 0), agg: 'avg' },
         { key: 'ig_website_clicks_total', label: 'Weboldal kattintások', value: sumSeries(findChart(results, 'ig_website_clicks_trend')) },
         { key: 'ig_total_clicks', label: 'Összes profil kattintás', value: sumSeries(findChart(results, 'ig_clicks')) },
       ]);

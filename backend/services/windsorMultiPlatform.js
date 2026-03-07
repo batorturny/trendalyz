@@ -67,17 +67,43 @@ const PLATFORM_CONFIG = {
   },
   INSTAGRAM_ORGANIC: {
     endpoint: 'instagram',
-    dailyFields: ['date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks'],
-    contentFields: ['date', 'media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved', 'media_url', 'permalink'],
+    dailyFields: ['date', 'impressions', 'reach', 'profile_views', 'follower_count', 'follower_count_1d', 'website_clicks_1d'],
+    contentFields: ['date', 'media_id', 'media_caption', 'timestamp', 'media_reach', 'media_like_count', 'media_comments_count', 'media_shares', 'media_saved', 'media_url', 'media_permalink'],
     audienceFields: ['date', 'audience_city', 'audience_country', 'audience_gender_age'],
+    // Split into separate API calls to avoid Windsor mixing different data dimensions
+    separateChartCalls: {
+      daily: [
+        'date', 'impressions', 'reach', 'profile_views',
+        'follower_count', 'follower_count_1d', 'website_clicks_1d',
+        'email_contacts_1d', 'phone_call_clicks_1d', 'get_directions_clicks_1d', 'text_message_clicks_1d',
+      ],
+      content: [
+        'date', 'media_id', 'media_caption', 'timestamp', 'media_reach',
+        'media_like_count', 'media_comments_count', 'media_shares', 'media_saved',
+        'media_url', 'media_permalink',
+        'media_engagement', 'media_views',
+        'media_reel_video_views', 'media_reel_avg_watch_time', 'media_reel_total_interactions',
+      ],
+      story: [
+        'date', 'story_reach', 'story_views', 'story_exits',
+        'story_interactions', 'story_replies', 'story_shares',
+        'story_taps_forward', 'story_taps_back', 'story_swipe_forward',
+      ],
+      audience_age: ['audience_age_name', 'audience_age_size'],
+      audience_gender: ['audience_gender_name', 'audience_gender_size'],
+      audience_country: ['audience_country_name', 'audience_country_size'],
+      audience_city: ['city', 'audience_city_size'],
+    },
     demographicFields: null,
     allChartFields: [
-      'date', 'impressions', 'reach', 'follower_count', 'profile_views', 'website_clicks',
-      'media_id', 'caption', 'timestamp', 'likes', 'comments', 'shares', 'saved',
-      'media_url', 'permalink',
-      'follower_count_1d', 'media_engagement', 'media_reach', 'media_saved', 'media_shares',
+      'date', 'impressions', 'reach', 'profile_views',
+      'follower_count', 'follower_count_1d', 'website_clicks_1d',
+      'media_id', 'media_caption', 'timestamp', 'media_like_count', 'media_comments_count',
+      'media_shares', 'media_saved', 'media_url', 'media_permalink',
+      'media_engagement', 'media_reach', 'media_views',
       'media_reel_video_views', 'media_reel_avg_watch_time',
       'story_reach', 'story_views', 'story_exits',
+      'email_contacts_1d', 'phone_call_clicks_1d', 'get_directions_clicks_1d', 'text_message_clicks_1d',
     ],
   },
   INSTAGRAM: {
@@ -207,6 +233,30 @@ class WindsorMultiPlatform {
 
   async fetchAllChartData(provider, accountId, dateFrom, dateTo) {
     const config = this.getConfig(provider);
+
+    // If the platform has separateChartCalls, make individual API calls per data category
+    // to prevent Windsor from mixing different data dimensions (daily vs media vs story vs demographics)
+    if (config.separateChartCalls) {
+      const calls = config.separateChartCalls;
+      const callNames = Object.keys(calls);
+      console.log(`[Windsor] ${provider}: making ${callNames.length} separate API calls: ${callNames.join(', ')}`);
+
+      const promises = callNames.map(name =>
+        this.fetchData(provider, accountId, dateFrom, dateTo, calls[name]).catch(err => {
+          console.warn(`[Windsor] ${provider} ${name} fetch failed:`, err.message);
+          return [];
+        })
+      );
+
+      const results = await Promise.all(promises);
+      // Tag each row with its source category for debugging
+      results.forEach((rows, idx) => {
+        const name = callNames[idx];
+        console.log(`[Windsor] ${provider} ${name}: ${rows.length} rows`);
+      });
+
+      return results.flat();
+    }
 
     // Demographics fields are a separate Windsor dimension — must be fetched
     // in individual API calls and merged into the main dataset.

@@ -225,6 +225,8 @@ async function fetchWindsorChartData(apiKey: string, platform: string, accountId
 
 const META_GRAPH_BASE = 'https://graph.facebook.com/v19.0';
 const META_DIRECT_PROVIDERS = new Set(['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC']);
+const YOUTUBE_ANALYTICS_BASE = 'https://youtubeanalytics.googleapis.com/v2';
+const YOUTUBE_DATA_BASE = 'https://www.googleapis.com/youtube/v3';
 
 async function fetchMetaDirectData(provider: string, connection: { externalAccountId: string; metadata: any }, dateFrom: string, dateTo: string): Promise<any[] | null> {
   const meta = connection.metadata as any;
@@ -502,6 +504,101 @@ async function fetchInstagramDirectData(igUserId: string, token: string, dateFro
   return rows;
 }
 
+async function fetchYouTubeDirectData(channelId: string, token: string, dateFrom: string, dateTo: string): Promise<any[]> {
+  const rows: any[] = [];
+  const authHeader = { Authorization: `Bearer ${token}` };
+
+  // 1. Daily channel analytics
+  try {
+    const metrics = [
+      'views', 'likes', 'dislikes', 'comments', 'shares',
+      'subscribersGained', 'subscribersLost', 'estimatedMinutesWatched',
+      'cardClicks', 'cardImpressions', 'cardClickRate',
+      'videosAddedToPlaylists', 'videosRemovedFromPlaylists',
+    ].join(',');
+    const url = `${YOUTUBE_ANALYTICS_BASE}/reports?ids=channel==${channelId}&startDate=${dateFrom}&endDate=${dateTo}&metrics=${metrics}&dimensions=day`;
+    const json = await fetch(url, { headers: authHeader, signal: AbortSignal.timeout(30000) }).then(r => r.json()) as any;
+
+    if (!json.error && Array.isArray(json.columnHeaders) && Array.isArray(json.rows)) {
+      const cols = json.columnHeaders.map((h: any) => h.name as string);
+      for (const row of json.rows) {
+        const obj: any = {};
+        cols.forEach((col: string, i: number) => { obj[col] = row[i]; });
+        rows.push({
+          date: obj.day,
+          views: obj.views ?? 0,
+          likes: obj.likes ?? 0,
+          dislikes: obj.dislikes ?? 0,
+          comments: obj.comments ?? 0,
+          shares: obj.shares ?? 0,
+          subscribers_gained: obj.subscribersGained ?? 0,
+          subscribers_lost: obj.subscribersLost ?? 0,
+          estimated_minutes_watched: obj.estimatedMinutesWatched ?? 0,
+          card_clicks: obj.cardClicks ?? 0,
+          card_impressions: obj.cardImpressions ?? 0,
+          card_click_rate: obj.cardClickRate ?? 0,
+          videos_added_to_playlists: obj.videosAddedToPlaylists ?? 0,
+          videos_removed_from_playlists: obj.videosRemovedFromPlaylists ?? 0,
+        });
+      }
+    }
+  } catch (e: any) { console.warn('[YouTube Direct] Daily analytics error:', e.message); }
+
+  // 2. Total subscriber count (current snapshot)
+  try {
+    const json = await fetch(
+      `${YOUTUBE_DATA_BASE}/channels?part=statistics&id=${channelId}`,
+      { headers: authHeader, signal: AbortSignal.timeout(10000) }
+    ).then(r => r.json()) as any;
+    const stats = json.items?.[0]?.statistics;
+    if (stats) {
+      const subscriberCount = parseInt(stats.subscriberCount) || 0;
+      // Distribute subscriber_count to all daily rows
+      for (const row of rows) { row.subscriber_count = subscriberCount; }
+    }
+  } catch (e: any) { console.warn('[YouTube Direct] Channel stats error:', e.message); }
+
+  // 3. Per-video analytics for the period
+  try {
+    const videoMetrics = 'views,likes,comments,shares,estimatedMinutesWatched,averageViewDuration,averageViewPercentage';
+    const analyticsUrl = `${YOUTUBE_ANALYTICS_BASE}/reports?ids=channel==${channelId}&startDate=${dateFrom}&endDate=${dateTo}&metrics=${videoMetrics}&dimensions=video&maxResults=50&sort=-views`;
+    const [analyticsJson, searchJson] = await Promise.all([
+      fetch(analyticsUrl, { headers: authHeader, signal: AbortSignal.timeout(30000) }).then(r => r.json()),
+      fetch(`${YOUTUBE_DATA_BASE}/search?part=snippet&channelId=${channelId}&type=video&maxResults=50&publishedAfter=${dateFrom}T00:00:00Z&publishedBefore=${dateTo}T23:59:59Z&order=date`, { headers: authHeader, signal: AbortSignal.timeout(20000) }).then(r => r.json()),
+    ]) as any[];
+
+    // Build title map from search results
+    const titleMap = new Map<string, string>();
+    if (!searchJson.error && Array.isArray(searchJson.items)) {
+      for (const item of searchJson.items) {
+        const vid = item.id?.videoId;
+        if (vid) titleMap.set(vid, item.snippet?.title || vid);
+      }
+    }
+
+    if (!analyticsJson.error && Array.isArray(analyticsJson.columnHeaders) && Array.isArray(analyticsJson.rows)) {
+      const cols = analyticsJson.columnHeaders.map((h: any) => h.name as string);
+      for (const row of analyticsJson.rows) {
+        const obj: any = {};
+        cols.forEach((col: string, i: number) => { obj[col] = row[i]; });
+        rows.push({
+          video_id: obj.video,
+          video_title: titleMap.get(obj.video) || obj.video,
+          views: obj.views ?? 0,
+          likes: obj.likes ?? 0,
+          comments: obj.comments ?? 0,
+          shares: obj.shares ?? 0,
+          estimated_minutes_watched: obj.estimatedMinutesWatched ?? 0,
+          average_view_duration: obj.averageViewDuration ?? 0,
+          average_view_percentage: obj.averageViewPercentage ?? 0,
+        });
+      }
+    }
+  } catch (e: any) { console.warn('[YouTube Direct] Video analytics error:', e.message); }
+
+  return rows;
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -587,7 +684,12 @@ export async function POST(req: Request) {
         try {
           let data: any[];
 
-          if (META_DIRECT_PROVIDERS.has(platform) && (connection.metadata as any)?.encryptedAccessToken) {
+          if (platform === 'YOUTUBE' && (connection.metadata as any)?.encryptedAccessToken) {
+            // Use YouTube Analytics API directly
+            const token = decrypt((connection.metadata as any).encryptedAccessToken as string);
+            console.log(`[Chart API] YouTube direct fetch for channel ${connection.externalAccountId}`);
+            data = await fetchYouTubeDirectData(connection.externalAccountId, token, startDate, endDate);
+          } else if (META_DIRECT_PROVIDERS.has(platform) && (connection.metadata as any)?.encryptedAccessToken) {
             // Use Meta Graph API directly
             console.log(`[Chart API] Meta direct fetch for ${platform}`);
             data = (await fetchMetaDirectData(platform, connection, startDate, endDate)) ?? [];

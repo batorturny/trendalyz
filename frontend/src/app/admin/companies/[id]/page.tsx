@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { notFound, redirect } from 'next/navigation';
 import { CompanyUsers } from './CompanyUsers';
 import { DashboardConfig } from './DashboardConfig';
+import { MonthlyAnalysis } from './MonthlyAnalysis';
 import { EmailSchedule } from './EmailSchedule';
 import { IntegrationConnections } from './IntegrationConnections';
 import { OAuthFeedback } from './OAuthFeedback';
@@ -89,6 +90,11 @@ export default async function CompanyDetailPage({
           />
         </div>
       )}
+
+      {/* Monthly Analysis */}
+      <div className="mb-6">
+        <MonthlyAnalysis companyId={company.id} />
+      </div>
 
       <div className="grid grid-cols-1 gap-6">
         {/* Users */}
