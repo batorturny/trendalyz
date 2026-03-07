@@ -1,292 +1,250 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Trendalyz',
+  title: 'Adatvédelmi irányelvek | Trendalyz',
   description: 'Trendalyz adatvédelmi irányelvek és felhasználási feltételek.',
 };
 
 const sections = [
   {
-    number: '01',
-    title: 'Introduction',
-    color: 'from-violet-500 to-indigo-500',
-    bg: 'bg-violet-50 border-violet-100',
+    id: 'intro',
+    title: '1. Bevezetés',
     content: (
-      <>
-        <p className="text-gray-600 leading-relaxed">
-          Trendalyz operates a social media analytics platform that allows businesses to connect
-          their social media accounts and view performance metrics. This Privacy Policy explains
-          how we collect, use, store, and protect information when you use our service at{' '}
-          <span className="font-semibold text-gray-800">trendalyz.hu</span>.
-        </p>
-        <p className="text-gray-600 leading-relaxed mt-3">
-          By using Trendalyz, you agree to the collection and use of information in accordance
-          with this policy.
-        </p>
-      </>
+      <p className="text-gray-600 leading-relaxed">
+        A Trendalyz egy social media analytics platform, amely lehetővé teszi vállalkozások
+        számára, hogy összekössék közösségi média fiókjaikat és megtekinthessék a teljesítmény
+        metrikákat. Ez az adatvédelmi tájékoztató ismerteti, hogy milyen adatokat gyűjtünk,
+        hogyan használjuk, tároljuk és védjük azokat a{' '}
+        <span className="font-medium text-gray-800">trendalyz.hu</span> szolgáltatás használata során.
+        A Trendalyz használatával elfogadja a jelen tájékoztatóban foglaltakat.
+      </p>
     ),
   },
   {
-    number: '02',
-    title: 'Data We Collect',
-    color: 'from-blue-500 to-cyan-500',
-    bg: 'bg-blue-50 border-blue-100',
+    id: 'data',
+    title: '2. Gyűjtött adatok',
     content: (
-      <>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-2">Account Information</h3>
-            <ul className="space-y-1">
-              {['Name and email address', 'Encrypted password (bcrypt hashed)', 'Company name and contact details'].map(i => (
-                <li key={i} className="flex items-center gap-2 text-gray-600 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                  {i}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-2">Social Media Platform Data</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {[
-                { platform: 'Facebook', color: 'bg-blue-100 text-blue-700', data: 'Page impressions, reach, follower count, post metrics' },
-                { platform: 'Instagram', color: 'bg-pink-100 text-pink-700', data: 'Impressions, reach, profile views, media metrics' },
-                { platform: 'TikTok', color: 'bg-red-100 text-red-700', data: 'Video views, likes, comments, shares' },
-                { platform: 'YouTube', color: 'bg-red-100 text-red-700', data: 'Views, likes, comments, watch time' },
-              ].map(item => (
-                <div key={item.platform} className="bg-white rounded-xl p-3 border border-gray-100">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.color}`}>{item.platform}</span>
-                  <p className="text-gray-500 text-xs mt-1.5">{item.data}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-2">Authentication Tokens</h3>
-            <p className="text-gray-600 text-sm">
-              OAuth access tokens are stored encrypted using <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">AES-256-GCM</span> encryption.
-              Used solely to fetch analytics data on your behalf.
-            </p>
+      <div className="space-y-5">
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">Fiókadatok</h3>
+          <ul className="space-y-1 text-gray-600 text-sm">
+            {['Név és e-mail cím', 'Titkosított jelszó (bcrypt hash)', 'Cégnév és kapcsolattartási adatok'].map(i => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
+                {i}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">Közösségi média platform adatok</h3>
+          <p className="text-gray-600 text-sm mb-3">
+            Kizárólag az összekapcsolt fiókokhoz tartozó analitikai adatokat olvassuk le:
+          </p>
+          <div className="space-y-2">
+            {[
+              { platform: 'Facebook Pages', data: 'Oldal impressziók, elérés, követőszám, napi követők/lekövetők, videó megtekintések, oldal megtekintések, post-szintű impressziók, elérés, reakciók, megosztások, kattintások.' },
+              { platform: 'Instagram Business', data: 'Impressziók, elérés, profilmegtekintések, webhelykattintások, követőszám változás, média (kép/videó/reel) szintű elérés, like-ok, kommentek, megosztások, mentések.' },
+              { platform: 'TikTok Organic', data: 'Videó megtekintések, like-ok, kommentek, megosztások, követőszám, profilmegtekintések, videó megtartási arány, nézési idő.' },
+              { platform: 'YouTube', data: 'Megtekintések, like-ok, kommentek, megosztások, feliratkozók változása, megtekintési idő, kártyakattintások.' },
+            ].map(item => (
+              <div key={item.platform} className="border border-gray-100 rounded-lg p-3">
+                <p className="font-medium text-gray-800 text-sm mb-0.5">{item.platform}</p>
+                <p className="text-gray-500 text-xs leading-relaxed">{item.data}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </>
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-2">Hitelesítési tokenek</h3>
+          <p className="text-gray-600 text-sm">
+            Az OAuth hozzáférési tokeneket{' '}
+            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono">AES-256-GCM</code>{' '}
+            titkosítással tároljuk. Kizárólag az analitikai adatok lekérdezésére használjuk
+            az Ön nevében. A tokeneket harmadik félnek nem adjuk tovább.
+          </p>
+        </div>
+      </div>
     ),
   },
   {
-    number: '03',
-    title: 'How We Use Your Data',
-    color: 'from-emerald-500 to-teal-500',
-    bg: 'bg-emerald-50 border-emerald-100',
+    id: 'use',
+    title: '3. Adatfelhasználás',
     content: (
-      <>
-        <ul className="space-y-2">
+      <div className="space-y-3">
+        <ul className="space-y-2 text-gray-600 text-sm">
           {[
-            'Display social media analytics and performance metrics',
-            'Generate automated reports and send them via email',
-            'Authenticate and maintain your session securely',
-            'Send transactional emails (report delivery, notifications)',
-            'Improve our service and troubleshoot technical issues',
+            'Közösségi média analitika és teljesítménymetrikák megjelenítése a dashboardon',
+            'Automatikus havi riportok generálása és e-mailben való kiküldése',
+            'Munkamenet hitelesítése és biztonságos fenntartása',
+            'Tranzakciós e-mailek küldése (riport kézbesítés, értesítések)',
+            'Szolgáltatás fejlesztése és technikai problémák elhárítása',
           ].map(item => (
-            <li key={item} className="flex items-start gap-3 text-gray-600 text-sm">
-              <span className="mt-0.5 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </span>
+            <li key={item} className="flex items-start gap-2">
+              <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
               {item}
             </li>
           ))}
         </ul>
-        <div className="mt-4 p-3 bg-white rounded-xl border border-emerald-200">
-          <p className="text-emerald-700 text-sm font-semibold">
-            We do not sell your data to third parties and we do not use your data for advertising.
-          </p>
-        </div>
-      </>
+        <p className="text-sm text-gray-500 border border-gray-100 rounded-lg p-3 bg-gray-50">
+          Az Ön adatait nem adjuk el harmadik félnek, és nem használjuk hirdetési célokra.
+        </p>
+      </div>
     ),
   },
   {
-    number: '04',
-    title: 'Facebook & Instagram Data',
-    color: 'from-blue-600 to-purple-500',
-    bg: 'bg-indigo-50 border-indigo-100',
+    id: 'facebook',
+    title: '4. Facebook és Instagram adatok',
     content: (
-      <>
-        <p className="text-gray-600 text-sm mb-4">
-          Trendalyz uses the Facebook Graph API and Instagram Graph API. By connecting your account,
-          you authorize the following permissions:
+      <div className="space-y-4">
+        <p className="text-gray-600 text-sm">
+          A Trendalyz a Facebook Graph API-t és az Instagram Graph API-t használja.
+          Fiókja összekapcsolásával az alábbi engedélyeket adja meg:
         </p>
         <div className="space-y-2">
           {[
-            { perm: 'pages_show_list', desc: 'List Facebook Pages you manage' },
-            { perm: 'pages_read_engagement', desc: 'Read post engagement data' },
-            { perm: 'read_insights', desc: 'Read page-level analytics & demographics' },
-            { perm: 'instagram_basic', desc: 'Access basic Instagram account info' },
-            { perm: 'instagram_manage_insights', desc: 'Read Instagram analytics' },
-            { perm: 'ads_read', desc: 'Read Facebook Ads performance data (optional)' },
+            { perm: 'pages_show_list', desc: 'A kezelt Facebook oldalak listázása' },
+            { perm: 'pages_read_engagement', desc: 'Posztok engagement adatainak olvasása' },
+            { perm: 'read_insights', desc: 'Oldal-szintű analitika és demográfiai adatok' },
+            { perm: 'instagram_basic', desc: 'Alapvető Instagram fiókadatok elérése' },
+            { perm: 'instagram_manage_insights', desc: 'Instagram analitikai adatok olvasása' },
+            { perm: 'ads_read', desc: 'Facebook Ads teljesítményadatok (opcionális)' },
           ].map(item => (
-            <div key={item.perm} className="flex items-center gap-3 bg-white rounded-lg p-2.5 border border-gray-100">
-              <code className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-mono flex-shrink-0">{item.perm}</code>
+            <div key={item.perm} className="flex items-center gap-3 border border-gray-100 rounded-lg p-2.5">
+              <code className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-mono flex-shrink-0">{item.perm}</code>
               <span className="text-gray-500 text-xs">{item.desc}</span>
             </div>
           ))}
         </div>
-        <p className="text-gray-500 text-xs mt-4">
-          You can revoke access at any time via Facebook Settings → Apps and Websites.
+        <p className="text-gray-500 text-xs">
+          A hozzáférést bármikor visszavonhatja a Facebook Beállítások → Alkalmazások és webhelyek menüponton keresztül.
         </p>
-      </>
+      </div>
     ),
   },
   {
-    number: '05',
-    title: 'Data Storage & Security',
-    color: 'from-amber-500 to-orange-500',
-    bg: 'bg-amber-50 border-amber-100',
+    id: 'security',
+    title: '5. Adattárolás és biztonság',
     content: (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[
-          { icon: '🇪🇺', title: 'EU Servers', desc: 'Hetzner, Germany — GDPR compliant' },
-          { icon: '🔐', title: 'AES-256-GCM', desc: 'OAuth tokens encrypted at rest' },
-          { icon: '🔒', title: 'HTTPS / TLS', desc: 'All data in transit encrypted' },
-          { icon: '🛡️', title: 'Bcrypt passwords', desc: 'Never stored in plain text' },
+          { title: 'EU-s szerverek', desc: 'Hetzner, Németország — GDPR megfelelő adatközpont' },
+          { title: 'AES-256-GCM titkosítás', desc: 'OAuth tokenek titkosítva tárolva' },
+          { title: 'HTTPS / TLS', desc: 'Minden adatátvitel titkosított csatornán' },
+          { title: 'Bcrypt jelszavak', desc: 'Jelszavak soha nem kerülnek egyszerű szövegként tárolásra' },
         ].map(item => (
-          <div key={item.title} className="bg-white rounded-xl p-3 border border-amber-100 flex items-start gap-3">
-            <span className="text-2xl">{item.icon}</span>
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">{item.title}</p>
-              <p className="text-gray-500 text-xs mt-0.5">{item.desc}</p>
-            </div>
+          <div key={item.title} className="border border-gray-100 rounded-lg p-3">
+            <p className="font-medium text-gray-800 text-sm">{item.title}</p>
+            <p className="text-gray-500 text-xs mt-0.5">{item.desc}</p>
           </div>
         ))}
       </div>
     ),
   },
   {
-    number: '06',
-    title: 'Your Rights (GDPR)',
-    color: 'from-rose-500 to-pink-500',
-    bg: 'bg-rose-50 border-rose-100',
+    id: 'gdpr',
+    title: '6. Az Ön jogai (GDPR)',
     content: (
-      <>
+      <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
-            { right: 'Access', desc: 'Request a copy of your personal data' },
-            { right: 'Rectification', desc: 'Correct inaccurate personal data' },
-            { right: 'Erasure', desc: 'Right to be forgotten' },
-            { right: 'Restriction', desc: 'Restrict processing of your data' },
-            { right: 'Portability', desc: 'Receive data in machine-readable format' },
-            { right: 'Object', desc: 'Object to processing of your data' },
+            { right: 'Hozzáférés', desc: 'Másolat kérése a személyes adatairól' },
+            { right: 'Helyesbítés', desc: 'Pontatlan személyes adatok korrekciója' },
+            { right: 'Törlés', desc: 'Az elfeledtetéshez való jog' },
+            { right: 'Korlátozás', desc: 'Adatkezelés korlátozásának kérése' },
+            { right: 'Hordozhatóság', desc: 'Adatok géppel olvasható formátumban' },
+            { right: 'Tiltakozás', desc: 'Adatkezelés ellen való tiltakozás' },
           ].map(item => (
-            <div key={item.right} className="bg-white rounded-xl p-3 border border-rose-100">
-              <p className="font-semibold text-rose-600 text-sm">Right to {item.right}</p>
+            <div key={item.right} className="border border-gray-100 rounded-lg p-3">
+              <p className="font-medium text-gray-800 text-sm">{item.right}</p>
               <p className="text-gray-500 text-xs mt-0.5">{item.desc}</p>
             </div>
           ))}
         </div>
-        <p className="text-gray-500 text-sm mt-4">
-          To exercise any right, email{' '}
-          <a href="mailto:bator.turny@gmail.com" className="text-rose-500 hover:underline font-medium">
+        <p className="text-gray-500 text-sm">
+          Jogai gyakorlásához írjon a{' '}
+          <a href="mailto:bator.turny@gmail.com" className="text-indigo-600 hover:underline">
             bator.turny@gmail.com
-          </a>
-          . We respond within 30 days.
+          </a>{' '}
+          címre. 30 napon belül válaszolunk.
         </p>
-      </>
+      </div>
     ),
   },
   {
-    number: '07',
-    title: 'Data Deletion',
-    color: 'from-slate-600 to-slate-800',
-    bg: 'bg-slate-50 border-slate-100',
+    id: 'deletion',
+    title: '7. Adattörlés',
     content: (
-      <>
-        <p className="text-gray-600 text-sm mb-3">You can request deletion of your data at any time:</p>
-        <ul className="space-y-2">
+      <div className="space-y-3">
+        <p className="text-gray-600 text-sm">Adatainak törlését bármikor kérheti:</p>
+        <ul className="space-y-2 text-gray-600 text-sm">
           {[
-            'Email us at bator.turny@gmail.com',
-            'Disconnect social accounts from within the Trendalyz dashboard',
-            'Revoke app access through Facebook / Instagram / TikTok settings',
+            'E-mail küldése a bator.turny@gmail.com címre',
+            'Közösségi média fiók leválasztása a Trendalyz dashboardon belül',
+            'Alkalmazás hozzáférésének visszavonása Facebook / Instagram / TikTok beállításokban',
           ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-gray-600 text-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 flex-shrink-0" />
+            <li key={item} className="flex items-start gap-2">
+              <span className="mt-1.5 w-1 h-1 rounded-full bg-gray-400 flex-shrink-0" />
               {item}
             </li>
           ))}
         </ul>
-        <p className="text-gray-500 text-xs mt-4">
-          All personal data permanently deleted within 30 days of request.
+        <p className="text-gray-500 text-xs">
+          Minden személyes adat véglegesen törlődik a kérés beérkezésétől számított 30 napon belül.
         </p>
-      </>
+      </div>
     ),
   },
 ];
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#f4f4f6]">
+    <div className="min-h-screen bg-white">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <TrendalyzLogo size="md" />
-          <span className="text-xs text-gray-400">Last updated: 2026-03-06</span>
+      <header className="border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/"><TrendalyzLogo size="md" /></Link>
+          <span className="text-xs text-gray-400">Utoljára frissítve: 2026-03-07</span>
         </div>
       </header>
 
       {/* Hero */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-100 text-violet-600 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            GDPR Compliant
-          </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">
-            Privacy Policy
-          </h1>
-          <p className="text-gray-500 max-w-xl mx-auto text-base">
-            We take your privacy seriously. Here&apos;s exactly what data we collect,
-            how we use it, and how we protect it.
-          </p>
-        </div>
+      <div className="max-w-3xl mx-auto px-6 py-12 border-b border-gray-100">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Adatvédelmi irányelvek</h1>
+        <p className="text-gray-500 text-base">
+          Pontosan ismertetjük, milyen adatokat gyűjtünk, hogyan használjuk és hogyan védjük azokat.
+        </p>
       </div>
 
       {/* Sections */}
-      <div className="max-w-4xl mx-auto px-6 py-12 space-y-6">
+      <div className="max-w-3xl mx-auto px-6 py-10 space-y-10">
         {sections.map((section) => (
-          <div key={section.number} className={`bg-white rounded-2xl border ${section.bg} overflow-hidden shadow-sm`}>
-            {/* Section header */}
-            <div className={`bg-gradient-to-r ${section.color} px-6 py-4 flex items-center gap-4`}>
-              <span className="text-white/60 font-mono text-sm font-bold">{section.number}</span>
-              <h2 className="text-white font-bold text-lg">{section.title}</h2>
-            </div>
-            {/* Section body */}
-            <div className="px-6 py-5">
-              {section.content}
-            </div>
+          <div key={section.id} id={section.id}>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">
+              {section.title}
+            </h2>
+            {section.content}
           </div>
         ))}
-
-        {/* Contact card */}
-        <div className="bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl p-8 text-center text-white shadow-lg">
-          <TrendalyzLogo size="md" showText={true} className="justify-center mb-4 [&_span]:text-white" />
-          <p className="text-white/80 text-sm mb-4">Questions about this Privacy Policy?</p>
-          <a
-            href="mailto:bator.turny@gmail.com"
-            className="inline-flex items-center gap-2 bg-white text-indigo-600 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-indigo-50 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            bator.turny@gmail.com
-          </a>
-          <p className="text-white/50 text-xs mt-6">
-            © {new Date().getFullYear()} Trendalyz · trendalyz.hu
-          </p>
-        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-100 bg-gray-50" id="data-deletion">
+        <div className="max-w-3xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <Link href="/"><TrendalyzLogo size="sm" /></Link>
+          <div className="text-center md:text-right">
+            <a href="mailto:bator.turny@gmail.com" className="text-sm text-indigo-600 hover:underline">
+              bator.turny@gmail.com
+            </a>
+            <p className="text-gray-400 text-xs mt-1">
+              &copy; {new Date().getFullYear()} Trendalyz &middot; trendalyz.hu
+            </p>
+          </div>
+        </div>
+      </footer>
 
     </div>
   );

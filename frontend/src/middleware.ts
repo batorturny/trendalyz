@@ -5,8 +5,9 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Fast path: skip token check entirely for public routes that don't need redirect
+  // Privacy and set-password always public
   if (
+    pathname === '/privacy' ||
     pathname === '/set-password' ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/oauth/callback')
@@ -25,6 +26,11 @@ export async function middleware(req: NextRequest) {
   });
   const isLoggedIn = !!token;
   const role = token?.role as string | undefined;
+
+  // Root: always show landing page, regardless of login state
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
 
   // Redirect logged-in users away from login
   if (pathname === '/login') {
