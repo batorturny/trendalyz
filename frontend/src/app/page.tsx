@@ -1,5 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
+import { useT } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 // ─── Platform SVG icons ─────────────────────────────────────────────────────
 
@@ -154,6 +158,7 @@ function MockBrowser({ children, title }: { children: React.ReactNode; title: st
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const t = useT();
   return (
     <div style={{ background: '#0f0f11', color: '#f0f0f2', fontFamily: 'system-ui, -apple-system, sans-serif', minHeight: '100vh' }}>
 
@@ -166,28 +171,31 @@ export default function LandingPage() {
               Trend<span style={{ color: '#a5b4fc' }}>alyz</span>
             </span>
           </div>
-          <Link href="/login" className="btn-gradient" style={{ fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 10, textDecoration: 'none' }}>
-            Bejelentkezés
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <LanguageSwitcher />
+            <Link href="/login" className="btn-gradient" style={{ fontSize: 13, fontWeight: 700, padding: '9px 22px', borderRadius: 10, textDecoration: 'none' }}>
+              {t('Bejelentkezés')}
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 24px 60px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#6366f122', border: '1px solid #6366f144', borderRadius: 999, padding: '4px 14px', fontSize: 11, color: '#a5b4fc', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 24 }}>
-          MARKETING ÜGYNÖKSÉGEKNEK
+          {t('MARKETING ÜGYNÖKSÉGEKNEK')}
         </div>
         <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 20 }}>
-          Havi riport minden<br />
+          {t('Havi riport minden')}<br />
           <span style={{ background: 'linear-gradient(135deg,#0d9488,#06b6d4,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            partnerednek. Automatikusan.
+            {t('partnerednek. Automatikusan.')}
           </span>
         </h1>
         <p style={{ color: '#9a9aa0', fontSize: 18, maxWidth: 580, margin: '0 auto 36px', lineHeight: 1.6 }}>
-          A Trendalyz marketing ügynökségek számára készült — összegyűjti az összes kezelt fiók TikTok, Facebook, Instagram és YouTube adatait, és minden hónapban automatikusan elküldi a riportot a partnereknek.
+          {t('A Trendalyz marketing ügynökségek számára készült — összegyűjti az összes kezelt fiók TikTok, Facebook, Instagram és YouTube adatait, és minden hónapban automatikusan elküldi a riportot a partnereknek.')}
         </p>
         <Link href="/login" className="btn-gradient" style={{ fontSize: 15, fontWeight: 700, padding: '13px 32px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}>
-          Belépés a platformra
+          {t('Belépés a platformra')}
         </Link>
 
         {/* Hero mock - dashboard overview */}
@@ -200,26 +208,26 @@ export default function LandingPage() {
               </div>
               <div>
                 <p style={{ color: '#f0f0f2', fontWeight: 700, fontSize: 15, margin: 0 }}>Facebook</p>
-                <p style={{ color: '#9a9aa0', fontSize: 11, margin: 0 }}>Facebook oldal havi riport generálása</p>
+                <p style={{ color: '#9a9aa0', fontSize: 11, margin: 0 }}>{t('Facebook oldal havi riport generálása')}</p>
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                 <div style={{ background: '#26262b', border: '1px solid #3a3a40', borderRadius: 8, padding: '6px 14px', fontSize: 12, color: '#9a9aa0' }}>2026. Február</div>
-                <div className="btn-gradient" style={{ borderRadius: 8, padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Riport generálása</div>
+                <div className="btn-gradient" style={{ borderRadius: 8, padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{t('Riport generálása')}</div>
               </div>
             </div>
             {/* KPI grid */}
-            <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>2026. FEBRUÁR SZÁMAI</p>
+            <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>2026. FEBRUARY NUMBERS</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
-              <KpiCard label="Követők" value="25,1K" change="0.3%" up={true} />
-              <KpiCard label="Elérés" value="424,1K" change="35.6%" up={false} />
-              <KpiCard label="Impressziók" value="508,7K" change="43.0%" up={false} />
-              <KpiCard label="Engagement" value="5 508" change="35.5%" up={false} />
-              <KpiCard label="Reakciók" value="1 877" change="355.6%" up={true} />
-              <KpiCard label="Videó nézések" value="58,1K" change="24.6%" up={true} />
+              <KpiCard label={t('Követők')} value="25,1K" change="0.3%" up={true} />
+              <KpiCard label={t('Elérés')} value="424,1K" change="35.6%" up={false} />
+              <KpiCard label={t('Impressziók')} value="508,7K" change="43.0%" up={false} />
+              <KpiCard label={t('Engagement')} value="5 508" change="35.5%" up={false} />
+              <KpiCard label={t('Reakciók')} value="1 877" change="355.6%" up={true} />
+              <KpiCard label={t('Videó nézések')} value="58,1K" change="24.6%" up={true} />
             </div>
             {/* Mini chart */}
             <div style={{ background: '#26262b', border: '1px solid #3a3a40', borderRadius: 10, padding: '12px 16px' }}>
-              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Elérés – napi bontás</p>
+              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('Elérés – napi bontás')}</p>
               <LineChart />
             </div>
           </MockBrowser>
@@ -230,17 +238,17 @@ export default function LandingPage() {
       <section style={{ borderTop: '1px solid #3a3a40', padding: '80px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <p style={{ color: '#9a9aa0', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>HOGYAN MŰKÖDIK</p>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em' }}>Három lépés az első riportig</h2>
+            <p style={{ color: '#9a9aa0', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>{t('HOGYAN MŰKÖDIK')}</p>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em' }}>{t('Három lépés az első riportig')}</h2>
           </div>
 
           {/* Step 1 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 80 }}>
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#6366f122', border: '1px solid #6366f144', color: '#a5b4fc', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>1</div>
-              <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>Kösd be a platformokat</h3>
+              <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>{t('Kösd be a platformokat')}</h3>
               <p style={{ color: '#9a9aa0', lineHeight: 1.7, marginBottom: 16 }}>
-                Egy kattintással engedélyezd a hozzáférést a TikTok, Facebook, Instagram és YouTube fiókokhoz. Az OAuth tokeneket titkosítva tároljuk, jelszavadat soha nem látjuk.
+                {t('Egy kattintással engedélyezd a hozzáférést a TikTok, Facebook, Instagram és YouTube fiókokhoz. Az OAuth tokeneket titkosítva tároljuk, jelszavadat soha nem látjuk.')}
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 <PlatformBadge color="#e8687f" name="TikTok" />
@@ -250,12 +258,12 @@ export default function LandingPage() {
               </div>
             </div>
             <MockBrowser title="admin/companies/beallitasok">
-              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>INTEGRÁCIÓK</p>
+              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>{t('Integrációk').toUpperCase()}</p>
               {[
-                { color: '#e8687f', icon: <IconTikTok size={16} color="#e8687f" />, name: 'TikTok Organic', status: 'Kapcsolódva', ok: true },
-                { color: '#5a9cf5', icon: <IconFacebook size={16} color="#5a9cf5" />, name: 'Facebook Pages', status: 'Kapcsolódva', ok: true },
-                { color: '#d06a8e', icon: <IconInstagram size={16} color="#d06a8e" />, name: 'Instagram Business', status: 'Várakozás', ok: false },
-                { color: '#e06060', icon: <IconYouTube size={16} color="#e06060" />, name: 'YouTube', status: 'Kapcsolódva', ok: true },
+                { color: '#e8687f', icon: <IconTikTok size={16} color="#e8687f" />, name: 'TikTok Organic', status: t('Kapcsolódva'), ok: true },
+                { color: '#5a9cf5', icon: <IconFacebook size={16} color="#5a9cf5" />, name: 'Facebook Pages', status: t('Kapcsolódva'), ok: true },
+                { color: '#d06a8e', icon: <IconInstagram size={16} color="#d06a8e" />, name: 'Instagram Business', status: t('Várakozás'), ok: false },
+                { color: '#e06060', icon: <IconYouTube size={16} color="#e06060" />, name: 'YouTube', status: t('Kapcsolódva'), ok: true },
               ].map(p => (
                 <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #3a3a40' }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: p.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{p.icon}</div>
@@ -275,13 +283,13 @@ export default function LandingPage() {
             <MockBrowser title="admin/reports/tiktok">
               <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>TIKTOK — 2026. FEBRUÁR</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-                <KpiCard label="Videó nézések" value="1,2M" change="18.4%" up={true} />
-                <KpiCard label="Követők" value="48,3K" change="5.2%" up={true} />
-                <KpiCard label="Engagement" value="94,7K" change="12.1%" up={true} />
-                <KpiCard label="Profilmegtekintés" value="231K" change="3.8%" up={false} />
+                <KpiCard label={t('Videó nézések')} value="1,2M" change="18.4%" up={true} />
+                <KpiCard label={t('Követők')} value="48,3K" change="5.2%" up={true} />
+                <KpiCard label={t('Engagement')} value="94,7K" change="12.1%" up={true} />
+                <KpiCard label={t('Profil megtekintések')} value="231K" change="3.8%" up={false} />
               </div>
               <div style={{ background: '#1a1a1e', borderRadius: 8, padding: '10px 12px' }}>
-                <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Napi nézések</p>
+                <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t('Napi nézések')}</p>
                 <BarChart bars={[
                   { h: 28, label: '1' }, { h: 35, label: '3' }, { h: 22, label: '5' },
                   { h: 48, label: '7' }, { h: 40, label: '9' }, { h: 55, label: '11' },
@@ -293,12 +301,12 @@ export default function LandingPage() {
             </MockBrowser>
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#6366f122', border: '1px solid #6366f144', color: '#a5b4fc', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>2</div>
-              <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>Tekintsd meg az analitikát</h3>
+              <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>{t('Tekintsd meg az analitikát')}</h3>
               <p style={{ color: '#9a9aa0', lineHeight: 1.7, marginBottom: 16 }}>
-                A dashboard valós időben mutatja az összes platform összesített adatait. Napi bontású grafikonok, poszt-szintű statisztikák, elérés, engagement és videó metrikák.
+                {t('A dashboard valós időben mutatja az összes platform összesített adatait. Napi bontású grafikonok, poszt-szintű statisztikák, elérés, engagement és videó metrikák.')}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {['Elérés és impressziók napi bontásban', 'Posztszintű teljesítmény rangsor', 'Videó megtekintések és megtartási arány', 'Engagement rate automatikus számítással'].map(f => (
+                {[t('Elérés és impressziók napi bontásban'), t('Posztszintű teljesítmény rangsor'), t('Videó megtekintések és megtartási arány'), t('Engagement rate automatikus számítással')].map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9a9aa0', fontSize: 13 }}>
                     <span style={{ color: '#34d399', fontSize: 14 }}>✓</span> {f}
                   </div>
@@ -311,12 +319,12 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#6366f122', border: '1px solid #6366f144', color: '#a5b4fc', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>3</div>
-              <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>Automatikus havi riportok</h3>
+              <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>{t('Automatikus havi riportok')}</h3>
               <p style={{ color: '#9a9aa0', lineHeight: 1.7, marginBottom: 16 }}>
-                Állítsd be a hónap napját és az időpontot. Minden hónapban a Trendalyz automatikusan összeállítja a riportot és elküldi emailben PDF formátumban az ügyfelednek.
+                {t('Állítsd be a hónap napját és az időpontot. Minden hónapban a Trendalyz automatikusan összeállítja a riportot és elküldi emailben PDF formátumban az ügyfelednek.')}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {['Ütemezett küldés (pl. minden hónap 5-én)', 'PDF export letölthetően is', 'Előző hónappal való összehasonlítás', 'Egyedi ügyfél hozzáférés saját dashboardhoz'].map(f => (
+                {[t('Ütemezett küldés (pl. minden hónap 5-én)'), t('PDF export letölthetően is'), t('Előző hónappal való összehasonlítás'), t('Egyedi ügyfél hozzáférés saját dashboardhoz')].map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9a9aa0', fontSize: 13 }}>
                     <span style={{ color: '#34d399', fontSize: 14 }}>✓</span> {f}
                   </div>
@@ -324,15 +332,15 @@ export default function LandingPage() {
               </div>
             </div>
             <MockBrowser title="admin/companies/beallitasok">
-              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>AUTOMATIKUS EMAIL ÜTEMEZÉS</p>
-              <p style={{ color: '#9a9aa0', fontSize: 12, marginBottom: 16 }}>Válaszd ki, hogy a havi riport emailt a hónap melyik napján és hány órakor kapják az ügyfelek.</p>
+              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>{t('Automatikus email ütemezés').toUpperCase()}</p>
+              <p style={{ color: '#9a9aa0', fontSize: 12, marginBottom: 16 }}>{t('Válaszd ki, hogy a havi riport emailt a hónap melyik napján és hány órakor kapják az ügyfelek.')}</p>
               <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ color: '#9a9aa0', fontSize: 10, marginBottom: 6 }}>Hónap napja</p>
+                  <p style={{ color: '#9a9aa0', fontSize: 10, marginBottom: 6 }}>{t('Hónap napja')}</p>
                   <div style={{ background: '#1a1a1e', border: '1px solid #3a3a40', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#f0f0f2' }}>5.</div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ color: '#9a9aa0', fontSize: 10, marginBottom: 6 }}>Óra (UTC)</p>
+                  <p style={{ color: '#9a9aa0', fontSize: 10, marginBottom: 6 }}>{t('Óra (UTC)')}</p>
                   <div style={{ background: '#1a1a1e', border: '1px solid #3a3a40', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#f0f0f2' }}>08:00</div>
                 </div>
               </div>
@@ -341,12 +349,12 @@ export default function LandingPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#0d9488,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>T</div>
                   <div>
-                    <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: '#f0f0f2' }}>Trendalyz — Havi riport kész</p>
+                    <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: '#f0f0f2' }}>{t('Trendalyz — Havi riport kész')}</p>
                     <p style={{ margin: 0, fontSize: 10, color: '#9a9aa0' }}>noreply@trendalyz.hu</p>
                   </div>
                 </div>
                 <p style={{ color: '#9a9aa0', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
-                  A február havi riportod elkészült. Letöltés: <span style={{ color: '#6366f1' }}>riport-2026-02.pdf</span>
+                  {t('A február havi riportod elkészült.')} {t('Letöltés')}: <span style={{ color: '#6366f1' }}>riport-2026-02.pdf</span>
                 </p>
               </div>
             </MockBrowser>
@@ -358,12 +366,12 @@ export default function LandingPage() {
       <section style={{ borderTop: '1px solid #3a3a40', padding: '80px 24px', background: '#0d0d10' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <p style={{ color: '#a5b4fc', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>ÜGYNÖKSÉGEKNEK TERVEZVE</p>
+            <p style={{ color: '#a5b4fc', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>{t('ÜGYNÖKSÉGEKNEK TERVEZVE')}</p>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 16 }}>
-              Te kezeled. Ők kapják a riportot.
+              {t('Te kezeled. Ők kapják a riportot.')}
             </h2>
             <p style={{ color: '#9a9aa0', fontSize: 16, maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
-              A Trendalyz-zal egyszerre kezelheted az összes partnered social media fiókját. Minden hónapban egy kattintás nélkül megy ki a riport — te csak a stratégiára fókuszálhatsz.
+              {t('A Trendalyz-zal egyszerre kezelheted az összes partnered social media fiókját. Minden hónapban egy kattintás nélkül megy ki a riport — te csak a stratégiára fókuszálhatsz.')}
             </p>
           </div>
 
@@ -372,18 +380,18 @@ export default function LandingPage() {
             {[
               {
                 icon: <IconBuilding size={28} color="#a5b4fc" />,
-                title: 'Több partner, egy felület',
-                text: 'Minden ügyfeled külön cégnél kezeled. Platformonkénti kapcsolatok, saját hozzáférések, saját riportok — minden rendezett és elkülönített.',
+                title: t('Több partner, egy felület'),
+                text: t('Minden ügyfeled külön cégnél kezeled. Platformonkénti kapcsolatok, saját hozzáférések, saját riportok — minden rendezett és elkülönített.'),
               },
               {
                 icon: <IconBarChart size={28} color="#a5b4fc" />,
-                title: 'Automatikus havi riport',
-                text: 'Állítsd be egyszer, és minden hónapban automatikusan megy ki az email a partnernek — PDF-ben, az előző hónaphoz képesti változással.',
+                title: t('Automatikus havi riport'),
+                text: t('Állítsd be egyszer, és minden hónapban automatikusan megy ki az email a partnernek — PDF-ben, az előző hónaphoz képesti változással.'),
               },
               {
                 icon: <IconUsers size={28} color="#a5b4fc" />,
-                title: 'Ügyfél dashboard hozzáférés',
-                text: 'Minden partner saját bejelentkezőt kap, ahol megnézheti az adatait. Nincs több "küld el Excel-ben" — ők is élőben látnak mindent.',
+                title: t('Ügyfél dashboard hozzáférés'),
+                text: t('Minden partner saját bejelentkezőt kap, ahol megnézheti az adatait. Nincs több "küld el Excel-ben" — ők is élőben látnak mindent.'),
               },
             ].map(card => (
               <div key={card.title} style={{ background: '#1a1a1e', border: '1px solid #3a3a40', borderRadius: 16, padding: '28px 24px' }}>
@@ -401,8 +409,8 @@ export default function LandingPage() {
               <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg,#0d9488,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
                 <IconBuilding size={26} color="white" />
               </div>
-              <p style={{ color: '#f0f0f2', fontWeight: 700, fontSize: 13, margin: 0 }}>Te (ügynökség)</p>
-              <p style={{ color: '#9a9aa0', fontSize: 11, margin: '4px 0 0' }}>Admin panel</p>
+              <p style={{ color: '#f0f0f2', fontWeight: 700, fontSize: 13, margin: 0 }}>{t('Te (ügynökség)')}</p>
+              <p style={{ color: '#9a9aa0', fontSize: 11, margin: '4px 0 0' }}>{t('Admin Panel')}</p>
             </div>
 
             {/* Arrow */}
@@ -410,12 +418,12 @@ export default function LandingPage() {
               <div style={{ borderTop: '2px dashed #3a3a40', position: 'relative' }}>
                 <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: '#6366f1', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 999 }}>Trendalyz</span>
               </div>
-              <p style={{ color: '#9a9aa0', fontSize: 11, marginTop: 14 }}>minden hónapban automatikusan</p>
+              <p style={{ color: '#9a9aa0', fontSize: 11, marginTop: 14 }}>{t('minden hónapban automatikusan')}</p>
             </div>
 
             {/* Clients */}
             <div style={{ display: 'flex', gap: 12 }}>
-              {(['Partner A', 'Partner B', 'Partner C'] as const).map((name, i) => {
+              {([t('Partner A'), t('Partner B'), t('Partner C')]).map((name, i) => {
                 const colors = ['#e8687f', '#5a9cf5', '#d06a8e'];
                 const icons = [
                   <IconTikTok key="tt" size={18} color={colors[0]} />,
@@ -428,7 +436,7 @@ export default function LandingPage() {
                     {icons[i]}
                   </div>
                   <p style={{ color: '#f0f0f2', fontSize: 12, fontWeight: 600, margin: 0 }}>{name}</p>
-                  <p style={{ color: '#34d399', fontSize: 10, margin: '3px 0 0', fontWeight: 700 }}>riport kész</p>
+                  <p style={{ color: '#34d399', fontSize: 10, margin: '3px 0 0', fontWeight: 700 }}>{t('riport kész')}</p>
                 </div>
                 );
               })}
@@ -440,7 +448,7 @@ export default function LandingPage() {
       {/* Platforms */}
       <section style={{ borderTop: '1px solid #3a3a40', padding: '60px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ color: '#9a9aa0', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>TÁMOGATOTT PLATFORMOK</p>
+          <p style={{ color: '#9a9aa0', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>{t('TÁMOGATOTT PLATFORMOK')}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
             {[
               { name: 'TikTok Organic', color: '#e8687f', icon: <IconTikTok size={14} color="#e8687f" /> },
@@ -465,17 +473,17 @@ export default function LandingPage() {
             <div>
               <TrendalyzLogo size="sm" />
               <p style={{ color: '#9a9aa0', fontSize: 13, marginTop: 12, lineHeight: 1.6 }}>
-                Social media analytics platform marketing ügynökségeknek. Minden platform, egy helyen.
+                {t('Social media analytics platform marketing ügynökségeknek. Minden platform, egy helyen.')}
               </p>
             </div>
             <div>
-              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>Jogi</p>
+              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>{t('Jogi')}</p>
               <Link href="/privacy" style={{ color: '#9a9aa0', fontSize: 13, textDecoration: 'none', display: 'block', marginBottom: 8 }} className="hover:text-white">
-                Adatvédelmi irányelvek
+                {t('Adatvédelmi irányelvek')}
               </Link>
             </div>
             <div>
-              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>Kapcsolat</p>
+              <p style={{ color: '#9a9aa0', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>{t('Kapcsolat')}</p>
               <a href="mailto:bator.turny@gmail.com" style={{ color: '#9a9aa0', fontSize: 13, textDecoration: 'none', display: 'block', marginBottom: 8 }}>
                 bator.turny@gmail.com
               </a>
@@ -483,8 +491,8 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ borderTop: '1px solid #3a3a40', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ color: '#9a9aa0', fontSize: 12 }}>© {new Date().getFullYear()} Trendalyz. Minden jog fenntartva.</p>
-            <p style={{ color: '#9a9aa0', fontSize: 12 }}>EU-s szerver · GDPR megfelelő · Hetzner, Németország</p>
+            <p style={{ color: '#9a9aa0', fontSize: 12 }}>© {new Date().getFullYear()} Trendalyz. {t('Minden jog fenntartva.')}</p>
+            <p style={{ color: '#9a9aa0', fontSize: 12 }}>{t('EU-s szerver · GDPR megfelelő · Hetzner, Németország')}</p>
           </div>
         </div>
       </footer>
