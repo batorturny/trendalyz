@@ -1,7 +1,11 @@
+'use client';
+
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
+import { useT } from '@/lib/i18n';
 import LoginForm from './LoginForm';
 
 export default function LoginPage() {
+  const t = useT();
   return (
     <div className="min-h-screen bg-[var(--surface-raised)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -9,7 +13,7 @@ export default function LoginPage() {
         <div className="text-center mb-8 flex flex-col items-center">
           <TrendalyzLogo size="lg" />
           <p className="text-[var(--text-secondary)] text-sm mt-3 max-w-xs">
-            Havi riportok marketing ügynökségeknek — minden partner, egy helyen
+            {t('Havi riportok marketing ügynökségeknek — minden partner, egy helyen')}
           </p>
         </div>
 

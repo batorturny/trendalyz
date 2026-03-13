@@ -10,6 +10,7 @@ import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
+import { useT } from '@/lib/i18n';
 
 interface PlatformConfig {
   platformKey: string;
@@ -48,6 +49,7 @@ export function ClientPlatformPage({
   dashboardConfig?: DashboardConfigType | null;
   adminNote?: string | null;
 }) {
+  const t = useT();
   const { data: session, status } = useSession();
   const [allCatalog, setAllCatalog] = useState<ChartDefinition[]>([]);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -114,7 +116,7 @@ export function ClientPlatformPage({
 
     getChartCatalog()
       .then(data => setAllCatalog(data.charts))
-      .catch(() => setError('Nem sikerült betölteni a chart katalógust'));
+      .catch(() => setError(t('Nem sikerült betölteni a chart katalógust')));
   }, []);
 
   const handleGenerate = useCallback(async () => {
@@ -150,7 +152,7 @@ export function ClientPlatformPage({
         }
 
         if (allMonthKpis.length === 0) {
-          setError('Nem sikerült adatot lekérni a megadott időszakra');
+          setError(t('Nem sikerült adatot lekérni a megadott időszakra'));
         } else {
           setAggregatedKPIs(aggregateMonthlyKPIs(allMonthKpis));
           setAggregatedCount(allMonthKpis.length);
@@ -204,7 +206,7 @@ export function ClientPlatformPage({
         .catch(() => {});
     }
   } catch (err) {
-    setError(err instanceof Error ? err.message : 'Hiba történt');
+    setError(err instanceof Error ? err.message : t('Hiba történt'));
   } finally {
     setLoading(false);
   }
@@ -257,8 +259,8 @@ export function ClientPlatformPage({
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'PDF generálás sikertelen' }));
-        throw new Error(err.error || 'PDF generálás sikertelen');
+        const err = await response.json().catch(() => ({ error: t('PDF generálás sikertelen') }));
+        throw new Error(err.error || t('PDF generálás sikertelen'));
       }
 
       const blob = await response.blob();
@@ -270,7 +272,7 @@ export function ClientPlatformPage({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('PDF export error:', err);
-      setError('PDF letöltés sikertelen: ' + (err instanceof Error ? err.message : 'Ismeretlen hiba'));
+      setError(t('PDF letöltés sikertelen') + ': ' + (err instanceof Error ? err.message : t('Ismeretlen hiba')));
     } finally {
       setExporting(false);
     }
@@ -280,8 +282,8 @@ export function ClientPlatformPage({
     return (
       <div className="text-center py-20">
         <Building2 className="w-12 h-12 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
-        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Nincs hozzárendelt cég</h2>
-        <p className="text-[var(--text-secondary)]">Kérd meg az adminisztrátort, hogy rendeljen hozzád egy céget.</p>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{t('Nincs hozzárendelt cég')}</h2>
+        <p className="text-[var(--text-secondary)]">{t('Kérd meg az adminisztrátort, hogy rendeljen hozzád egy céget.')}</p>
       </div>
     );
   }
@@ -291,8 +293,8 @@ export function ClientPlatformPage({
     return (
       <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
         <Settings className="w-16 h-16 mx-auto mb-4 text-[var(--text-secondary)]" strokeWidth={1.5} />
-        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Dashboard még nincs konfigurálva</h2>
-        <p className="text-[var(--text-secondary)]">Az adminisztrátor még nem állította be, mely adatokat lásd ezen a platformon.</p>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{t('Dashboard még nincs konfigurálva')}</h2>
+        <p className="text-[var(--text-secondary)]">{t('Az adminisztrátor még nem állította be, mely adatokat lásd ezen a platformon.')}</p>
       </div>
     );
   }
@@ -303,7 +305,7 @@ export function ClientPlatformPage({
       <div data-no-print className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-[var(--shadow-card)]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
+            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Hónap')}</label>
             <MonthPicker value={selectedMonth} onChange={setSelectedMonth} periodMonths={periodMonths} onPeriodChange={setPeriodMonths} />
           </div>
           <div className="flex items-end">
@@ -313,7 +315,7 @@ export function ClientPlatformPage({
               className="w-full text-white font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               style={{ backgroundColor: platform.borderColor }}
             >
-              {loading ? 'Generálás...' : 'Riport generálása'}
+              {loading ? t('Generálás...') : t('Riport generálása')}
             </button>
           </div>
           <div className="flex items-end">
@@ -322,7 +324,7 @@ export function ClientPlatformPage({
               disabled={(results.length === 0 && !aggregatedKPIs) || exporting}
               className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] font-bold py-3 px-6 rounded-xl hover:bg-[var(--accent-subtle)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
-              {exporting ? 'PDF készítése...' : 'Letöltés PDF-ben'}
+              {exporting ? t('PDF készítése...') : t('Letöltés PDF-ben')}
             </button>
           </div>
         </div>
@@ -346,7 +348,7 @@ export function ClientPlatformPage({
                     {(() => {
                       const [y, mo] = selectedMonth.split('-').map(Number);
                       const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
-                      return `${y}. ${MONTHS[mo - 1]} — havi elemzés`;
+                      return `${y}. ${MONTHS[mo - 1]} — ${t('havi elemzés')}`;
                     })()}
                   </p>
                 </div>
@@ -359,7 +361,7 @@ export function ClientPlatformPage({
               <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 flex items-start gap-3">
                 <MessageSquare className="w-5 h-5 text-[var(--accent)] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-1">Megjegyzés</p>
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-1">{t('Megjegyzés')}</p>
                   <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{adminNote}</p>
                 </div>
               </div>
@@ -372,7 +374,7 @@ export function ClientPlatformPage({
                 <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-4 md:p-6">
                   {periodMonths > 1 && (
                     <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                      Összesített KPI-ok ({aggregatedCount} hónap)
+                      {t('Összesített KPI-ok')} ({aggregatedCount} {t('hónap')})
                     </p>
                   )}
                   {periodMonths === 1 && selectedMonth && (() => {
@@ -380,7 +382,7 @@ export function ClientPlatformPage({
                     const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
                     return (
                       <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                        {y}. {MONTHS[mo - 1]} számai
+                        {y}. {MONTHS[mo - 1]} {t('számai')}
                       </p>
                     );
                   })()}
@@ -428,9 +430,9 @@ export function ClientPlatformPage({
                             <thead>
                               <tr className="border-b border-[var(--border)]">
                                 <th className="text-left py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">
-                                  {chart.key.includes('gender') ? 'Nem' : 'Korcsoport'}
+                                  {chart.key.includes('gender') ? t('Nem') : t('Korcsoport')}
                                 </th>
-                                <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">Megoszlás</th>
+                                <th className="text-right py-2 px-3 text-xs font-bold text-[var(--text-secondary)] uppercase">{t('Megoszlás')}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -471,8 +473,8 @@ export function ClientPlatformPage({
       {loading && (
         <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
           <div className="mb-4 animate-pulse flex justify-center">{platform.icon}</div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Riport generálása...</h2>
-          <p className="text-[var(--text-secondary)]">Adatok lekérése és feldolgozása folyamatban</p>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{t('Riport generálása...')}</h2>
+          <p className="text-[var(--text-secondary)]">{t('Adatok lekérése és feldolgozása folyamatban')}</p>
         </div>
       )}
 
@@ -480,8 +482,8 @@ export function ClientPlatformPage({
       {!loading && results.length === 0 && autoLoaded && (
         <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
           <div className="mb-4 flex justify-center">{platform.icon}</div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Nincs adat</h2>
-          <p className="text-[var(--text-secondary)]">Ehhez a hónaphoz nem található adat. Próbálj másik hónapot választani.</p>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{t('Nincs adat')}</h2>
+          <p className="text-[var(--text-secondary)]">{t('Ehhez a hónaphoz nem található adat. Próbálj másik hónapot választani.')}</p>
         </div>
       )}
     </div>

@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MonthPicker } from '@/components/MonthPicker';
 import { Save, Loader2, Check, FileText } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 interface Props {
   companyId: string;
 }
 
 export function MonthlyAnalysis({ companyId }: Props) {
+  const t = useT();
   const now = new Date();
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const defaultMonth = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
@@ -66,10 +68,10 @@ export function MonthlyAnalysis({ companyId }: Props) {
         <div>
           <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[var(--text-secondary)]" />
-            Havi elemzés az ügyfélnek
+            {t('Havi elemzés az ügyfélnek')}
           </h2>
           <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-            Írj havi összefoglalót — az ügyfél látja a dashboardján, amikor kiválasztja a hónapot
+            {t('Írj havi összefoglalót — az ügyfél látja a dashboardján, amikor kiválasztja a hónapot')}
           </p>
         </div>
         <button
@@ -84,34 +86,34 @@ export function MonthlyAnalysis({ companyId }: Props) {
           ) : (
             <Save className="w-4 h-4" />
           )}
-          {saved ? 'Mentve' : 'Mentés'}
+          {saved ? t('Mentve') : t('Mentés')}
         </button>
       </div>
 
       <div className="mb-4 max-w-xs">
-        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
+        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Hónap')}</label>
         <MonthPicker value={month} onChange={handleMonthChange} />
       </div>
 
       {loading ? (
         <div className="h-40 flex items-center justify-center text-[var(--text-secondary)] text-sm">
-          Betöltés...
+          {t('Betöltés...')}
         </div>
       ) : (
         <>
           <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
-            {monthLabel} — elemzés szövege
+            {monthLabel} — {t('elemzés szövege')}
           </label>
           <textarea
             value={content}
             onChange={(e) => { setContent(e.target.value); setSaved(false); }}
-            placeholder={`Írd ide a ${monthLabel} havi értékelést az ügyfélnek...\n\nPl.: Ebben a hónapban kiemelkedő eredményeket értünk el az elérés terén. A TikTok videók összesített megtekintése 35%-kal nőtt az előző hónaphoz képest. Javasoljuk, hogy a jövő hónapban...`}
+            placeholder={`${t('Írd ide a havi értékelést az ügyfélnek...')}\n\n${t('Pl.: Ebben a hónapban kiemelkedő eredményeket értünk el az elérés terén...')}`}
             rows={10}
             className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all resize-y leading-relaxed"
           />
           <p className="text-xs text-[var(--text-secondary)] mt-2">
-            Az ügyfél ezt az elemzést látja a dashboardján, amikor a(z) <span className="font-semibold">{monthLabel}</span> hónapot kiválasztja.
-            {content.length > 0 && ` (${content.length} karakter)`}
+            {t('Az ügyfél ezt az elemzést látja a dashboardján, amikor a(z)')} <span className="font-semibold">{monthLabel}</span> {t('hónapot kiválasztja.')}
+            {content.length > 0 && ` (${content.length} ${t('karakter')})`}
           </p>
         </>
       )}

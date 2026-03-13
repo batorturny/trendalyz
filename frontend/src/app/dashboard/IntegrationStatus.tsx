@@ -2,12 +2,14 @@
 
 import { type IntegrationConnection, PROVIDERS } from '@/types/integration';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
+import { useT } from '@/lib/i18n';
 
 interface Props {
   connections: IntegrationConnection[];
 }
 
 export function IntegrationStatus({ connections }: Props) {
+  const t = useT();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
       {PROVIDERS.map((provider) => {
@@ -31,13 +33,13 @@ export function IntegrationStatus({ connections }: Props) {
                 <div className="font-semibold text-[var(--text-primary)] text-sm">{provider.label}</div>
                 {conn ? (
                   <>
-                    <div className="text-xs text-[var(--success)]">Kapcsolódva</div>
+                    <div className="text-xs text-[var(--success)]">{t('Kapcsolódva')}</div>
                     {conn.externalAccountName && (
                       <div className="text-xs text-[var(--text-secondary)] truncate">{conn.externalAccountName}</div>
                     )}
                   </>
                 ) : (
-                  <div className="text-xs text-[var(--text-secondary)]">Nem konfigurált</div>
+                  <div className="text-xs text-[var(--text-secondary)]">{t('Nem konfigurált')}</div>
                 )}
               </div>
               {conn && (

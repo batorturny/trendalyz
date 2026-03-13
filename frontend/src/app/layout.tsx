@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
+import { I18nProvider } from "@/lib/i18n";
 import "./globals.css";
 
 const inter = Inter({
@@ -49,9 +50,11 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ThemeProvider>
-          <SessionProvider>
-            <ToastProvider>{children}</ToastProvider>
-          </SessionProvider>
+          <I18nProvider>
+            <SessionProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </SessionProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

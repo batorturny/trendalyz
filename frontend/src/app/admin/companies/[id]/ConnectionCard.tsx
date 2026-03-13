@@ -5,6 +5,7 @@ import { deleteConnection, testConnection } from '../actions';
 import { useState } from 'react';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useT } from '@/lib/i18n';
 
 interface Props {
   connection: IntegrationConnection;
@@ -17,7 +18,10 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
   PENDING: { bg: 'bg-yellow-100 dark:bg-yellow-500/20', text: 'text-yellow-700 dark:text-yellow-400', label: 'Függőben' },
 };
 
+// Status labels are translated at render time via t() in the component
+
 export function ConnectionCard({ connection }: Props) {
+  const t = useT();
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; windsorOnboardUrl?: string; needsWindsorSetup?: boolean } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -37,7 +41,7 @@ export function ConnectionCard({ connection }: Props) {
       const result = await testConnection(connection.id);
       setTestResult(result);
     } catch {
-      setTestResult({ success: false, message: 'Teszt sikertelen' });
+      setTestResult({ success: false, message: t('Teszt sikertelen') });
     } finally {
       setTesting(false);
     }
@@ -63,14 +67,14 @@ export function ConnectionCard({ connection }: Props) {
           </div>
         </div>
         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${status.bg} ${status.text}`}>
-          {status.label}
+          {t(status.label)}
         </span>
       </div>
 
       <div className="space-y-1 mb-3">
         {connection.lastSyncAt && (
           <div className="text-xs text-[var(--text-secondary)]">
-            Utolsó szinkronizáció: {new Date(connection.lastSyncAt).toLocaleString('hu-HU')}
+            {t('Utolsó szinkronizáció')}: {new Date(connection.lastSyncAt).toLocaleString('hu-HU')}
           </div>
         )}
         {connection.errorMessage && (
@@ -88,7 +92,7 @@ export function ConnectionCard({ connection }: Props) {
               rel="noopener noreferrer"
               className="inline-block mt-1.5 px-3 py-1 bg-[var(--accent-subtle)] text-[var(--accent)] hover:opacity-80 rounded-lg font-semibold transition-colors"
             >
-              Windsor beállítás &rarr;
+              {t('Windsor beállítás')} &rarr;
             </a>
           )}
         </div>
@@ -100,23 +104,23 @@ export function ConnectionCard({ connection }: Props) {
           disabled={testing}
           className="text-xs font-semibold text-[var(--accent)] hover:opacity-70 disabled:opacity-50"
         >
-          {testing ? 'Tesztelés...' : 'Kapcsolat tesztelése'}
+          {testing ? t('Tesztelés...') : t('Kapcsolat tesztelése')}
         </button>
         <span className="text-[var(--border)]">|</span>
         <button
           onClick={() => setConfirmDelete(true)}
           className="text-xs font-semibold text-[var(--error)] hover:opacity-70"
         >
-          Törlés
+          {t('Törlés')}
         </button>
       </div>
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Integráció törlése"
-        message={`Biztosan törlöd a(z) ${provider.label} integrációt?`}
-        confirmLabel="Törlés"
-        cancelLabel="Mégse"
+        title={t('Integráció törlése')}
+        message={`${t('Biztosan törlöd a(z)')} ${provider.label} ${t('integrációt?')}`}
+        confirmLabel={t('Törlés')}
+        cancelLabel={t('Mégse')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}

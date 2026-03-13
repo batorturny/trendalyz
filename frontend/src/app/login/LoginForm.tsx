@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
+import { useT } from '@/lib/i18n';
 // Inline SVG eye icons to avoid loading lucide-react bundle on login
 function Eye({ className }: { className?: string }) {
   return (
@@ -23,6 +24,7 @@ function EyeOff({ className }: { className?: string }) {
 }
 
 export default function LoginForm() {
+  const t = useT();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +61,7 @@ export default function LoginForm() {
     });
 
     if (result?.error) {
-      setError('Hibás email vagy jelszó');
+      setError(t('Hibás email vagy jelszó'));
       setLoading(false);
     } else {
       const session = await fetch('/api/auth/session').then(r => r.json());
@@ -83,7 +85,7 @@ export default function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Hiba történt');
+        setError(data.error || t('Hiba történt'));
         setLoading(false);
         return;
       }
@@ -95,14 +97,14 @@ export default function LoginForm() {
       });
 
       if (loginResult?.error) {
-        setSuccess('Sikeres regisztráció! Most már bejelentkezhetsz.');
+        setSuccess(t('Sikeres regisztráció! Most már bejelentkezhetsz.'));
         setMode('login');
         setLoading(false);
       } else {
         window.location.href = '/admin';
       }
     } catch {
-      setError('Hálózati hiba');
+      setError(t('Hálózati hiba'));
       setLoading(false);
     }
   }
@@ -123,15 +125,15 @@ export default function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Hiba történt');
+        setError(data.error || t('Hiba történt'));
         setLoading(false);
         return;
       }
 
-      setSuccess('Ha létezik ilyen fiók, elküldtük a jelszó-visszaállító linket az email címedre.');
+      setSuccess(t('Ha létezik ilyen fiók, elküldtük a jelszó-visszaállító linket az email címedre.'));
       setLoading(false);
     } catch {
-      setError('Hálózati hiba');
+      setError(t('Hálózati hiba'));
       setLoading(false);
     }
   }
@@ -151,7 +153,7 @@ export default function LoginForm() {
               <div className="w-full border-t border-[var(--border)]"></div>
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-[var(--surface)] px-3 text-[var(--text-secondary)] font-semibold">vagy</span>
+              <span className="bg-[var(--surface)] px-3 text-[var(--text-secondary)] font-semibold">{t('vagy')}</span>
             </div>
           </div>
           <button
@@ -165,7 +167,7 @@ export default function LoginForm() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            {mode === 'login' ? 'Bejelentkezés Google fiókkal' : 'Regisztráció Google fiókkal'}
+            {mode === 'login' ? t('Bejelentkezés Google fiókkal') : t('Regisztráció Google fiókkal')}
           </button>
         </>
       )}
@@ -177,9 +179,9 @@ export default function LoginForm() {
       {mode === 'forgot' ? (
         <>
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-[var(--text-primary)]">Elfelejtett jelszó</h2>
+            <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('Elfelejtett jelszó')}</h2>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
-              Add meg az email címed és küldünk egy linket a jelszó visszaállításához.
+              {t('Add meg az email címed és küldünk egy linket a jelszó visszaállításához.')}
             </p>
           </div>
 
@@ -190,7 +192,7 @@ export default function LoginForm() {
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
                 <input
                   type="email"
                   value={email}
@@ -205,7 +207,7 @@ export default function LoginForm() {
                 disabled={loading}
                 className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
-                {loading ? 'Küldés...' : 'Visszaállító link küldése'}
+                {loading ? t('Küldés...') : t('Visszaállító link küldése')}
               </button>
             </form>
           )}
@@ -214,7 +216,7 @@ export default function LoginForm() {
             onClick={() => switchMode('login')}
             className="mt-4 w-full text-center text-sm text-[var(--accent)] hover:opacity-70 font-semibold transition-opacity"
           >
-            Vissza a bejelentkezéshez
+            {t('Vissza a bejelentkezéshez')}
           </button>
         </>
       ) : (
@@ -229,7 +231,7 @@ export default function LoginForm() {
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Bejelentkezés
+              {t('Bejelentkezés')}
             </button>
             <button
               onClick={() => switchMode('register')}
@@ -239,7 +241,7 @@ export default function LoginForm() {
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Regisztráció
+              {t('Regisztráció')}
             </button>
           </div>
 
@@ -252,7 +254,7 @@ export default function LoginForm() {
           {mode === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
                 <input
                   type="email"
                   value={email}
@@ -263,7 +265,7 @@ export default function LoginForm() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Jelszó</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Jelszó')}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -289,7 +291,7 @@ export default function LoginForm() {
                   onClick={() => switchMode('forgot')}
                   className="text-sm text-[var(--accent)] hover:opacity-70 font-semibold transition-opacity"
                 >
-                  Elfelejtettem a jelszavam
+                  {t('Elfelejtettem a jelszavam')}
                 </button>
               </div>
               <button
@@ -297,23 +299,23 @@ export default function LoginForm() {
                 disabled={loading}
                 className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
-                {loading ? 'Bejelentkezés...' : 'Bejelentkezés'}
+                {loading ? t('Bejelentkezés...') : t('Bejelentkezés')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Név</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Név')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input-field"
-                  placeholder="Teljes neved"
+                  placeholder={t('Teljes neved')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Email</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
                 <input
                   type="email"
                   value={email}
@@ -324,7 +326,7 @@ export default function LoginForm() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Jelszó</label>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Jelszó')}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -333,7 +335,7 @@ export default function LoginForm() {
                     required
                     minLength={6}
                     className="input-field pr-12"
-                    placeholder="Min. 6 karakter"
+                    placeholder={t('Min. 6 karakter')}
                   />
                   <button
                     type="button"
@@ -350,7 +352,7 @@ export default function LoginForm() {
                 disabled={loading}
                 className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
-                {loading ? 'Regisztráció...' : 'Fiók létrehozása'}
+                {loading ? t('Regisztráció...') : t('Fiók létrehozása')}
               </button>
             </form>
           )}

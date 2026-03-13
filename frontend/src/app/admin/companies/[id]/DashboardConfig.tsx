@@ -5,6 +5,7 @@ import { PLATFORM_METRICS, type PlatformMetricConfig } from '@/lib/platformMetri
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { updateDashboardConfig } from '../actions';
 import { ChevronDown, ChevronRight, Check, Save, Loader2 } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 interface DashboardConfigProps {
   companyId: string;
@@ -57,6 +58,7 @@ function PlatformConfigSection({
   note: string;
   onNoteChange: (value: string) => void;
 }) {
+  const t = useT();
   const [collapsed, setCollapsed] = useState(true);
 
   const totalSelected = selection.kpis.size + selection.charts.size;
@@ -96,20 +98,20 @@ function PlatformConfigSection({
               onClick={onSelectAll}
               className="text-xs font-semibold text-[var(--accent)] hover:underline"
             >
-              Összes kijelölése
+              {t('Összes kijelölése')}
             </button>
             <button
               type="button"
               onClick={onClearAll}
               className="text-xs font-semibold text-[var(--error)] hover:underline"
             >
-              Összes törlése
+              {t('Összes törlése')}
             </button>
           </div>
 
           {/* KPIs */}
           <div>
-            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">KPI-ok</h4>
+            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('KPI-ok')}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
               {config.kpis.map(item => (
                 <CheckboxItem
@@ -125,7 +127,7 @@ function PlatformConfigSection({
 
           {/* Daily Charts */}
           <div>
-            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Napi diagramok</h4>
+            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Napi diagramok')}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
               {config.daily.map(item => (
                 <CheckboxItem
@@ -141,7 +143,7 @@ function PlatformConfigSection({
 
           {/* Distributions */}
           <div>
-            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Megoszlások</h4>
+            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Megoszlások')}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
               {config.distributions.map(item => (
                 <CheckboxItem
@@ -157,11 +159,11 @@ function PlatformConfigSection({
 
           {/* Admin note */}
           <div>
-            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Megjegyzés az ügyfélnek</h4>
+            <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Megjegyzés az ügyfélnek')}</h4>
             <textarea
               value={note}
               onChange={(e) => onNoteChange(e.target.value)}
-              placeholder="Ide írhatsz megjegyzést, amit az ügyfél látni fog a dashboardon..."
+              placeholder={t('Ide írhatsz megjegyzést, amit az ügyfél látni fog a dashboardon...')}
               rows={3}
               className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all resize-y"
             />
@@ -202,6 +204,7 @@ function CheckboxItem({ label, checked, onChange, color }: {
 }
 
 export function DashboardConfig({ companyId, connections, dashboardConfig, dashboardNotes }: DashboardConfigProps) {
+  const t = useT();
   const [selections, setSelections] = useState(() => initSelections(connections, dashboardConfig));
   const [notes, setNotes] = useState<Record<string, string>>(dashboardNotes || {});
   const [isPending, startTransition] = useTransition();
@@ -277,9 +280,9 @@ export function DashboardConfig({ companyId, connections, dashboardConfig, dashb
     <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 shadow-[var(--shadow-card)]">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">Dashboard konfiguráció</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('Dashboard konfiguráció')}</h2>
           <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-            Válaszd ki, mely KPI-kat és chartokat lássák az ügyfelek
+            {t('Válaszd ki, mely KPI-kat és chartokat lássák az ügyfelek')}
           </p>
         </div>
         <button
@@ -292,7 +295,7 @@ export function DashboardConfig({ companyId, connections, dashboardConfig, dashb
           ) : (
             <Save className="w-4 h-4" />
           )}
-          {saved ? 'Mentve' : 'Mentés'}
+          {saved ? t('Mentve') : t('Mentés')}
         </button>
       </div>
 

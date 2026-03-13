@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { updateEmailSchedule } from '../actions';
+import { useT } from '@/lib/i18n';
 
 function CustomSelect({
   value,
@@ -81,6 +82,7 @@ export function EmailSchedule({
   initialDay: number;
   initialHour: number;
 }) {
+  const t = useT();
   const [day, setDay] = useState(initialDay);
   const [hour, setHour] = useState(initialHour);
   const [isPending, startTransition] = useTransition();
@@ -109,22 +111,22 @@ export function EmailSchedule({
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-5">
-      <h3 className="text-base font-semibold mb-1">Automatikus email ütemezés</h3>
+      <h3 className="text-base font-semibold mb-1">{t('Automatikus email ütemezés')}</h3>
       <p className="text-sm text-[var(--text-secondary)] mb-4">
-        Válaszd ki, hogy a havi riport emailt a hónap melyik napján és hány órakor kapják az ügyfelek.
+        {t('Válaszd ki, hogy a havi riport emailt a hónap melyik napján és hány órakor kapják az ügyfelek.')}
       </p>
 
       <div className="flex flex-wrap items-end gap-4">
         <div>
           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-            Hónap napja
+            {t('Hónap napja')}
           </label>
           <CustomSelect value={day} options={dayOptions} onChange={setDay} />
         </div>
 
         <div>
           <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-            Óra (UTC)
+            {t('Óra (UTC)')}
           </label>
           <CustomSelect value={hour} options={hourOptions} onChange={setHour} />
         </div>
@@ -134,7 +136,7 @@ export function EmailSchedule({
           disabled={isPending || !hasChanges}
           className="rounded-lg px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 hover:from-emerald-400 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
-          {isPending ? 'Mentés...' : saved ? 'Mentve!' : 'Mentés'}
+          {isPending ? t('Mentés...') : saved ? t('Mentve!') : t('Mentés')}
         </button>
       </div>
     </div>

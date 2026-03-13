@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Zap } from 'lucide-react';
 import { BaseModal } from './BaseModal';
+import { useT } from '@/lib/i18n';
 
 interface KPICardProps {
     label: string;
@@ -17,6 +18,7 @@ interface KPICardProps {
 }
 
 export function KPICard({ label, value, change, icon, description }: KPICardProps) {
+    const t = useT();
     const [open, setOpen] = useState(false);
 
     const safeValue = value ?? 0;
@@ -49,7 +51,7 @@ export function KPICard({ label, value, change, icon, description }: KPICardProp
                     {formattedValue}
                 </div>
                 <div className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    {label}
+                    {t(label)}
                 </div>
                 {description && (
                     <div className="absolute bottom-2 right-3 text-[10px] text-[var(--text-secondary)] opacity-40 group-hover:opacity-70 transition-opacity">
@@ -80,20 +82,20 @@ export function KPICard({ label, value, change, icon, description }: KPICardProp
                         </div>
 
                         <h3 className="text-xl font-bold text-[var(--text-primary)] mb-4">
-                            {description.title}
+                            {t(description.title)}
                         </h3>
 
                         <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-5">
-                            {description.text}
+                            {t(description.text)}
                         </p>
 
                         <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4">
                             <div className="flex items-start gap-3">
                                 <Zap className="w-5 h-5 text-[var(--text-secondary)] mt-0.5 shrink-0" />
                                 <div>
-                                    <div className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1">Tipp</div>
+                                    <div className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1">{t('Tipp')}</div>
                                     <p className="text-[var(--text-secondary)] text-xs leading-relaxed">
-                                        {description.tip}
+                                        {t(description.tip)}
                                     </p>
                                 </div>
                             </div>

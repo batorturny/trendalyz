@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { useT } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { LayoutDashboard, Building2, BarChart3, Settings, CreditCard, Menu, X } from 'lucide-react';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 import { useState, useEffect } from 'react';
@@ -27,13 +29,14 @@ const platformItems = [
 
 function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <>
       {/* Logo */}
       <div className="p-6 border-b border-[var(--border)]">
         <TrendalyzLogo size="sm" />
-        <p className="text-[10px] text-[var(--text-secondary)] font-semibold mt-1.5 uppercase tracking-wider">Admin Panel</p>
+        <p className="text-[10px] text-[var(--text-secondary)] font-semibold mt-1.5 uppercase tracking-wider">{t('Admin Panel')}</p>
       </div>
 
       {/* Navigation */}
@@ -44,11 +47,11 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
               <span
                 key={item.href}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed group relative"
-                title="Hamarosan érkezik"
+                title={t('Hamarosan érkezik')}
               >
                 <item.icon className="w-4 h-4" strokeWidth={2} />
-                {item.label}
-                <span className="ml-auto text-[9px] uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--text-primary)] text-[var(--surface)] px-1.5 py-0.5 rounded">HAMAROSAN</span>
+                {t(item.label)}
+                <span className="ml-auto text-[9px] uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--text-primary)] text-[var(--surface)] px-1.5 py-0.5 rounded">{t('HAMAROSAN')}</span>
               </span>
             );
           }
@@ -68,14 +71,14 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
                 }`}
             >
               <item.icon className="w-4 h-4" strokeWidth={2} />
-              {item.label}
+              {t(item.label)}
             </Link>
           );
         })}
 
         {/* Platform Reports */}
         <div className="pt-4 mt-4 border-t border-[var(--border)]">
-          <p className="px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Riportok</p>
+          <p className="px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">{t('Riportok')}</p>
           {platformItems.map((item) => {
             const isActive = pathname === item.href;
 
@@ -93,7 +96,7 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
                   <span className="w-0.5 h-5 rounded-full absolute left-4" style={{ backgroundColor: item.color }} />
                 )}
                 <PlatformIcon platform={item.platform} className="w-4 h-4" />
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
@@ -106,11 +109,14 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
           <div className="text-xs text-[var(--text-secondary)] truncate">{userName}</div>
           <ThemeToggle />
         </div>
+        <div className="flex items-center justify-between">
+          <LanguageSwitcher />
+        </div>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[var(--error)] hover:bg-red-500/10 rounded-xl transition-all"
         >
-          Kijelentkezés
+          {t('Kijelentkezés')}
         </button>
       </div>
     </>

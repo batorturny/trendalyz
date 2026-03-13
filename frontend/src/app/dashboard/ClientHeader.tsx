@@ -9,6 +9,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 import { Settings, Menu, X } from 'lucide-react';
+import { useT } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const platformTabs = [
   { href: '/dashboard/tiktok', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
@@ -27,6 +29,7 @@ interface Props {
 export function ClientHeader({ companyName, userEmail, connectedProviders }: Props) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const t = useT();
 
   // Close drawer on route change
   useEffect(() => {
@@ -55,7 +58,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                     <span
                       key={tab.href}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
-                      title="Nem konfigurált"
+                      title={t('Nem konfigurált')}
                     >
                       <PlatformIcon platform={tab.platform} className="w-4 h-4 grayscale" />
                       {tab.label}
@@ -83,14 +86,15 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <span className="text-xs text-[var(--text-secondary)]">{userEmail}</span>
-              <Link href="/dashboard/settings" className="p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] transition" title="Beállítások">
+              <Link href="/dashboard/settings" className="p-1.5 rounded-lg hover:bg-[var(--accent-subtle)] transition" title={t('Beállítások')}>
                 <Settings className="w-4 h-4 text-[var(--text-secondary)]" />
               </Link>
+              <LanguageSwitcher />
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="text-xs text-[var(--error)] hover:opacity-80 font-semibold"
               >
-                Kijelentkezés
+                {t('Kijelentkezés')}
               </button>
             </div>
           </div>
@@ -99,7 +103,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
           <button
             className="mobile-only p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] items-center justify-center"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? 'Menü bezárása' : 'Menü megnyitása'}
+            aria-label={mobileMenuOpen ? t('Menü bezárása') : t('Menü megnyitása')}
           >
             {mobileMenuOpen ? (
               <X className="w-5 h-5 text-[var(--text-primary)]" />
@@ -126,7 +130,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 rounded-lg hover:bg-[var(--accent-subtle)] transition min-h-[44px] min-w-[44px] flex items-center justify-center"
-                aria-label="Menü bezárása"
+                aria-label={t('Menü bezárása')}
               >
                 <X className="w-5 h-5 text-[var(--text-primary)]" />
               </button>
@@ -134,7 +138,7 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
 
             {/* Platform tabs */}
             <nav className="p-4 space-y-1">
-              <p className="px-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Platformok</p>
+              <p className="px-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">{t('Platformok')}</p>
               {platformTabs.map(tab => {
                 const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
                 const isEnabled = tab.providers.some(p => connectedProviders.includes(p));
@@ -177,17 +181,21 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                 className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)] transition"
               >
                 <Settings className="w-4 h-4" />
-                Beállítások
+                {t('Beállítások')}
               </Link>
               <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-xs text-[var(--text-secondary)]">Téma</span>
+                <span className="text-xs text-[var(--text-secondary)]">{t('Téma')}</span>
                 <ThemeToggle />
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-xs text-[var(--text-secondary)]">{t('Nyelv')}</span>
+                <LanguageSwitcher />
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-[var(--error)] hover:bg-red-500/10 transition"
               >
-                Kijelentkezés
+                {t('Kijelentkezés')}
               </button>
             </div>
           </div>
