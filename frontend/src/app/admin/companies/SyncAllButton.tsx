@@ -5,11 +5,13 @@ import { RefreshCw } from 'lucide-react';
 import { SyncWizard } from './SyncWizard';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useT } from '@/lib/i18n';
 
 export function SyncAllButton({ hasWindsorKey }: { hasWindsorKey: boolean }) {
   const [open, setOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const router = useRouter();
+  const t = useT();
 
   if (!hasWindsorKey) {
     return (
@@ -19,23 +21,23 @@ export function SyncAllButton({ hasWindsorKey }: { hasWindsorKey: boolean }) {
           className="px-4 py-2 bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-not-allowed opacity-60"
         >
           <RefreshCw className="w-4 h-4" />
-          Szinkronizálás
+          {t('Szinkronizálás')}
         </button>
         {showTooltip && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowTooltip(false)} />
             <div className="absolute right-0 top-full mt-2 z-50 w-72 p-4 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] shadow-lg">
               <p className="text-sm text-[var(--text-primary)] font-medium mb-2">
-                Szinkronizáláshoz saját Windsor API kulcs szükséges.
+                {t('Szinkronizáláshoz saját Windsor API kulcs szükséges.')}
               </p>
               <p className="text-xs text-[var(--text-secondary)] mb-3">
-                A Beállítások oldalon tudod megadni az API kulcsot.
+                {t('A Beállítások oldalon tudod megadni az API kulcsot.')}
               </p>
               <Link
                 href="/admin/settings"
                 className="inline-block px-3 py-1.5 text-xs font-bold rounded-lg bg-[var(--accent-subtle)] text-[var(--accent)] hover:brightness-110 transition-all"
               >
-                Beállítások
+                {t('Beállítások')}
               </Link>
             </div>
           </>

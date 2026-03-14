@@ -68,6 +68,17 @@ const translations = {
   'Szerkesztés': 'Edit',
   'Vissza': 'Back',
   '← Vissza': '← Back',
+  'Cégnév': 'Company Name',
+  'Státusz': 'Status',
+  'Műveletek': 'Actions',
+  'cég': 'companies',
+  'Csomag váltás': 'Change Plan',
+  'Nincs platform': 'No platform',
+  'felhasználó': 'users',
+  'Cég törlése': 'Delete Company',
+  'Törlés...': 'Deleting...',
+  'Szinkronizáláshoz saját Windsor API kulcs szükséges.': 'A Windsor API key is required for synchronization.',
+  'A Beállítások oldalon tudod megadni az API kulcsot.': 'You can enter your API key on the Settings page.',
 
   // Integrations
   'Integrációk': 'Integrations',
