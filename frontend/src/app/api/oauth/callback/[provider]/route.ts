@@ -11,6 +11,11 @@ const PROVIDER_MAP: Record<string, string> = {
   instagram: 'INSTAGRAM_ORGANIC',
 };
 
+function appUrl(path: string): string {
+  const origin = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  return `${origin}${path}`;
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ provider: string }> }
@@ -27,29 +32,26 @@ export async function GET(
 
   // Platform returned an error (user denied consent, etc.)
   if (error) {
-    const msg = errorDescription || error || 'OAuth elutasítva';
+    const msg = errorDescription || error || 'OAuth denied';
     return NextResponse.redirect(
-      new URL(`/admin/companies?oauth=error&message=${encodeURIComponent(msg)}`, req.url)
+      appUrl(`/admin/companies?oauth=error&message=${encodeURIComponent(msg)}`)
     );
   }
 
   if (!code || !state || !provider) {
     return NextResponse.redirect(
-      new URL(`/admin/companies?oauth=error&message=${encodeURIComponent('Hiányzó OAuth paraméterek')}`, req.url)
+      appUrl(`/admin/companies?oauth=error&message=${encodeURIComponent('Missing OAuth parameters')}`)
     );
   }
 
   // Build the callback URI that was used during authorization
-  const appUrl = new URL(req.url);
-  const redirectUri = `${appUrl.origin}/api/oauth/callback/${providerSlug}`;
+  const redirectUri = appUrl(`/api/oauth/callback/${providerSlug}`);
 
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (INTERNAL_API_KEY) {
       headers['Authorization'] = `Bearer ${INTERNAL_API_KEY}`;
     }
-    // Note: no X-User-* headers because this is a public callback (no session cookie from platform redirect)
-    // The state JWT carries the admin identity implicitly (signed with NEXTAUTH_SECRET)
 
     const response = await fetch(`${EXPRESS_API_URL}/api/oauth/complete`, {
       method: 'POST',
@@ -60,29 +62,27 @@ export async function GET(
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      const msg = data.error || 'OAuth befejezés sikertelen';
+      const msg = data.error || 'OAuth completion failed';
       const companyId = data.companyId || '';
       const dest = companyId
         ? `/admin/companies/${companyId}?oauth=error&message=${encodeURIComponent(msg)}`
         : `/admin/companies?oauth=error&message=${encodeURIComponent(msg)}`;
-      return NextResponse.redirect(new URL(dest, req.url));
+      return NextResponse.redirect(appUrl(dest));
     }
 
-    // If Windsor datasource is not configured, redirect to Windsor onboarding
-    // The user is already logged into Google/Meta, so Windsor OAuth will be quick
     if (data.windsorOnboardUrl) {
       return NextResponse.redirect(
-        new URL(`/admin/companies/${data.companyId}?oauth=success&provider=${encodeURIComponent(provider)}&windsorSetup=${encodeURIComponent(data.windsorOnboardUrl)}`, req.url)
+        appUrl(`/admin/companies/${data.companyId}?oauth=success&provider=${encodeURIComponent(provider)}&windsorSetup=${encodeURIComponent(data.windsorOnboardUrl)}`)
       );
     }
 
     return NextResponse.redirect(
-      new URL(`/admin/companies/${data.companyId}?oauth=success&provider=${encodeURIComponent(provider)}`, req.url)
+      appUrl(`/admin/companies/${data.companyId}?oauth=success&provider=${encodeURIComponent(provider)}`)
     );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'OAuth callback hiba';
+    const msg = err instanceof Error ? err.message : 'OAuth callback error';
     return NextResponse.redirect(
-      new URL(`/admin/companies?oauth=error&message=${encodeURIComponent(msg)}`, req.url)
+      appUrl(`/admin/companies?oauth=error&message=${encodeURIComponent(msg)}`)
     );
   }
 }

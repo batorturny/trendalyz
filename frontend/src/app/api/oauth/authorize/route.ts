@@ -4,11 +4,16 @@ import { auth } from '@/lib/auth';
 const EXPRESS_API_URL = process.env.EXPRESS_API_URL || 'http://localhost:4000';
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 
+function appUrl(path: string): string {
+  const origin = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  return `${origin}${path}`;
+}
+
 export async function GET(req: Request) {
   const session = await auth();
 
   if (!session?.user || session.user.role !== 'ADMIN') {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(appUrl('/login'));
   }
 
   const { searchParams } = new URL(req.url);
@@ -17,13 +22,12 @@ export async function GET(req: Request) {
 
   if (!provider || !companyId) {
     return NextResponse.redirect(
-      new URL(`/admin/companies?oauth=error&message=${encodeURIComponent('Hiányzó paraméterek')}`, req.url)
+      appUrl(`/admin/companies?oauth=error&message=${encodeURIComponent('Missing parameters')}`)
     );
   }
 
   // Build the callback redirect URI for the platform
-  const appUrl = new URL(req.url);
-  const callbackUri = `${appUrl.origin}/api/oauth/callback/${provider.toLowerCase().replace('_organic', '')}`;
+  const callbackUri = appUrl(`/api/oauth/callback/${provider.toLowerCase().replace('_organic', '')}`);
 
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -39,17 +43,17 @@ export async function GET(req: Request) {
     const data = await response.json();
 
     if (!response.ok || !data.authorizationUrl) {
-      const msg = data.error || 'Nem sikerült az OAuth URL létrehozása';
+      const msg = data.error || 'Failed to create OAuth URL';
       return NextResponse.redirect(
-        new URL(`/admin/companies/${companyId}?oauth=error&message=${encodeURIComponent(msg)}`, req.url)
+        appUrl(`/admin/companies/${companyId}?oauth=error&message=${encodeURIComponent(msg)}`)
       );
     }
 
     return NextResponse.redirect(data.authorizationUrl);
   } catch (error) {
-    const msg = error instanceof Error ? error.message : 'OAuth hiba';
+    const msg = error instanceof Error ? error.message : 'OAuth error';
     return NextResponse.redirect(
-      new URL(`/admin/companies/${companyId}?oauth=error&message=${encodeURIComponent(msg)}`, req.url)
+      appUrl(`/admin/companies/${companyId}?oauth=error&message=${encodeURIComponent(msg)}`)
     );
   }
 }
