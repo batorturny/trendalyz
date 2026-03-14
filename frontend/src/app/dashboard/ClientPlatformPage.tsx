@@ -67,9 +67,8 @@ export function ClientPlatformPage({
 
   const companyId = session?.user?.companyId;
 
-  // If dashboardConfig is null/undefined, show "not configured" state
-  const isConfigured = dashboardConfig != null &&
-    (dashboardConfig.kpis.length > 0 || dashboardConfig.charts.length > 0);
+  // Always show dashboard — if no config, show everything
+  const isConfigured = true;
 
   // Compute which chart keys to fetch from API based on config
   const configuredChartKeys = useMemo(() => {

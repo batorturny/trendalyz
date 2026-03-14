@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Video } from '@/lib/api';
 
 // Maps column labels (Hungarian + English) to data object property names
@@ -56,7 +57,7 @@ interface VideoTableProps {
     color?: string;
 }
 
-export function VideoTable({ videos, chartVideos, chartLabels, title, color }: VideoTableProps) {
+export const VideoTable = memo(function VideoTable({ videos, chartVideos, chartLabels, title, color }: VideoTableProps) {
     // Chart table mode - video data from chart API
     if (chartVideos !== undefined) {
         const filtered = chartVideos.filter(v =>
@@ -204,4 +205,4 @@ export function VideoTable({ videos, chartVideos, chartLabels, title, color }: V
             </table>
         </div>
     );
-}
+});

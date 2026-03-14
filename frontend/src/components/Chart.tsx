@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, memo, useMemo } from 'react';
 import { useTheme } from './ThemeProvider';
 import {
   Chart as ChartJS,
@@ -38,7 +38,7 @@ interface ChartProps {
   beginAtZero?: boolean;
 }
 
-export function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title, beginAtZero: beginAtZeroProp }: ChartProps) {
+export const Chart = memo(function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title, beginAtZero: beginAtZeroProp }: ChartProps) {
   const { theme } = useTheme();
   const chartRef = useRef<ChartJS<'bar' | 'line'>>(null);
 
@@ -61,7 +61,7 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
   const trimmedLabels = labels.slice(0, 31);
   const trimmedData = data.slice(0, 31);
 
-  const chartData = {
+  const chartData = useMemo(() => ({
     labels: trimmedLabels,
     datasets: [
       {
@@ -91,9 +91,9 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
           }),
       },
     ],
-  };
+  }), [trimmedLabels, trimmedData, label, type, color, theme]);
 
-  const options: ChartOptions<'bar' | 'line'> = {
+  const options: ChartOptions<'bar' | 'line'> = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
@@ -161,7 +161,7 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
         })() : {}),
       },
     },
-  };
+  }), [textColor, gridColor, beginAtZero, trimmedData, type]);
 
   return (
     <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-card)]">
@@ -175,4 +175,4 @@ export function Chart({ type, labels, data, label, color = '#bc6aff', height = 3
       </div>
     </div>
   );
-}
+});

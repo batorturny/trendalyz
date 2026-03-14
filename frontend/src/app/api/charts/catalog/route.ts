@@ -16,5 +16,7 @@ export async function GET() {
       platform: c.platform || 'TIKTOK_ORGANIC'
     })),
     byCategory
+  }, {
+    headers: { 'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400' },
   });
 }
