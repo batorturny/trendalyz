@@ -24,7 +24,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
   const [accountName, setAccountName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showManual, setShowManual] = useState(false);
+
 
   // Windsor OAuth popup state
   const [oauthLoading, setOauthLoading] = useState(false);
@@ -40,7 +40,6 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
     setAccountName('');
     setError(null);
     setSaving(false);
-    setShowManual(false);
     setOauthLoading(false);
     setOauthStatus('idle');
     setPickerEmpty(false);
@@ -60,7 +59,6 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
   const handleAccountPicked = (pickedId: string, pickedName: string) => {
     setAccountId(pickedId);
     setAccountName(pickedName);
-    setShowManual(false);
   };
 
   // Direct OAuth redirect (Meta: Facebook, Instagram)
@@ -304,12 +302,12 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
                 provider={selectedProvider!}
                 existingAccountIds={existingAccountIds}
                 onSelect={handleAccountPicked}
-                onEmpty={() => { setPickerEmpty(true); setShowManual(true); }}
+                onEmpty={() => { setPickerEmpty(true); }}
               />
             )}
 
             {/* Selected account display */}
-            {accountId && !showManual && (
+            {accountId && (
               <div className="p-3 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
                 <div className="text-xs text-[var(--text-secondary)] mb-1">{t('Kiválasztott fiók')}</div>
                 <div className="text-sm font-medium text-[var(--text-primary)]">{accountName || accountId}</div>
@@ -318,7 +316,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
             )}
 
             {/* Display name override */}
-            {accountId && !showManual && (
+            {accountId && (
               <div>
                 <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
                   {t('Megjelenítési név (felülírás)')}
@@ -332,66 +330,6 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
               </div>
             )}
 
-            {/* Divider + Manual toggle — only when picker has results */}
-            {!pickerEmpty && (
-              <>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-[var(--border)]" />
-                  <span className="text-xs text-[var(--text-secondary)]">{t('vagy')}</span>
-                  <div className="flex-1 h-px bg-[var(--border)]" />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowManual(!showManual);
-                    if (!showManual) {
-                      setAccountId('');
-                      setAccountName('');
-                    }
-                  }}
-                  className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  <ChevronRight className={`w-4 h-4 transition-transform ${showManual ? 'rotate-90' : ''}`} />
-                  {t('Manuális megadás')}
-                </button>
-              </>
-            )}
-
-            {/* Manual entry fields */}
-            {showManual && (
-              <div className="space-y-4 pl-4 border-l-2 border-[var(--border)]">
-                <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-3">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    {t('A')} <a href="https://onboard.windsor.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">Windsor AI {t('dashboardon')}</a> {t('connecteld a(z)')} {selectedMeta.label} {t('fiókot, majd add meg itt az account ID-t.')}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
-                    Account ID *
-                  </label>
-                  <input
-                    value={accountId}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    placeholder={t('pl. 123456789')}
-                    className="input-field font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
-                    {t('Megjelenítési név (opcionális)')}
-                  </label>
-                  <input
-                    value={accountName}
-                    onChange={(e) => setAccountName(e.target.value)}
-                    placeholder={`${t('pl. Cég')} ${selectedMeta.label} ${t('fiók')}`}
-                    className="input-field"
-                  />
-                </div>
-              </div>
-            )}
 
             {error && (
               <div className="bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-3 text-red-700 dark:text-red-300 text-sm">
@@ -401,7 +339,7 @@ export function AddConnectionWizard({ companyId, existingProviders, existingAcco
 
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => { setStep(1); setError(null); setShowManual(false); setAccountId(''); setAccountName(''); setOauthStatus('idle'); setOauthLoading(false); }}
+                onClick={() => { setStep(1); setError(null); setAccountId(''); setAccountName(''); setOauthStatus('idle'); setOauthLoading(false); }}
                 className="px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 {t('Vissza')}
