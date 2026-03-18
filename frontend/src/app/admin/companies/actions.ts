@@ -381,7 +381,7 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
         const idField = p.accountIdField || 'account_id';
         const nameField = p.accountNameField || 'account_name';
         const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(30000) });
+        const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
 
         if (!res.ok) {
           return { provider: p.key, label: p.label, accounts: [], error: `HTTP ${res.status}` };
@@ -389,6 +389,8 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
 
         const rawData = await res.json();
         const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+
+        console.log(`[Sync] ${p.key} (${p.windsorEndpoint}): ${rows.length} rows, idField=${idField}, nameField=${nameField}`);
 
         const accountMap = new Map<string, string>();
         for (const row of rows) {
@@ -398,10 +400,16 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
           }
         }
 
+        // Log first row for debugging if no accounts found
+        if (accountMap.size === 0 && rows.length > 0) {
+          console.log(`[Sync] ${p.key}: no accounts found in ${rows.length} rows. First row keys:`, Object.keys(rows[0]).join(', '));
+        }
+
         const accounts: DiscoveredAccount[] = Array.from(accountMap.entries()).map(
           ([accountId, accountName]) => ({ accountId, accountName, provider: p.key })
         );
 
+        console.log(`[Sync] ${p.key}: discovered ${accounts.length} accounts`);
         return { provider: p.key, label: p.label, accounts, error: null };
       } catch (err) {
         return {
