@@ -373,6 +373,33 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const dateTo = now.toISOString().split('T')[0];
   const dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+  // Helper: discover accounts from Windsor datasources API as fallback
+  async function discoverFromDatasources(
+    windsorEndpoint: string,
+    providerKey: ConnectionProvider,
+    apiKey: string,
+  ): Promise<DiscoveredAccount[]> {
+    try {
+      const dsUrl = `${WINDSOR_BASE}/${windsorEndpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=account_id,account_name`;
+      const dsRes = await fetch(dsUrl, { signal: AbortSignal.timeout(60000) });
+      if (!dsRes.ok) return [];
+      const dsData = await dsRes.json();
+      const dsRows = Array.isArray(dsData) ? (dsData[0]?.data || []) : (dsData?.data || []);
+      const dsMap = new Map<string, string>();
+      for (const row of dsRows) {
+        const id = row.account_id || row.campaign_advertiser_id;
+        if (id && !dsMap.has(String(id))) {
+          dsMap.set(String(id), row.account_name || String(id));
+        }
+      }
+      return Array.from(dsMap.entries()).map(
+        ([accountId, accountName]) => ({ accountId, accountName, provider: providerKey })
+      );
+    } catch {
+      return [];
+    }
+  }
+
   // Fetch all platforms in parallel
   const platformResults = await Promise.all(
     PROVIDERS.map(async (p): Promise<PlatformDiscoveryResult> => {
@@ -405,9 +432,19 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
           console.log(`[Sync] ${p.key}: no accounts found in ${rows.length} rows. First row keys:`, Object.keys(rows[0]).join(', '));
         }
 
-        const accounts: DiscoveredAccount[] = Array.from(accountMap.entries()).map(
+        let accounts: DiscoveredAccount[] = Array.from(accountMap.entries()).map(
           ([accountId, accountName]) => ({ accountId, accountName, provider: p.key })
         );
+
+        // Fallback: if no accounts found with metric fields, retry with minimal fields
+        // (TikTok Ads may return 0 rows if no ad spend in date range)
+        if (accounts.length === 0) {
+          console.log(`[Sync] ${p.key}: no accounts from data query, trying minimal fields fallback...`);
+          accounts = await discoverFromDatasources(p.windsorEndpoint, p.key, windsorApiKey);
+          if (accounts.length > 0) {
+            console.log(`[Sync] ${p.key}: fallback found ${accounts.length} accounts`);
+          }
+        }
 
         console.log(`[Sync] ${p.key}: discovered ${accounts.length} accounts`);
         return { provider: p.key, label: p.label, accounts, error: null };
