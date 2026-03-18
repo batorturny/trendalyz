@@ -666,37 +666,6 @@ export async function testConnection(connectionId: string): Promise<{ success: b
     }
   }
 
-  // Test TikTok connections via TikTok API directly if token is stored
-  if (connection.provider === 'TIKTOK_ORGANIC' && meta?.encryptedAccessToken) {
-    try {
-      const token = decrypt(meta.encryptedAccessToken as string);
-
-      const res = await fetch(
-        'https://open.tiktokapis.com/v2/user/info/?fields=display_name,follower_count',
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: AbortSignal.timeout(15000),
-        }
-      );
-      const data = await res.json() as any;
-      const userInfo = data?.data?.user;
-
-      if (userInfo?.display_name || userInfo?.follower_count !== undefined) {
-        await prisma.integrationConnection.update({
-          where: { id: connectionId },
-          data: { status: 'CONNECTED', errorMessage: null, lastSyncAt: new Date() },
-        });
-        revalidatePath(`/admin/companies/${connection.companyId}`);
-        return { success: true, message: `Sikeres kapcsolat — ${userInfo.display_name || 'TikTok fiók'}` };
-      }
-
-      // Token might be invalid, fall through to Windsor test
-    } catch (err) {
-      // TikTok direct test failed, fall through to Windsor test
-      console.error('TikTok direct API test failed:', err instanceof Error ? err.message : err);
-    }
-  }
-
   // Windsor test for other providers
   let windsorApiKey: string;
   try {

@@ -11,7 +11,7 @@ const OAUTH_CONFIGS = {
     tokenUrl: 'https://open.tiktokapis.com/v2/oauth/token/',
     clientId: () => process.env.TIKTOK_CLIENT_KEY,
     clientSecret: () => process.env.TIKTOK_CLIENT_SECRET,
-    scopes: ['user.info.basic', 'user.info.stats', 'video.list'],
+    scopes: ['user.info.basic', 'video.list'],
     windsorConnectorType: 'tiktok_organic',
   },
   YOUTUBE: {
