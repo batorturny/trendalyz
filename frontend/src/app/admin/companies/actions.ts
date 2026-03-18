@@ -366,100 +366,68 @@ export interface SyncDiscoveryResult {
 
 export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const session = await requireAdmin();
-  // Use personal API key, fall back to central key if none set
-  const windsorApiKey = await getAdminWindsorApiKey(session.user.id);
-  console.log(`[Sync] Using Windsor API key: ${windsorApiKey.slice(0, 6)}...${windsorApiKey.slice(-4)} for user ${session.user.id}`);
+  // Collect all available API keys (personal + central) for maximum coverage.
+  // Different Windsor connectors may be linked to different API keys.
+  const apiKeys: string[] = [];
+  try {
+    const personalKey = await getAdminPersonalWindsorApiKey(session.user.id);
+    apiKeys.push(personalKey);
+  } catch { /* no personal key */ }
+  if (process.env.WINDSOR_API_KEY && !apiKeys.includes(process.env.WINDSOR_API_KEY)) {
+    apiKeys.push(process.env.WINDSOR_API_KEY);
+  }
+  if (apiKeys.length === 0) {
+    throw new Error('Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon vagy állítsd be a WINDSOR_API_KEY env változót.');
+  }
+  console.log(`[Sync] Using ${apiKeys.length} Windsor API key(s): ${apiKeys.map(k => k.slice(0, 6) + '...' + k.slice(-4)).join(', ')}`);
 
   const now = new Date();
   const dateTo = now.toISOString().split('T')[0];
   const dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  // Helper: discover accounts from Windsor datasources API as fallback
-  async function discoverFromDatasources(
-    windsorEndpoint: string,
-    providerKey: ConnectionProvider,
-    apiKey: string,
-  ): Promise<DiscoveredAccount[]> {
-    try {
-      const dsUrl = `${WINDSOR_BASE}/${windsorEndpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=account_id,account_name,impressions`;
-      const dsRes = await fetch(dsUrl, { signal: AbortSignal.timeout(60000) });
-      if (!dsRes.ok) return [];
-      const dsData = await dsRes.json();
-      const dsRows = Array.isArray(dsData) ? (dsData[0]?.data || []) : (dsData?.data || []);
-      const dsMap = new Map<string, string>();
-      for (const row of dsRows) {
-        const id = row.account_id || row.campaign_advertiser_id;
-        if (id && !dsMap.has(String(id))) {
-          dsMap.set(String(id), row.account_name || String(id));
-        }
-      }
-      return Array.from(dsMap.entries()).map(
-        ([accountId, accountName]) => ({ accountId, accountName, provider: providerKey })
-      );
-    } catch {
-      return [];
-    }
-  }
-
-  // Fetch all platforms in parallel
+  // Fetch all platforms in parallel — try all API keys per platform
   const platformResults = await Promise.all(
     PROVIDERS.map(async (p): Promise<PlatformDiscoveryResult> => {
-      try {
-        const fields = p.discoverFields || 'account_id,account_name,date';
-        const idField = p.accountIdField || 'account_id';
-        const nameField = p.accountNameField || 'account_name';
-        const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
+      const fields = p.discoverFields || 'account_id,account_name,date';
+      const idField = p.accountIdField || 'account_id';
+      const nameField = p.accountNameField || 'account_name';
+      const accountMap = new Map<string, string>();
 
-        if (!res.ok) {
-          return { provider: p.key, label: p.label, accounts: [], error: `HTTP ${res.status}` };
-        }
+      // Try each API key until we find accounts
+      for (const key of apiKeys) {
+        try {
+          const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${key}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
+          const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
+          if (!res.ok) continue;
 
-        const rawData = await res.json();
-        const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+          const rawData = await res.json();
+          const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
 
-        console.log(`[Sync] ${p.key} (${p.windsorEndpoint}): ${rows.length} rows, idField=${idField}, nameField=${nameField}`);
-
-        const accountMap = new Map<string, string>();
-        for (const row of rows) {
-          const accId = row[idField];
-          if (accId && !accountMap.has(accId)) {
-            accountMap.set(accId, row[nameField] || accId);
+          for (const row of rows) {
+            const accId = row[idField];
+            if (accId && !accountMap.has(accId)) {
+              accountMap.set(accId, row[nameField] || accId);
+            }
           }
-        }
 
-        // Log first row for debugging if no accounts found
-        if (accountMap.size === 0 && rows.length > 0) {
-          console.log(`[Sync] ${p.key}: no accounts found in ${rows.length} rows. First row keys:`, Object.keys(rows[0]).join(', '));
-        }
-
-        let accounts: DiscoveredAccount[] = Array.from(accountMap.entries()).map(
-          ([accountId, accountName]) => ({ accountId, accountName, provider: p.key })
-        );
-
-        // Fallback: if no accounts found with metric fields, retry with minimal fields
-        // (TikTok Ads may return 0 rows if no ad spend in date range)
-        if (accounts.length === 0) {
-          console.log(`[Sync] ${p.key}: no accounts from data query, trying minimal fields fallback...`);
-          console.log(`[Sync] ${p.key}: query was: ${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey.slice(0,6)}...&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`);
-          accounts = await discoverFromDatasources(p.windsorEndpoint, p.key, windsorApiKey);
-          if (accounts.length > 0) {
-            console.log(`[Sync] ${p.key}: fallback found ${accounts.length} accounts`);
-          } else {
-            console.log(`[Sync] ${p.key}: fallback also returned 0 accounts — Windsor connector may not be linked to this API key`);
+          if (accountMap.size > 0) {
+            console.log(`[Sync] ${p.key}: found ${accountMap.size} accounts with key ${key.slice(0, 6)}...`);
+            break; // found accounts, no need to try more keys
           }
+        } catch {
+          // try next key
         }
-
-        console.log(`[Sync] ${p.key}: discovered ${accounts.length} accounts`);
-        return { provider: p.key, label: p.label, accounts, error: null };
-      } catch (err) {
-        return {
-          provider: p.key,
-          label: p.label,
-          accounts: [],
-          error: err instanceof Error ? err.message : 'Ismeretlen hiba',
-        };
       }
+
+      const accounts: DiscoveredAccount[] = Array.from(accountMap.entries()).map(
+        ([accountId, accountName]) => ({ accountId, accountName, provider: p.key })
+      );
+
+      if (accounts.length === 0) {
+        console.log(`[Sync] ${p.key}: no accounts found with any API key`);
+      }
+
+      return { provider: p.key, label: p.label, accounts, error: null };
     })
   );
 
