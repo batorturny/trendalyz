@@ -368,6 +368,7 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const session = await requireAdmin();
   // Sync ONLY works with personal API key — never use central fallback
   const windsorApiKey = await getAdminPersonalWindsorApiKey(session.user.id);
+  console.log(`[Sync] Using Windsor API key: ${windsorApiKey.slice(0, 6)}...${windsorApiKey.slice(-4)} for user ${session.user.id}`);
 
   const now = new Date();
   const dateTo = now.toISOString().split('T')[0];
@@ -440,9 +441,12 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
         // (TikTok Ads may return 0 rows if no ad spend in date range)
         if (accounts.length === 0) {
           console.log(`[Sync] ${p.key}: no accounts from data query, trying minimal fields fallback...`);
+          console.log(`[Sync] ${p.key}: query was: ${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${windsorApiKey.slice(0,6)}...&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`);
           accounts = await discoverFromDatasources(p.windsorEndpoint, p.key, windsorApiKey);
           if (accounts.length > 0) {
             console.log(`[Sync] ${p.key}: fallback found ${accounts.length} accounts`);
+          } else {
+            console.log(`[Sync] ${p.key}: fallback also returned 0 accounts — Windsor connector may not be linked to this API key`);
           }
         }
 
