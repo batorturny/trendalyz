@@ -14,6 +14,7 @@ WORKDIR /app/frontend
 COPY --from=deps /app/frontend/node_modules ./node_modules
 COPY frontend/ ./
 COPY prisma/ /app/prisma/
+COPY package.json /app/package.json
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
