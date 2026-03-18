@@ -385,6 +385,8 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const dateTo = now.toISOString().split('T')[0];
   const dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+  console.log(`[Sync] PROVIDERS count: ${PROVIDERS.length}, keys: ${PROVIDERS.map(p => p.key).join(', ')}`);
+
   // Fetch all platforms in parallel — try all API keys per platform
   const platformResults = await Promise.all(
     PROVIDERS.map(async (p): Promise<PlatformDiscoveryResult> => {
@@ -393,15 +395,22 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
       const nameField = p.accountNameField || 'account_name';
       const accountMap = new Map<string, string>();
 
+      console.log(`[Sync] ${p.key}: fields=${fields}, idField=${idField}, endpoint=${p.windsorEndpoint}`);
+
       // Try each API key until we find accounts
       for (const key of apiKeys) {
         try {
           const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${key}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
+          console.log(`[Sync] ${p.key}: fetching ${p.windsorEndpoint} with key ${key.slice(0, 6)}...`);
           const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
-          if (!res.ok) continue;
+          if (!res.ok) {
+            console.log(`[Sync] ${p.key}: HTTP ${res.status}`);
+            continue;
+          }
 
           const rawData = await res.json();
           const rows = Array.isArray(rawData) ? (rawData[0]?.data || []) : (rawData?.data || []);
+          console.log(`[Sync] ${p.key}: got ${rows.length} rows`);
 
           for (const row of rows) {
             const accId = row[idField];
@@ -411,11 +420,13 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
           }
 
           if (accountMap.size > 0) {
-            console.log(`[Sync] ${p.key}: found ${accountMap.size} accounts with key ${key.slice(0, 6)}...`);
-            break; // found accounts, no need to try more keys
+            console.log(`[Sync] ${p.key}: found ${accountMap.size} accounts`);
+            break;
+          } else if (rows.length > 0) {
+            console.log(`[Sync] ${p.key}: ${rows.length} rows but 0 accounts. First row:`, JSON.stringify(rows[0]));
           }
-        } catch {
-          // try next key
+        } catch (err) {
+          console.log(`[Sync] ${p.key}: error with key ${key.slice(0, 6)}...: ${err instanceof Error ? err.message : err}`);
         }
       }
 
@@ -423,10 +434,7 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
         ([accountId, accountName]) => ({ accountId, accountName, provider: p.key })
       );
 
-      if (accounts.length === 0) {
-        console.log(`[Sync] ${p.key}: no accounts found with any API key`);
-      }
-
+      console.log(`[Sync] ${p.key}: RESULT = ${accounts.length} accounts`);
       return { provider: p.key, label: p.label, accounts, error: null };
     })
   );
