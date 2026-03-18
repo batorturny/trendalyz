@@ -366,8 +366,8 @@ export interface SyncDiscoveryResult {
 
 export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
   const session = await requireAdmin();
-  // Sync ONLY works with personal API key — never use central fallback
-  const windsorApiKey = await getAdminPersonalWindsorApiKey(session.user.id);
+  // Use personal API key, fall back to central key if none set
+  const windsorApiKey = await getAdminWindsorApiKey(session.user.id);
   console.log(`[Sync] Using Windsor API key: ${windsorApiKey.slice(0, 6)}...${windsorApiKey.slice(-4)} for user ${session.user.id}`);
 
   const now = new Date();
