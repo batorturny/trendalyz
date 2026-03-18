@@ -27,6 +27,7 @@ const { encrypt } = require('./utils/encryption');
 const crypto = require('crypto');
 const metaGraphService = require('./services/metaGraphService');
 const youtubeDataService = require('./services/youtubeDataService');
+const tiktokApiService = require('./services/tiktokApiService');
 const { getWindsorApiKey, getWindsorApiKeyForCompany } = require('./services/adminKeyService');
 const prisma = require('./lib/prisma');
 
@@ -444,6 +445,20 @@ if (ENABLE_MULTI_PLATFORM) {
                 } catch (err) {
                     result = { success: false, message: err.message };
                 }
+            } else if (connection.provider === 'TIKTOK_ORGANIC' && connection.metadata?.encryptedAccessToken) {
+                // Test via TikTok API directly
+                const { decrypt } = require('./utils/encryption');
+                const token = decrypt(connection.metadata.encryptedAccessToken);
+                try {
+                    const userInfo = await tiktokApiService.getUserInfo(token);
+                    if (userInfo?.display_name || userInfo?.follower_count !== undefined) {
+                        result = { success: true, message: `Kapcsolat OK: ${userInfo.display_name || 'TikTok fiók'}` };
+                    } else {
+                        result = { success: false, message: 'TikTok API nem adott vissza felhasználói adatot' };
+                    }
+                } catch (err) {
+                    result = { success: false, message: `TikTok API hiba: ${err.message}` };
+                }
             } else {
                 const apiKey = await resolveWindsorKey(req);
                 const { windsorMulti: wm } = createWindsorServices(apiKey);
@@ -657,6 +672,16 @@ if (ENABLE_MULTI_PLATFORM) {
                 } else if (provider === 'YOUTUBE') {
                     platformAccounts = await youtubeDataService.discoverChannels(tokens.access_token);
                     console.log(`Discovered ${platformAccounts.length} YouTube channels`);
+                } else if (provider === 'TIKTOK_ORGANIC') {
+                    // Discover TikTok account via direct API using the fresh token
+                    const userInfo = await tiktokApiService.getUserInfo(tokens.access_token);
+                    if (userInfo && (tokens.open_id || userInfo.display_name)) {
+                        platformAccounts = [{
+                            accountId: tokens.open_id || userInfo.union_id || `tiktok-${crypto.randomUUID().slice(0, 8)}`,
+                            accountName: userInfo.display_name || null,
+                        }];
+                        console.log(`Discovered TikTok account via API: ${userInfo.display_name || tokens.open_id}`);
+                    }
                 }
             } catch (platformErr) {
                 console.error(`Platform account discovery failed for ${provider} (non-fatal):`, platformErr.message);
@@ -820,8 +845,10 @@ if (ENABLE_CHART_API) {
             const chartApiKey = await resolveWindsorKey(req);
             const { windsorMulti } = createWindsorServices(chartApiKey);
             const { fetchMetaChartData } = require('./services/metaDataAdapter');
+            const { fetchTiktokChartData } = require('./services/tiktokDataAdapter');
 
             const META_DIRECT_PROVIDERS = new Set(['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC']);
+            const TIKTOK_DIRECT_PROVIDERS = new Set(['TIKTOK_ORGANIC']);
 
             const platformPromises = Array.from(chartsByPlatform.entries()).map(async ([platform, platformCharts]) => {
                 const connection = platformAccounts.get(platform);
@@ -849,12 +876,21 @@ if (ENABLE_CHART_API) {
                     } else {
                         // Use Meta Graph API directly if connection has stored token
                         const useMetaDirect = META_DIRECT_PROVIDERS.has(platform) && connection.metadata?.encryptedAccessToken;
+                        // Use TikTok API directly if connection has stored token
+                        const useTiktokDirect = TIKTOK_DIRECT_PROVIDERS.has(platform) && connection.metadata?.encryptedAccessToken;
 
                         if (useMetaDirect) {
                             console.log(`[CHART API] Meta direct fetch for ${platform} (account ${platformAccountId})`);
                             platformData = await fetchMetaChartData(platform, connection, startDate, endDate);
                             if (!platformData) {
-                                // No token found — fall back to Windsor
+                                platformData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
+                            }
+                        } else if (useTiktokDirect) {
+                            console.log(`[CHART API] TikTok direct API fetch for ${platform} (account ${platformAccountId})`);
+                            platformData = await fetchTiktokChartData(platform, connection, startDate, endDate);
+                            if (!platformData) {
+                                // No data or token issue — fall back to Windsor
+                                console.log(`[CHART API] TikTok direct API returned null, falling back to Windsor`);
                                 platformData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
                             }
                         } else {
