@@ -33,7 +33,10 @@ async function refreshAccessToken(refreshToken) {
 
 /**
  * Get user info (display name, avatar, follower count, etc.).
- * Requires scope: user.info.basic
+ * Requires scopes: user.info.basic + user.info.stats
+ *
+ * user.info.basic → display_name, avatar_url
+ * user.info.stats → follower_count, following_count, likes_count, video_count
  */
 async function getUserInfo(accessToken) {
   const response = await axios.get(`${TIKTOK_API_BASE}/user/info/`, {
