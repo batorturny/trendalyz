@@ -381,7 +381,7 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
     apiKey: string,
   ): Promise<DiscoveredAccount[]> {
     try {
-      const dsUrl = `${WINDSOR_BASE}/${windsorEndpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=account_id,account_name`;
+      const dsUrl = `${WINDSOR_BASE}/${windsorEndpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=account_id,account_name,impressions`;
       const dsRes = await fetch(dsUrl, { signal: AbortSignal.timeout(60000) });
       if (!dsRes.ok) return [];
       const dsData = await dsRes.json();

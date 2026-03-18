@@ -67,7 +67,7 @@ export const PROVIDERS = [
     windsorEndpoint: 'tiktok',
     description: 'TikTok fizetett hirdetések',
     supportsOAuth: true,
-    discoverFields: 'account_id,account_name,date,impressions',
+    discoverFields: 'account_id,account_name,impressions',
     accountIdField: 'account_id',
     accountNameField: 'account_name',
   },
