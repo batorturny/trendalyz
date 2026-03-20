@@ -34,3 +34,8 @@ coverage/
 
 # Misc
 *.log
+*.webm
+
+# Secrets - NEVER commit
+hetzner_key
+hetzner_key.pub
