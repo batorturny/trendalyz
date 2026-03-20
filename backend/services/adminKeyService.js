@@ -31,18 +31,6 @@ async function getWindsorApiKey(adminUserId) {
 }
 
 /**
- * Check if a specific admin has their OWN Windsor API key (not fallback).
- */
-async function hasPersonalWindsorKey(adminUserId) {
-  if (!adminUserId) return false;
-  const user = await prisma.user.findUnique({
-    where: { id: adminUserId },
-    select: { windsorApiKeyEnc: true },
-  });
-  return !!user?.windsorApiKeyEnc;
-}
-
-/**
  * Get Windsor API key for a company by resolving its owning admin.
  * Falls back to global key if company has no adminId.
  */
@@ -55,4 +43,4 @@ async function getWindsorApiKeyForCompany(companyId) {
   return getWindsorApiKey(company?.adminId || null);
 }
 
-module.exports = { getWindsorApiKey, getWindsorApiKeyForCompany, hasPersonalWindsorKey };
+module.exports = { getWindsorApiKey, getWindsorApiKeyForCompany };

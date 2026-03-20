@@ -399,9 +399,10 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
 
       // Try each API key until we find accounts
       for (const key of apiKeys) {
+        const keyHint = key.slice(0, 6);
         try {
           const url = `${WINDSOR_BASE}/${p.windsorEndpoint}?api_key=${key}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}`;
-          console.log(`[Sync] ${p.key}: fetching ${p.windsorEndpoint} with key ${key.slice(0, 6)}...`);
+          console.log(`[Sync] ${p.key}: fetching ${p.windsorEndpoint} with key ${keyHint}...`);
           const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
           if (!res.ok) {
             console.log(`[Sync] ${p.key}: HTTP ${res.status}`);
@@ -420,13 +421,12 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
           }
 
           if (accountMap.size > 0) {
-            console.log(`[Sync] ${p.key}: found ${accountMap.size} accounts`);
             break;
           } else if (rows.length > 0) {
-            console.log(`[Sync] ${p.key}: ${rows.length} rows but 0 accounts. First row:`, JSON.stringify(rows[0]));
+            console.log(`[Sync] ${p.key}: ${rows.length} rows but 0 accounts. Row keys: ${Object.keys(rows[0]).join(', ')}`);
           }
         } catch (err) {
-          console.log(`[Sync] ${p.key}: error with key ${key.slice(0, 6)}...: ${err instanceof Error ? err.message : err}`);
+          console.log(`[Sync] ${p.key}: error with key ${keyHint}...: ${err instanceof Error ? err.message : err}`);
         }
       }
 

@@ -15,12 +15,6 @@ async function getConnectionById(id) {
   return prisma.integrationConnection.findUnique({ where: { id } });
 }
 
-async function getConnectionsByProvider(companyId, provider) {
-  return prisma.integrationConnection.findMany({
-    where: { companyId, provider },
-  });
-}
-
 async function createConnection({ companyId, provider, externalAccountId, externalAccountName, metadata }) {
   return prisma.integrationConnection.create({
     data: {
@@ -76,7 +70,6 @@ async function updateConnectionStatus(id, status, errorMessage = null) {
 module.exports = {
   getConnectionsByCompany,
   getConnectionById,
-  getConnectionsByProvider,
   createConnection,
   upsertConnection,
   deleteConnection,
