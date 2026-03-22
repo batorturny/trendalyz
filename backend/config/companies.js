@@ -16,6 +16,7 @@ async function getAllCompanies(adminId = null) {
     select: {
       id: true,
       name: true,
+      tiktokAccountId: true,
       integrationConnections: {
         where: { status: 'CONNECTED' },
         select: { provider: true },
@@ -23,11 +24,18 @@ async function getAllCompanies(adminId = null) {
     },
     orderBy: { name: 'asc' },
   });
-  return companies.map(c => ({
-    ...c,
-    connectedPlatforms: c.integrationConnections.map(ic => ic.provider),
-    integrationConnections: undefined,
-  }));
+  return companies.map(c => {
+    const platforms = c.integrationConnections.map(ic => ic.provider);
+    // Legacy companies with tiktokAccountId but no IntegrationConnection
+    if (c.tiktokAccountId && !platforms.includes('TIKTOK_ORGANIC')) {
+      platforms.push('TIKTOK_ORGANIC');
+    }
+    return {
+      id: c.id,
+      name: c.name,
+      connectedPlatforms: platforms,
+    };
+  });
 }
 
 async function addCompany({ name, tiktokAccountId }) {
