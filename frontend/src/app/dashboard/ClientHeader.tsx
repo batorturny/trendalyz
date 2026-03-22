@@ -48,7 +48,13 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
           {/* Desktop Navigation */}
           <div className="desktop-only items-center gap-6">
             <nav className="flex gap-1">
-              {platformTabs.map(tab => {
+              {[...platformTabs].sort((a, b) => {
+                const aEnabled = a.providers.some(p => connectedProviders.includes(p));
+                const bEnabled = b.providers.some(p => connectedProviders.includes(p));
+                if (aEnabled && !bEnabled) return -1;
+                if (!aEnabled && bEnabled) return 1;
+                return 0;
+              }).map(tab => {
                 const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
 
                 const isEnabled = tab.providers.some(p => connectedProviders.includes(p));
@@ -139,7 +145,13 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
             {/* Platform tabs */}
             <nav className="p-4 space-y-1">
               <p className="px-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">{t('Platformok')}</p>
-              {platformTabs.map(tab => {
+              {[...platformTabs].sort((a, b) => {
+                const aEnabled = a.providers.some(p => connectedProviders.includes(p));
+                const bEnabled = b.providers.some(p => connectedProviders.includes(p));
+                if (aEnabled && !bEnabled) return -1;
+                if (!aEnabled && bEnabled) return 1;
+                return 0;
+              }).map(tab => {
                 const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
                 const isEnabled = tab.providers.some(p => connectedProviders.includes(p));
 

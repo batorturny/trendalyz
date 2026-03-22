@@ -45,7 +45,6 @@ const LABEL_TO_KEY: Record<string, string> = {
     'CPC': 'cpc',
     'CTR%': 'ctr',
     'Költés': 'spend',
-    'Elérés': 'reach',
     'Lejátszások': 'video_play_actions',
     '2s nézés': 'video_watched_2s',
     '6s nézés': 'video_watched_6s',

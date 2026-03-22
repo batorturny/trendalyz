@@ -20,11 +20,11 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; dis
 ];
 
 const platformItems = [
-  { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
-  { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)' },
-  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)' },
-  { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)' },
-  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)' },
+  { href: '/admin/reports/tiktok', label: 'TikTok Organic', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', comingSoon: false },
+  { href: '/admin/reports/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', comingSoon: false },
+  { href: '/admin/reports/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', comingSoon: false },
+  { href: '/admin/reports/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', comingSoon: false },
+  { href: '/admin/reports/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', comingSoon: true },
 ];
 
 function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate?: () => void }) {
@@ -81,6 +81,20 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
           <p className="px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">{t('Riportok')}</p>
           {platformItems.map((item) => {
             const isActive = pathname === item.href;
+
+            if (item.comingSoon) {
+              return (
+                <span
+                  key={item.href}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
+                  title="Coming soon"
+                >
+                  <PlatformIcon platform={item.platform} className="w-4 h-4 grayscale" />
+                  {t(item.label)}
+                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider opacity-70">Soon</span>
+                </span>
+              );
+            }
 
             return (
               <Link
