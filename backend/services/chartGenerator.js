@@ -706,28 +706,40 @@ class ChartGenerator {
         this.data.forEach(item => {
             const name = item.ad_name;
             if (!name) return;
-            if (!adMap[name]) adMap[name] = { ad_text: item.ad_text || '-', impressions: 0, clicks: 0, spend: 0, video_play_actions: 0, video_watched_2s: 0, average_video_play_sum: 0, count: 0 };
+            if (!adMap[name]) adMap[name] = { ad_text: item.ad_text || '-', impressions: 0, clicks: 0, spend: 0, reach: 0, conversions: 0, video_play_actions: 0, video_watched_2s: 0, video_watched_6s: 0, average_video_play_sum: 0, likes: 0, comments: 0, shares: 0, count: 0 };
             adMap[name].impressions += parseInt(item.impressions) || 0;
             adMap[name].clicks += parseInt(item.clicks) || 0;
             adMap[name].spend += parseFloat(item.spend) || 0;
+            adMap[name].reach += parseInt(item.reach) || 0;
+            adMap[name].conversions += parseInt(item.conversions) || 0;
             adMap[name].video_play_actions += parseInt(item.video_play_actions) || 0;
             adMap[name].video_watched_2s += parseInt(item.video_watched_2s) || 0;
+            adMap[name].video_watched_6s += parseInt(item.video_watched_6s) || 0;
             adMap[name].average_video_play_sum += parseFloat(item.average_video_play) || 0;
+            adMap[name].likes += parseInt(item.likes) || 0;
+            adMap[name].comments += parseInt(item.comments) || 0;
+            adMap[name].shares += parseInt(item.shares) || 0;
             adMap[name].count++;
         });
         const tableData = Object.entries(adMap).map(([name, s]) => ({
-            ad_name: name,
-            ad_text: s.ad_text,
+            title: name,
+            caption: s.ad_text,
             impressions: s.impressions,
             clicks: s.clicks,
             spend: parseFloat(s.spend.toFixed(2)),
             cpc: s.clicks > 0 ? parseFloat((s.spend / s.clicks).toFixed(2)) : 0,
             ctr: s.impressions > 0 ? parseFloat(((s.clicks / s.impressions) * 100).toFixed(2)) : 0,
+            reach: s.reach,
+            conversions: s.conversions,
             video_play_actions: s.video_play_actions,
             video_watched_2s: s.video_watched_2s,
-            average_video_play: s.count > 0 ? parseFloat((s.average_video_play_sum / s.count).toFixed(2)) : 0
-        }));
-        return { labels: ['Hirdetés', 'Szöveg', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Lejátszások', '2s nézés', 'Átl. lejátszás'], series: [{ name: 'Ads', data: tableData }] };
+            video_watched_6s: s.video_watched_6s,
+            average_video_play: s.count > 0 ? parseFloat((s.average_video_play_sum / s.count).toFixed(2)) : 0,
+            likes: s.likes,
+            comments: s.comments,
+            shares: s.shares
+        })).sort((a, b) => b.spend - a.spend);
+        return { labels: ['Cím', 'Szöveg', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Elérés', 'Konverziók', 'Lejátszások', '2s nézés', '6s nézés', 'Átl. lejátszás', 'Like-ok', 'Kommentek', 'Megosztások'], series: [{ name: 'Ads', data: tableData }] };
     }
 
     generate_tiktokads_campaign_performance() {
