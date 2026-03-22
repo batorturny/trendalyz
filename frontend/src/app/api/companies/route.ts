@@ -21,16 +21,31 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        tiktokAccountId: true,
         dashboardConfig: true,
         dashboardNotes: true,
         connections: {
+          where: { status: 'CONNECTED' },
           select: { provider: true, externalAccountId: true },
         },
       },
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json(companies);
+    const result = companies.map(c => {
+      const platforms = c.connections.map(conn => conn.provider);
+      // Legacy companies with tiktokAccountId but no IntegrationConnection
+      if (c.tiktokAccountId && !platforms.includes('TIKTOK_ORGANIC')) {
+        platforms.push('TIKTOK_ORGANIC');
+      }
+      return {
+        ...c,
+        tiktokAccountId: undefined,
+        connectedPlatforms: platforms,
+      };
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching companies:', error);
     return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 });
