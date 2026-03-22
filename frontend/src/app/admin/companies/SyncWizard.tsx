@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { syncAllPlatforms, executeSyncPlan } from './actions';
 import type { SyncDiscoveryResult, SyncPlanGroup } from './actions';
 import type { AccountGroup, DiscoveredAccount, ExistingCompany } from '@/lib/accountGrouping';
-import { getProviderMeta } from '@/types/integration';
+import { PROVIDERS, getProviderMeta } from '@/types/integration';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { X, Check, ChevronDown, SkipForward, Loader2 } from 'lucide-react';
 
@@ -210,13 +210,16 @@ function LoadingStep() {
     <div className="flex flex-col items-center justify-center py-16 gap-4">
       <div className="w-10 h-10 border-3 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
       <p className="text-sm text-[var(--text-secondary)]">Fiókok keresése az összes platformon...</p>
-      <div className="flex gap-3 mt-4">
-        {(['tiktok', 'instagram', 'facebook', 'youtube'] as const).map(p => (
-          <span key={p} className={`flex items-center gap-1.5 px-3 py-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full text-xs text-[var(--text-secondary)] ${PLATFORM_COLORS[p]}`}>
-            <PlatformIcon platform={p} className="w-3.5 h-3.5" />
-            {p.charAt(0).toUpperCase() + p.slice(1)}
-          </span>
-        ))}
+      <div className="flex flex-wrap gap-3 mt-4">
+        {PROVIDERS.map(p => {
+          const platform = getPlatformFromProvider(p.key);
+          return (
+            <span key={p.key} className={`flex items-center gap-1.5 px-3 py-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full text-xs text-[var(--text-secondary)] ${PLATFORM_COLORS[platform]}`}>
+              <PlatformIcon platform={platform} className="w-3.5 h-3.5" />
+              {p.label}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
