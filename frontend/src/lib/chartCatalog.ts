@@ -631,16 +631,7 @@ export const chartCatalog = [
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_impressions_unique', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_clicks', 'post_permalink']
     },
-    {
-        key: 'fb_engaged_users',
-        title: 'Elk\u00f6telezett felhaszn\u00e1l\u00f3k',
-        description: 'Napi elk\u00f6telezett felhaszn\u00e1l\u00f3k trendje',
-        category: CHART_CATEGORIES.TREND,
-        type: 'line',
-        color: '#ff6b9d',
-        platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['page_post_engagements', 'date']
-    },
+    // fb_engaged_users removed — broken metric
     {
         key: 'fb_page_views',
         title: 'Oldal megtekint\u00e9sek',
@@ -695,26 +686,7 @@ export const chartCatalog = [
     },
 
     // ========== TIKTOK ORGANIC (NEW WINDSOR FIELDS) ==========
-    {
-        key: 'tt_daily_reached',
-        title: 'Napi el\u00e9rt k\u00f6z\u00f6ns\u00e9g',
-        description: 'Naponta el\u00e9rt felhaszn\u00e1l\u00f3k sz\u00e1ma',
-        category: CHART_CATEGORIES.TREND,
-        type: 'line',
-        color: '#00d4aa',
-        platform: 'TIKTOK_ORGANIC',
-        windsorFields: ['engaged_audience', 'date']
-    },
-    {
-        key: 'tt_engaged_audience',
-        title: 'Elk\u00f6telezett k\u00f6z\u00f6ns\u00e9g',
-        description: 'Elk\u00f6telezett felhaszn\u00e1l\u00f3k napi trendje',
-        category: CHART_CATEGORIES.TREND,
-        type: 'line',
-        color: '#bc6aff',
-        platform: 'TIKTOK_ORGANIC',
-        windsorFields: ['engaged_audience', 'date']
-    },
+    // tt_daily_reached and tt_engaged_audience removed — engaged_audience metric produces broken data
     {
         key: 'tt_follower_change',
         title: 'K\u00f6vet\u0151 v\u00e1ltoz\u00e1s \u00b1',

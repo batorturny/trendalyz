@@ -150,7 +150,7 @@ async function fetchGenericKpis(windsorApiKey, provider, accountId, month) {
   }
 
   const FIELD_LABELS = {
-    impressions: 'Megjelenítések', reach: 'Elérés', engaged_users: 'Aktív felhasználók',
+    impressions: 'Megjelenítések', reach: 'Elérés',
     page_fans: 'Oldal kedvelők', page_views_total: 'Oldal nézetek', reactions: 'Reakciók',
     comments: 'Kommentek', shares: 'Megosztások', follower_count: 'Követők',
     profile_views: 'Profilnézetek', website_clicks: 'Weboldal kattintások',

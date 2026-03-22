@@ -29,7 +29,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
         fields: [
           'date', 'followers_count', 'total_followers_count', 'profile_views',
           'likes', 'comments', 'shares', 'bio_link_clicks', 'email_clicks',
-          'engaged_audience', 'daily_lost_followers', 'phone_number_clicks',
+          'daily_lost_followers', 'phone_number_clicks',
         ],
       },
       {

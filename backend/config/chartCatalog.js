@@ -673,16 +673,7 @@ const chartCatalog = [
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_reach', 'post_reactions', 'post_comments', 'post_shares', 'post_clicks', 'post_permalink']
     },
-    {
-        key: 'fb_engaged_users',
-        title: 'Elkötelezett felhasználók',
-        description: 'Napi elkötelezett felhasználók trendje',
-        category: CHART_CATEGORIES.TREND,
-        type: 'line',
-        color: '#ff6b9d',
-        platform: 'FACEBOOK_ORGANIC',
-        windsorFields: ['page_post_engagements', 'date']
-    },
+    // fb_engaged_users removed — broken metric
     {
         key: 'fb_page_views',
         title: 'Oldal megtekintések',
@@ -770,8 +761,7 @@ const chartCatalog = [
     },
 
     // ========== TIKTOK ORGANIC (NEW WINDSOR FIELDS) ==========
-    { key: 'tt_daily_reached', title: 'Napi elért közönség', description: 'Naponta elért felhasználók száma', category: CHART_CATEGORIES.TREND, type: 'line', color: '#00d4aa', platform: 'TIKTOK_ORGANIC', windsorFields: ['engaged_audience', 'date'] },
-    { key: 'tt_engaged_audience', title: 'Elkötelezett közönség', description: 'Elkötelezett felhasználók napi trendje', category: CHART_CATEGORIES.TREND, type: 'line', color: '#bc6aff', platform: 'TIKTOK_ORGANIC', windsorFields: ['engaged_audience', 'date'] },
+    // tt_daily_reached and tt_engaged_audience removed — engaged_audience metric produces broken data
     { key: 'tt_follower_change', title: 'Követő változás ±', description: 'Szerzett és elvesztett követők napi bontásban', category: CHART_CATEGORIES.TREND, type: 'bar', color: '#00ff95', platform: 'TIKTOK_ORGANIC', windsorFields: ['daily_lost_followers', 'date'] },
     { key: 'tt_audience_countries', title: 'Közönség országok', description: 'Követők megoszlása országonként', category: CHART_CATEGORIES.AUDIENCE, type: 'bar', color: '#4d96ff', platform: 'TIKTOK_ORGANIC', windsorFields: ['audience_country', 'audience_country_percentage'] },
     { key: 'tt_audience_cities', title: 'Közönség városok', description: 'Követők megoszlása városonként', category: CHART_CATEGORIES.AUDIENCE, type: 'bar', color: '#00d4ff', platform: 'TIKTOK_ORGANIC', windsorFields: ['audience_cities_city', 'audience_cities_percentage'] },

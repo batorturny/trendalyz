@@ -17,7 +17,7 @@ const PLATFORM_CONFIG = {
     dailyFields: [
       'date', 'likes', 'comments', 'shares', 'followers_count', 'profile_views',
       'total_followers_count', 'daily_lost_followers', 'daily_total_followers',
-      'unique_video_views', 'total_likes', 'video_views', 'engaged_audience',
+      'unique_video_views', 'total_likes', 'video_views',
       'bio_link_clicks', 'email_clicks', 'address_clicks', 'phone_number_clicks',
       'app_download_clicks', 'lead_submissions',
     ],
@@ -42,7 +42,7 @@ const PLATFORM_CONFIG = {
       daily: [
         'date', 'likes', 'comments', 'shares', 'followers_count', 'profile_views',
         'total_followers_count', 'daily_lost_followers', 'daily_total_followers',
-        'unique_video_views', 'total_likes', 'video_views', 'engaged_audience',
+        'unique_video_views', 'total_likes', 'video_views',
         'bio_link_clicks', 'email_clicks', 'address_clicks', 'phone_number_clicks',
         'app_download_clicks', 'lead_submissions',
       ],
@@ -75,7 +75,7 @@ const PLATFORM_CONFIG = {
       'video_website_clicks', 'video_email_clicks', 'video_address_clicks',
       'video_app_download_clicks', 'video_phone_number_clicks', 'video_lead_submissions',
       'audience_activity_hour', 'audience_activity_count',
-      'bio_link_clicks', 'email_clicks', 'engaged_audience',
+      'bio_link_clicks', 'email_clicks',
       'address_clicks', 'phone_number_clicks', 'app_download_clicks', 'lead_submissions',
       'video_impression_sources_impression_source', 'video_impression_sources_percentage',
     ],

@@ -103,7 +103,7 @@ class ChartGenerator {
         const data = labels.map(d => {
             const items = grouped[d];
             const avg = items.reduce((s, i) => s + (parseFloat(i[field]) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
+            return Math.max(0, parseFloat(avg.toFixed(2)));
         });
         return { labels, series: [{ name, data }] };
     }
@@ -113,7 +113,7 @@ class ChartGenerator {
         const grouped = this.groupByDate(source, 'date');
         const labels = Object.keys(grouped).sort();
         const data = labels.map(d =>
-            parseFloat(grouped[d].reduce((s, i) => s + (parseFloat(i[field]) || 0), 0).toFixed(2))
+            Math.max(0, parseFloat(grouped[d].reduce((s, i) => s + (parseFloat(i[field]) || 0), 0).toFixed(2)))
         );
         return { labels, series: [{ name, data }] };
     }
@@ -400,7 +400,7 @@ class ChartGenerator {
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
-    generate_fb_engaged_users() { return this.dailyMetric(this.daily, 'engaged_users', 'Elkötelezett felhasználók'); }
+    // fb_engaged_users removed — broken metric
     generate_fb_page_views() { return this.dailyMetric(this.daily, 'page_views_total', 'Oldal megtekintések'); }
 
     // fb_engagement_rate removed — KPI-ban megjelenik, de chartként nem releváns
@@ -775,7 +775,8 @@ class ChartGenerator {
 
     sumField(items, field) {
         if (!Array.isArray(items)) return 0;
-        return items.reduce((sum, item) => sum + (parseFloat(item[field]) || 0), 0);
+        const raw = items.reduce((sum, item) => sum + (parseFloat(item[field]) || 0), 0);
+        return Math.max(0, raw);
     }
 
     /** Calculate engagement rate: (likes + comments + shares) / divisor * 100 */

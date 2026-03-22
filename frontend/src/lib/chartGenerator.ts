@@ -104,7 +104,7 @@ export default class ChartGenerator {
         const data = labels.map(d => {
             const items = grouped[d];
             const avg = items.reduce((s, i) => s + (parseFloat(i[field]) || 0), 0) / (items.length || 1);
-            return parseFloat(avg.toFixed(2));
+            return Math.max(0, parseFloat(avg.toFixed(2)));
         });
         return { labels, series: [{ name, data }] };
     }
@@ -114,7 +114,7 @@ export default class ChartGenerator {
         const grouped = this.groupByDate(source, 'date');
         const labels = Object.keys(grouped).sort();
         const data = labels.map(d =>
-            parseFloat(grouped[d].reduce((s, i) => s + (parseFloat(i[field]) || 0), 0).toFixed(2))
+            Math.max(0, parseFloat(grouped[d].reduce((s, i) => s + (parseFloat(i[field]) || 0), 0).toFixed(2)))
         );
         return { labels, series: [{ name, data }] };
     }
@@ -211,8 +211,7 @@ export default class ChartGenerator {
         return this.dailyMax(this.daily, 'total_followers_count', '\u00d6sszes k\u00f6vet\u0151');
     }
 
-    generate_tt_engaged_audience() { return this.dailyMetric(this.daily, 'engaged_audience', 'Elk\u00f6telezett k\u00f6z\u00f6ns\u00e9g'); }
-    generate_tt_daily_reached() { return this.dailyMetric(this.daily, 'engaged_audience', 'Elk\u00f6telezett k\u00f6z\u00f6ns\u00e9g'); }
+    // tt_engaged_audience and tt_daily_reached removed — engaged_audience metric produces broken data
     generate_tt_email_clicks() { return this.dailyMetric(this.daily, 'email_clicks', 'Email kattint\u00e1sok'); }
     generate_tt_phone_clicks() { return this.dailyMetric(this.daily, 'phone_number_clicks', 'Telefonsz\u00e1m kattint\u00e1sok'); }
     generate_tt_follower_change() {
@@ -414,7 +413,7 @@ export default class ChartGenerator {
         return this.generateFacebookPostTable(sorted.slice(0, 3));
     }
 
-    generate_fb_engaged_users() { return this.dailyMetric(this.daily, 'page_post_engagements', 'Poszt engagement'); }
+    // fb_engaged_users removed — broken metric
     generate_fb_page_views() { return this.dailyMetric(this.daily, 'page_views_total', 'Oldal megtekint\u00e9sek'); }
 
     // fb_engagement_rate removed — KPI-ban megjelenik, de chartként nem releváns
@@ -744,7 +743,8 @@ export default class ChartGenerator {
 
     sumField(items, field) {
         if (!Array.isArray(items)) return 0;
-        return items.reduce((sum, item) => sum + (parseFloat(item[field]) || 0), 0);
+        const raw = items.reduce((sum, item) => sum + (parseFloat(item[field]) || 0), 0);
+        return Math.max(0, raw);
     }
 
     /** Calculate engagement rate: (likes + comments + shares) / divisor * 100 */
