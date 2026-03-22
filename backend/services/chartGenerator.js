@@ -688,6 +688,73 @@ class ChartGenerator {
     generate_ttads_cost_per_conversion() { return this.dailyAvg(this.daily, 'cost_per_conversion', 'Költség/konverzió'); }
     generate_ttads_video_engagement() { return this.dailyMultiMetric(this.daily, [['video_play_actions', 'Lejátszások'], ['video_watched_2s', '2s nézés'], ['video_watched_6s', '6s nézés']]); }
 
+    // ===== TIKTOK ADS (NEW CHARTS) =====
+
+    generate_tiktokads_daily_spend() { return this.dailyFloatSum(this.daily, 'spend', 'Költés'); }
+    generate_tiktokads_daily_impressions() { return this.dailyMetric(this.daily, 'impressions', 'Megjelenítések'); }
+    generate_tiktokads_daily_clicks() { return this.dailyMetric(this.daily, 'clicks', 'Kattintások'); }
+    generate_tiktokads_daily_reach() { return this.dailyMetric(this.daily, 'reach', 'Elérés'); }
+    generate_tiktokads_daily_ctr() { return this.dailyAvg(this.daily, 'ctr', 'CTR %'); }
+    generate_tiktokads_daily_cpc() { return this.dailyAvg(this.daily, 'cpc', 'CPC'); }
+    generate_tiktokads_daily_cpm() { return this.dailyAvg(this.daily, 'cpm', 'CPM'); }
+    generate_tiktokads_daily_engagement() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['comments', 'Kommentek'], ['shares', 'Megosztások']]); }
+    generate_tiktokads_daily_follows() { return this.dailyMetric(this.daily, 'follows', 'Új követők'); }
+    generate_tiktokads_daily_conversions() { return this.dailyMetric(this.daily, 'conversions', 'Konverziók'); }
+
+    generate_tiktokads_ad_performance() {
+        const adMap = {};
+        this.data.forEach(item => {
+            const name = item.ad_name;
+            if (!name) return;
+            if (!adMap[name]) adMap[name] = { ad_text: item.ad_text || '-', impressions: 0, clicks: 0, spend: 0, video_play_actions: 0, video_watched_2s: 0, average_video_play_sum: 0, count: 0 };
+            adMap[name].impressions += parseInt(item.impressions) || 0;
+            adMap[name].clicks += parseInt(item.clicks) || 0;
+            adMap[name].spend += parseFloat(item.spend) || 0;
+            adMap[name].video_play_actions += parseInt(item.video_play_actions) || 0;
+            adMap[name].video_watched_2s += parseInt(item.video_watched_2s) || 0;
+            adMap[name].average_video_play_sum += parseFloat(item.average_video_play) || 0;
+            adMap[name].count++;
+        });
+        const tableData = Object.entries(adMap).map(([name, s]) => ({
+            ad_name: name,
+            ad_text: s.ad_text,
+            impressions: s.impressions,
+            clicks: s.clicks,
+            spend: parseFloat(s.spend.toFixed(2)),
+            cpc: s.clicks > 0 ? parseFloat((s.spend / s.clicks).toFixed(2)) : 0,
+            ctr: s.impressions > 0 ? parseFloat(((s.clicks / s.impressions) * 100).toFixed(2)) : 0,
+            video_play_actions: s.video_play_actions,
+            video_watched_2s: s.video_watched_2s,
+            average_video_play: s.count > 0 ? parseFloat((s.average_video_play_sum / s.count).toFixed(2)) : 0
+        }));
+        return { labels: ['Hirdetés', 'Szöveg', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Lejátszások', '2s nézés', 'Átl. lejátszás'], series: [{ name: 'Ads', data: tableData }] };
+    }
+
+    generate_tiktokads_campaign_performance() {
+        const campaignMap = {};
+        this.data.forEach(item => {
+            const name = item.campaign_name;
+            if (!name) return;
+            if (!campaignMap[name]) campaignMap[name] = { impressions: 0, clicks: 0, spend: 0, reach: 0, video_play_actions: 0 };
+            campaignMap[name].impressions += parseInt(item.impressions) || 0;
+            campaignMap[name].clicks += parseInt(item.clicks) || 0;
+            campaignMap[name].spend += parseFloat(item.spend) || 0;
+            campaignMap[name].reach += parseInt(item.reach) || 0;
+            campaignMap[name].video_play_actions += parseInt(item.video_play_actions) || 0;
+        });
+        const tableData = Object.entries(campaignMap).map(([name, s]) => ({
+            campaign: name,
+            impressions: s.impressions,
+            clicks: s.clicks,
+            spend: parseFloat(s.spend.toFixed(2)),
+            cpc: s.clicks > 0 ? parseFloat((s.spend / s.clicks).toFixed(2)) : 0,
+            ctr: s.impressions > 0 ? parseFloat(((s.clicks / s.impressions) * 100).toFixed(2)) : 0,
+            reach: s.reach,
+            video_play_actions: s.video_play_actions
+        }));
+        return { labels: ['Kampány', 'Impressziók', 'Kattintások', 'Költés', 'CPC', 'CTR%', 'Elérés', 'Lejátszások'], series: [{ name: 'Campaigns', data: tableData }] };
+    }
+
     generate_ttads_campaign_perf() {
         const campaignMap = {};
         this.data.forEach(item => {
