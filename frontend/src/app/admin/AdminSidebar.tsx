@@ -35,7 +35,7 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
     <>
       {/* Logo */}
       <div className="p-6 border-b border-[var(--border)]">
-        <TrendalyzLogo size="sm" />
+        <TrendalyzLogo size="md" />
         <p className="text-[10px] text-[var(--text-secondary)] font-semibold mt-1.5 uppercase tracking-wider">{t('Admin Panel')}</p>
       </div>
 
@@ -143,7 +143,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
         >
           <Menu className="w-5 h-5 text-[var(--text-primary)]" />
         </button>
-        <TrendalyzLogo size="sm" />
+        <TrendalyzLogo size="md" />
       </div>
 
       {/* Mobile spacer for fixed top bar */}

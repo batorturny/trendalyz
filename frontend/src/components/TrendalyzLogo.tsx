@@ -5,7 +5,7 @@ interface LogoProps {
 }
 
 export function TrendalyzLogo({ size = 'md', showText = true, className = '' }: LogoProps) {
-  const iconSize = size === 'sm' ? 24 : size === 'md' ? 32 : 44;
+  const iconSize = size === 'sm' ? 28 : size === 'md' ? 38 : 44;
   const textSize = size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl';
 
   return (
@@ -48,7 +48,7 @@ export function TrendalyzLogo({ size = 'md', showText = true, className = '' }: 
         <circle cx="10" cy="34" r="2.5" fill="white" opacity="0.6" />
       </svg>
       {showText && (
-        <span className={`${textSize} font-extrabold tracking-tight text-[var(--text-primary)]`}>
+        <span className={`${textSize} font-black tracking-tight text-[var(--text-primary)]`}>
           Trend<span className="text-[var(--accent)]">alyz</span>
         </span>
       )}
