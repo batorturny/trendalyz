@@ -48,6 +48,7 @@ const LABEL_TO_KEY: Record<string, string> = {
 };
 
 const TEXT_COLUMNS = new Set(['date', 'caption', 'link', 'type', 'title']);
+const CURRENCY_COLUMNS = new Set(['spend', 'cpc', 'cpm', 'cost_per_conversion', 'cost_per_1000_reached']);
 
 interface VideoTableProps {
     videos?: Video[];
@@ -131,10 +132,15 @@ export const VideoTable = memo(function VideoTable({ videos, chartVideos, chartL
                                             }
                                             // Numeric column
                                             const val = video[col.key] ?? 0;
+                                            const numVal = typeof val === 'number' ? val : 0;
                                             const isMainMetric = col.key === 'views';
+                                            const isCurrency = CURRENCY_COLUMNS.has(col.key);
+                                            const formatted = isCurrency
+                                                ? `${numVal.toLocaleString('hu-HU', { minimumFractionDigits: numVal % 1 !== 0 ? 2 : 0, maximumFractionDigits: 2 })} Ft`
+                                                : numVal.toLocaleString('hu-HU');
                                             return (
                                                 <td key={col.key} className={`px-3 py-2 text-right ${isMainMetric ? 'font-semibold text-[var(--text-primary)]' : ''}`}>
-                                                    {(typeof val === 'number' ? val : 0).toLocaleString('hu-HU')}
+                                                    {formatted}
                                                 </td>
                                             );
                                         })}

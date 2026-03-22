@@ -180,6 +180,8 @@ function tableAvg(chart: ChartData | undefined, field: string): number {
 
 function fmtPct(n: number): string { return `${n.toFixed(2)}%`; }
 function fmtDec(n: number): string { return n.toFixed(2); }
+function fmtFt(n: number): string { return `${n.toLocaleString('hu-HU')} Ft`; }
+function fmtDecFt(n: number): string { return `${n.toFixed(2)} Ft`; }
 function fmtDec1(n: number): string { return n.toFixed(1); }
 
 function addDescriptions(kpis: KPI[]): KPI[] {
@@ -251,18 +253,18 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const totalConversions = sumSeries(conversions);
 
       return addDescriptions([
-        { key: 'ttads_spend', label: 'Költés', value: totalSpend },
+        { key: 'ttads_spend', label: 'Költés', value: fmtFt(totalSpend) },
         { key: 'ttads_impressions', label: 'Impressziók', value: totalImpressions },
         { key: 'ttads_clicks', label: 'Kattintások', value: totalClicks },
         { key: 'ttads_ctr', label: 'CTR%', value: fmtPct(avgSeries(ctr)), agg: 'avg' },
-        { key: 'ttads_cpc', label: 'CPC', value: fmtDec(avgSeries(cpcCpm, 0)), agg: 'avg' },
-        { key: 'ttads_cpm', label: 'CPM', value: fmtDec(avgSeries(cpcCpm, 1)), agg: 'avg' },
+        { key: 'ttads_cpc', label: 'CPC (kattintás ára)', value: fmtDecFt(avgSeries(cpcCpm, 0)), agg: 'avg' },
+        { key: 'ttads_cpm', label: 'CPM (1000 megj. ára)', value: fmtDecFt(avgSeries(cpcCpm, 1)), agg: 'avg' },
         { key: 'ttads_conv', label: 'Konverziók', value: totalConversions },
-        { key: 'ttads_cost_conv', label: 'Költség/konverzió', value: fmtDec(avgSeries(costConv)), agg: 'avg' },
+        { key: 'ttads_cost_conv', label: 'Költség/konverzió', value: fmtDecFt(avgSeries(costConv)), agg: 'avg' },
         { key: 'ttads_roas', label: 'ROAS', value: totalSpend > 0 ? fmtDec(totalConversions / totalSpend) : '0.00', agg: 'avg' },
         { key: 'ttads_conv_rate', label: 'Konverziós arány%', value: fmtPct(totalClicks > 0 ? totalConversions / totalClicks * 100 : 0), agg: 'avg' },
-        { key: 'ttads_spend_per_click', label: 'Költés/kattintás', value: totalClicks > 0 ? fmtDec(totalSpend / totalClicks) : '0.00', agg: 'avg' },
-        { key: 'ttads_cpr', label: 'CPR (1000 elérés)', value: fmtDec(avgSeries(findChart(results, 'ttads_reach_cost'))), agg: 'avg' },
+        { key: 'ttads_spend_per_click', label: 'Költés/kattintás', value: totalClicks > 0 ? fmtDecFt(totalSpend / totalClicks) : '0 Ft', agg: 'avg' },
+        { key: 'ttads_cpr', label: 'CPR (1000 elérés ára)', value: fmtDecFt(avgSeries(findChart(results, 'ttads_reach_cost'))), agg: 'avg' },
         { key: 'ttads_app_installs', label: 'App telepítések', value: sumSeries(findChart(results, 'ttads_app_install')) },
         { key: 'ttads_payments', label: 'Fizetés konverziók', value: sumSeries(findChart(results, 'ttads_payment_trend')) },
         { key: 'ttads_registrations', label: 'Regisztrációk', value: sumSeries(findChart(results, 'ttads_registration')) },
