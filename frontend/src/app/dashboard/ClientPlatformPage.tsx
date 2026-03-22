@@ -10,6 +10,7 @@ import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
+import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { useT } from '@/lib/i18n';
 
 interface PlatformConfig {
@@ -224,51 +225,72 @@ export function ClientPlatformPage({
     setError(null);
     try {
       const displayKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
+      const pdfFilename = `${platform.label}_riport_${selectedMonth}`;
 
-      // Extract video data from table-type charts
-      const videoChart = results.find(c => c.type === 'table' && !c.empty);
-      const videos = videoChart?.data?.series?.[0]?.data as any[] || [];
+      // Try backend (Puppeteer) PDF generation first
+      let backendSuccess = false;
+      try {
+        // Extract video data from table-type charts
+        const videoChart = results.find(c => c.type === 'table' && !c.empty);
+        const videos = videoChart?.data?.series?.[0]?.data as any[] || [];
 
-      // Collect chart sections for daily trend data tables
-      const chartSections = periodMonths === 1 ? sections.map(s => ({
-        category: s.category,
-        label: s.label,
-        charts: s.charts.filter(c => c.type !== 'table').map(c => ({
-          key: c.key,
-          title: c.title,
-          type: c.type,
-          data: c.data,
-        })),
-      })) : [];
+        // Collect chart sections for daily trend data tables
+        const chartSections = periodMonths === 1 ? sections.map(s => ({
+          category: s.category,
+          label: s.label,
+          charts: s.charts.filter(c => c.type !== 'table').map(c => ({
+            key: c.key,
+            title: c.title,
+            type: c.type,
+            data: c.data,
+          })),
+        })) : [];
 
-      const response = await fetch('/api/reports/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyName: session?.user?.name || 'Riport',
-          platform: platform.platformKey,
-          platformLabel: platform.label,
-          month: selectedMonth,
-          kpis: displayKpis.map(k => ({ label: k.label, value: k.value, description: k.description })),
-          sections: chartSections,
-          videos,
-          adminNote,
-          borderColor: platform.borderColor,
-        }),
-      });
+        const response = await fetch('/api/reports/export-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyName: session?.user?.name || 'Riport',
+            platform: platform.platformKey,
+            platformLabel: platform.label,
+            month: selectedMonth,
+            kpis: displayKpis.map(k => ({ label: k.label, value: k.value, description: k.description })),
+            sections: chartSections,
+            videos,
+            adminNote,
+            borderColor: platform.borderColor,
+          }),
+        });
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: t('PDF generálás sikertelen') }));
-        throw new Error(err.error || t('PDF generálás sikertelen'));
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.warn('Backend PDF failed:', response.status, errorData);
+          throw new Error(errorData?.error || 'Backend PDF generation failed');
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${pdfFilename}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        backendSuccess = true;
+      } catch (backendErr) {
+        console.warn('Backend PDF export failed, falling back to client-side:', backendErr);
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${platform.label}_riport_${selectedMonth}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Fallback: client-side PDF from DOM capture
+      if (!backendSuccess) {
+        const reportEl = reportRef.current;
+        if (!reportEl) {
+          throw new Error(t('Nincs megjeleníthető riport tartalom'));
+        }
+        await exportPdfFromDOM({
+          element: reportEl,
+          filename: pdfFilename,
+        });
+      }
     } catch (err) {
       console.error('PDF export error:', err);
       setError(t('PDF letöltés sikertelen') + ': ' + (err instanceof Error ? err.message : t('Ismeretlen hiba')));
