@@ -66,6 +66,12 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
 
+  // Filter companies to only those with an active connection for this platform
+  const platformCompanies = useMemo(
+    () => companies.filter(c => c.connectedPlatforms?.includes(platform.platformKey)),
+    [companies, platform.platformKey]
+  );
+
   // Get dashboardConfig for selected company
   const selectedCompanyObj = useMemo(
     () => companies.find(c => c.id === selectedCompany),
@@ -219,8 +225,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         const allKpis: KPI[][] = [];
         const failed: Company[] = [];
 
-        for (let i = 0; i < companies.length; i += BATCH_SIZE) {
-          const batch = companies.slice(i, i + BATCH_SIZE);
+        for (let i = 0; i < platformCompanies.length; i += BATCH_SIZE) {
+          const batch = platformCompanies.slice(i, i + BATCH_SIZE);
           const batchResults = await Promise.allSettled(
             batch.map(async (company) => {
               try {
@@ -338,7 +344,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég kiválasztása</label>
               <CompanyPicker
-                companies={companies}
+                companies={platformCompanies}
                 value={selectedCompany}
                 onChange={setSelectedCompany}
                 showAll

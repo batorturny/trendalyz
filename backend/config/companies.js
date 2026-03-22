@@ -13,10 +13,21 @@ async function getAllCompanies(adminId = null) {
   if (adminId) where.adminId = adminId;
   const companies = await prisma.company.findMany({
     where,
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      integrationConnections: {
+        where: { status: 'CONNECTED' },
+        select: { provider: true },
+      },
+    },
     orderBy: { name: 'asc' },
   });
-  return companies;
+  return companies.map(c => ({
+    ...c,
+    connectedPlatforms: c.integrationConnections.map(ic => ic.provider),
+    integrationConnections: undefined,
+  }));
 }
 
 async function addCompany({ name, tiktokAccountId }) {

@@ -6,6 +6,7 @@ export interface Company {
     name: string;
     dashboardConfig?: Record<string, { kpis: string[]; charts: string[] }> | null;
     dashboardNotes?: Record<string, string> | null;
+    connectedPlatforms?: string[];
 }
 
 export interface ReportRequest {
