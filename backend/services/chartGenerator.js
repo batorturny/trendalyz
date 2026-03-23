@@ -313,7 +313,7 @@ class ChartGenerator {
                 link: v.video_embed_url || '#'
             };
         });
-        return { labels: ['Dátum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'Elérés', 'Új követők', 'Végignézés%', 'Átl. nézési idő', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Elérés', 'Új követők', 'Végignézés%', 'Átl. nézési idő', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     generateVideoTable(videos) {
@@ -707,7 +707,7 @@ class ChartGenerator {
                 link: v.video ? `https://youtube.com/watch?v=${v.video}` : '#'
             };
         });
-        return { labels: ['Videó ID', 'Views', 'Likes', 'Comments', 'Shares', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó ID', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====

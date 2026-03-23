@@ -325,7 +325,7 @@ export default class ChartGenerator {
                 link: v.video_embed_url || '#'
             };
         });
-        return { labels: ['D\u00e1tum', 'Caption', 'Views', 'Likes', 'Comments', 'Shares', 'El\u00e9r\u00e9s', '\u00daj k\u00f6vet\u0151k', 'V\u00e9gign\u00e9z\u00e9s%', '\u00c1tl. n\u00e9z\u00e9si id\u0151', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Dátum', 'Üzenet', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Elérés', 'Új követők', 'Végignézés%', 'Átl. nézési idő', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     generateVideoTable(videos) {
@@ -631,7 +631,7 @@ export default class ChartGenerator {
                 link: v.video ? `https://youtube.com/watch?v=${v.video}` : '#'
             };
         });
-        return { labels: ['Videó ID', 'Views', 'Likes', 'Comments', 'Shares', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó ID', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====
