@@ -569,25 +569,42 @@ export default class ChartGenerator {
     generate_yt_avg_view_pct_trend() { return this.dailyAvg(this.daily, 'average_view_percentage', 'Átl. megtekintés%'); }
 
     generate_yt_video_performance() {
-        // Aggregate by video ID, sum views/likes/comments
-        const videoMap: Record<string, { views: number; likes: number; comments: number }> = {};
+        const videoMap: Record<string, { video_title: string; published_at: string; views: number; likes: number; comments: number; shares: number; estimated_minutes_watched: number }> = {};
         this.video.forEach((row: any) => {
-            const vid = row.video;
+            const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { views: 0, likes: 0, comments: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video_title: row.video_title || '', published_at: row.published_at || '', views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
+            videoMap[vid].shares += parseInt(row.shares) || 0;
+            videoMap[vid].estimated_minutes_watched += parseFloat(row.estimated_minutes_watched) || 0;
+            if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
+            if (row.published_at && !videoMap[vid].published_at) videoMap[vid].published_at = row.published_at;
         });
-        const tableData = Object.entries(videoMap)
+        // Filter to videos published in report period
+        let entries = Object.entries(videoMap);
+        const hasPublishDates = entries.some(([, s]) => s.published_at);
+        if (hasPublishDates && this.startDate && this.endDate) {
+            entries = entries.filter(([, s]) => {
+                if (!s.published_at) return false;
+                const pd = s.published_at.slice(0, 10);
+                return pd >= this.startDate && pd <= this.endDate;
+            });
+        }
+        const tableData = entries
             .map(([videoId, s]) => ({
-                title: videoId,
+                title: s.video_title || videoId,
                 views: s.views,
                 likes: s.likes,
-                comments: s.comments
+                comments: s.comments,
+                shares: s.shares,
+                estimated_minutes_watched: Math.round(s.estimated_minutes_watched),
+                link: `https://youtube.com/watch?v=${videoId}`
             }))
+            .filter(v => v.views > 0 || v.likes > 0 || v.comments > 0)
             .sort((a, b) => b.views - a.views);
-        return { labels: ['Videó ID', 'Nézések', 'Kedvelések', 'Kommentek'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Nézési idő (perc)', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     generate_yt_top_5_videos() {
@@ -602,32 +619,43 @@ export default class ChartGenerator {
     }
     generate_yt_all_videos() { return this._buildYouTubeVideoTable(this._aggregateYouTubeVideos()); }
 
-    /** Aggregate YouTube video rows by video ID (field: `video`) */
+    /** Aggregate YouTube video rows by video ID, filter to report period */
     _aggregateYouTubeVideos() {
-        const videoMap: Record<string, { video: string; views: number; likes: number; comments: number; shares: number }> = {};
+        const videoMap: Record<string, { video: string; video_title: string; published_at: string; views: number; likes: number; comments: number; shares: number }> = {};
         this.video.forEach((row: any) => {
             const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { video: vid, views: 0, likes: 0, comments: 0, shares: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video: vid, video_title: row.video_title || '', published_at: row.published_at || '', views: 0, likes: 0, comments: 0, shares: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
             videoMap[vid].shares += parseInt(row.shares) || 0;
+            if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
+            if (row.published_at && !videoMap[vid].published_at) videoMap[vid].published_at = row.published_at;
         });
-        return Object.values(videoMap);
+        let results = Object.values(videoMap);
+        const hasPublishDates = results.some(v => v.published_at);
+        if (hasPublishDates && this.startDate && this.endDate) {
+            results = results.filter(v => {
+                if (!v.published_at) return false;
+                const pd = v.published_at.slice(0, 10);
+                return pd >= this.startDate && pd <= this.endDate;
+            });
+        }
+        return results;
     }
 
-    _buildYouTubeVideoTable(videos: { video: string; views: number; likes: number; comments: number; shares: number }[]) {
+    _buildYouTubeVideoTable(videos: { video: string; video_title: string; views: number; likes: number; comments: number; shares: number }[]) {
         const tableData = videos.map(v => {
             const er = this.engagementRate(v.likes, v.comments, v.shares, v.views);
             return {
-                title: v.video || '-',
+                title: v.video_title || v.video || '-',
                 views: v.views, likes: v.likes, comments: v.comments, shares: v.shares,
                 engagementRate: er,
                 link: v.video ? `https://youtube.com/watch?v=${v.video}` : '#'
             };
         });
-        return { labels: ['Videó ID', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====
