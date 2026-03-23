@@ -862,8 +862,11 @@ if (ENABLE_CHART_API) {
                             platformData = await windsorMulti.fetchAllChartData(platform, platformAccountId, startDate, endDate);
                         }
 
-                        windsorDataCache.set(cacheKey, { data: platformData, ts: Date.now() });
-                        console.log(`[CHART API] ${platform}: ${Array.isArray(platformData) ? platformData.length : 'invalid'} rows cached`);
+                        // Only cache if we got data — don't cache empty results
+                        if (Array.isArray(platformData) && platformData.length > 0) {
+                            windsorDataCache.set(cacheKey, { data: platformData, ts: Date.now() });
+                        }
+                        console.log(`[CHART API] ${platform}: ${Array.isArray(platformData) ? platformData.length : 'invalid'} rows${Array.isArray(platformData) && platformData.length === 0 ? ' (NOT cached)' : ' cached'}`);
                     }
 
                     const generator = new ChartGenerator(platformData, startDate, endDate);
