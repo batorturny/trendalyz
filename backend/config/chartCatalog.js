@@ -325,7 +325,7 @@ const chartCatalog = [
         type: 'table',
         color: '#00ff95',
         platform: 'YOUTUBE',
-        windsorFields: ['video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration']
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
     {
         key: 'yt_worst_5_videos',
@@ -335,7 +335,7 @@ const chartCatalog = [
         type: 'table',
         color: '#ff6b6b',
         platform: 'YOUTUBE',
-        windsorFields: ['video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration']
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
     {
         key: 'yt_all_videos',
@@ -345,7 +345,7 @@ const chartCatalog = [
         type: 'table',
         color: '#00d4ff',
         platform: 'YOUTUBE',
-        windsorFields: ['video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration']
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
 
     // AUDIENCE
@@ -358,6 +358,88 @@ const chartCatalog = [
         color: '#ffce44',
         platform: 'YOUTUBE',
         windsorFields: ['viewer_percentage', 'country']
+    },
+
+    // NEW YOUTUBE DAILY CHARTS
+    {
+        key: 'yt_daily_views',
+        title: 'Napi nézések',
+        description: 'Napi megtekintések száma',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['views', 'date']
+    },
+    {
+        key: 'yt_daily_watch_time',
+        title: 'Napi nézési idő (perc)',
+        description: 'Napi becsült nézési idő percben',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#00ff95',
+        platform: 'YOUTUBE',
+        windsorFields: ['estimated_minutes_watched', 'date']
+    },
+    {
+        key: 'yt_daily_subscribers',
+        title: 'Napi feliratkozók',
+        description: 'Napi új és elvesztett feliratkozók',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#ff0000',
+        platform: 'YOUTUBE',
+        windsorFields: ['subscribers_gained', 'subscribers_lost', 'date']
+    },
+    {
+        key: 'yt_daily_likes',
+        title: 'Napi kedvelések',
+        description: 'Napi kedvelések száma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#bc6aff',
+        platform: 'YOUTUBE',
+        windsorFields: ['likes', 'date']
+    },
+    {
+        key: 'yt_daily_comments',
+        title: 'Napi kommentek',
+        description: 'Napi kommentek száma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'YOUTUBE',
+        windsorFields: ['comments', 'date']
+    },
+    {
+        key: 'yt_daily_shares',
+        title: 'Napi megosztások',
+        description: 'Napi megosztások száma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['shares', 'date']
+    },
+    {
+        key: 'yt_avg_view_pct_trend',
+        title: 'Átlagos megtekintési %',
+        description: 'Átlagos megtekintési százalék napi trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'YOUTUBE',
+        windsorFields: ['average_view_percentage', 'date']
+    },
+    {
+        key: 'yt_video_performance',
+        title: 'Videó teljesítmény',
+        description: 'Videók összesített teljesítménye',
+        category: CHART_CATEGORIES.VIDEO,
+        type: 'table',
+        color: '#00d4ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
 
     // ========== TIKTOK ORGANIC (NEW) ==========
@@ -727,7 +809,7 @@ const chartCatalog = [
         type: 'bar',
         color: '#ffce44',
         platform: 'YOUTUBE',
-        windsorFields: ['average_view_percentage', 'video_title', 'video_id']
+        windsorFields: ['average_view_percentage', 'date']
     },
     {
         key: 'yt_playlist_adds',

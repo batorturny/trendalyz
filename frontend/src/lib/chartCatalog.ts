@@ -24,7 +24,7 @@ export const chartCatalog = [
         description: 'Napi k\u00f6vet\u0151sz\u00e1m trend',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['followers_count', 'date']
     },
@@ -34,7 +34,7 @@ export const chartCatalog = [
         description: 'Profil l\u00e1togat\u00e1sok trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['profile_views', 'date']
     },
@@ -46,7 +46,7 @@ export const chartCatalog = [
         description: 'Naponta kapott like-ok sz\u00e1ma',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['likes', 'date']
     },
@@ -66,7 +66,7 @@ export const chartCatalog = [
         description: 'Naponta kapott megoszt\u00e1sok',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['shares', 'date']
     },
@@ -89,7 +89,7 @@ export const chartCatalog = [
         description: 'Melyik napon a legjobb a teljes\u00edtm\u00e9ny',
         category: CHART_CATEGORIES.TIMING,
         type: 'bar',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['audience_activity_count', 'audience_activity_hour']
     },
@@ -99,7 +99,7 @@ export const chartCatalog = [
         description: 'Aktivit\u00e1s napszak szerint (0-23)',
         category: CHART_CATEGORIES.TIMING,
         type: 'bar',
-        color: '#9d4edd',
+        color: '#0d3b5e',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['audience_activity_count', 'audience_activity_hour']
     },
@@ -111,7 +111,7 @@ export const chartCatalog = [
         description: 'Teljes vide\u00f3 lista az id\u0151szakban',
         category: CHART_CATEGORIES.VIDEO,
         type: 'table',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['video_id', 'video_caption', 'video_create_datetime', 'video_views_count', 'video_likes', 'video_comments', 'video_shares', 'video_embed_url']
     },
@@ -121,7 +121,7 @@ export const chartCatalog = [
         description: 'Legt\u00f6bb megtekint\u00e9s\u0171 vide\u00f3k',
         category: CHART_CATEGORIES.VIDEO,
         type: 'table',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['video_id', 'video_caption', 'video_create_datetime', 'video_views_count', 'video_likes', 'video_comments', 'video_shares', 'video_embed_url']
     },
@@ -143,7 +143,7 @@ export const chartCatalog = [
         description: 'Napi el\u00e9r\u00e9s \u00e9s impresszi\u00f3k trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_impressions_unique', 'page_impressions', 'date']
     },
@@ -153,7 +153,7 @@ export const chartCatalog = [
         description: 'Oldal k\u00f6vet\u0151k sz\u00e1m\u00e1nak alakul\u00e1sa',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_fans', 'date']
     },
@@ -163,7 +163,7 @@ export const chartCatalog = [
         description: 'Poszt engagement',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_post_engagements', 'date']
     },
@@ -183,7 +183,7 @@ export const chartCatalog = [
         description: 'Teljes poszt lista az id\u0151szakban',
         category: CHART_CATEGORIES.POST,
         type: 'table',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_impressions_unique', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_clicks', 'post_permalink']
     },
@@ -193,7 +193,7 @@ export const chartCatalog = [
         description: 'Legjobban teljes\u00edt\u0151 posztok',
         category: CHART_CATEGORIES.POST,
         type: 'table',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_impressions', 'post_impressions_unique', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_clicks', 'post_permalink']
     },
@@ -215,7 +215,7 @@ export const chartCatalog = [
         description: 'K\u00f6vet\u0151k sz\u00e1m\u00e1nak alakul\u00e1sa',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['follower_count', 'date']
     },
@@ -225,7 +225,7 @@ export const chartCatalog = [
         description: 'Like-ok, kommentek, megoszt\u00e1sok, ment\u00e9sek',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['likes', 'comments', 'shares', 'saved', 'date']
     },
@@ -245,7 +245,7 @@ export const chartCatalog = [
         description: 'Teljes tartalom lista az id\u0151szakban',
         category: CHART_CATEGORIES.MEDIA,
         type: 'table',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved', 'permalink']
     },
@@ -255,7 +255,7 @@ export const chartCatalog = [
         description: 'Legjobban teljes\u00edt\u0151 tartalmak',
         category: CHART_CATEGORIES.MEDIA,
         type: 'table',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_id', 'caption', 'timestamp', 'impressions', 'reach', 'likes', 'comments', 'shares', 'saved', 'permalink']
     },
@@ -279,7 +279,7 @@ export const chartCatalog = [
         description: 'Napi megtekint\u00e9sek trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'YOUTUBE',
         windsorFields: ['views', 'date']
     },
@@ -289,7 +289,7 @@ export const chartCatalog = [
         description: 'Becs\u00fclt n\u00e9z\u00e9si id\u0151 (perc)',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'YOUTUBE',
         windsorFields: ['estimated_minutes_watched', 'date']
     },
@@ -301,7 +301,7 @@ export const chartCatalog = [
         description: 'Like-ok, kommentek \u00e9s megoszt\u00e1sok',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'YOUTUBE',
         windsorFields: ['likes', 'comments', 'shares', 'date']
     },
@@ -324,9 +324,9 @@ export const chartCatalog = [
         description: 'Legt\u00f6bb megtekint\u00e9s\u0171 vide\u00f3k',
         category: CHART_CATEGORIES.VIDEO,
         type: 'table',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'YOUTUBE',
-        windsorFields: ['video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration']
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
     {
         key: 'yt_worst_5_videos',
@@ -336,7 +336,7 @@ export const chartCatalog = [
         type: 'table',
         color: '#ff6b6b',
         platform: 'YOUTUBE',
-        windsorFields: ['video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration']
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
     {
         key: 'yt_all_videos',
@@ -344,9 +344,9 @@ export const chartCatalog = [
         description: 'Teljes vide\u00f3 lista az id\u0151szakban',
         category: CHART_CATEGORIES.VIDEO,
         type: 'table',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'YOUTUBE',
-        windsorFields: ['video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration']
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
 
     // AUDIENCE
@@ -368,7 +368,7 @@ export const chartCatalog = [
         description: 'Bio link kattint\u00e1sok trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['bio_link_clicks', 'date']
     },
@@ -378,7 +378,7 @@ export const chartCatalog = [
         description: '\u00c1tlagos n\u00e9z\u00e9si id\u0151 vide\u00f3nk\u00e9nt',
         category: CHART_CATEGORIES.VIDEO,
         type: 'bar',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['video_average_time_watched', 'video_caption', 'date']
     },
@@ -398,7 +398,7 @@ export const chartCatalog = [
         description: 'Forgalmi forr\u00e1sok (For You, Following, stb.)',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#9d4edd',
+        color: '#0d3b5e',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['video_impression_sources_impression_source', 'video_impression_sources_percentage']
     },
@@ -450,7 +450,7 @@ export const chartCatalog = [
         description: 'Napi impresszi\u00f3k \u00e9s kattint\u00e1sok',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'TIKTOK_ADS',
         windsorFields: ['impressions', 'clicks', 'date']
     },
@@ -460,7 +460,7 @@ export const chartCatalog = [
         description: '\u00c1tkattint\u00e1si ar\u00e1ny trend',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'TIKTOK_ADS',
         windsorFields: ['ctr', 'date']
     },
@@ -470,7 +470,7 @@ export const chartCatalog = [
         description: 'Kattint\u00e1sonk\u00e9nti \u00e9s ezres megjelen\u00e9senk\u00e9nti k\u00f6lts\u00e9g',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'TIKTOK_ADS',
         windsorFields: ['cpc', 'cpm', 'date']
     },
@@ -480,7 +480,7 @@ export const chartCatalog = [
         description: 'Napi konverzi\u00f3k sz\u00e1ma',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'TIKTOK_ADS',
         windsorFields: ['conversions', 'date']
     },
@@ -500,7 +500,7 @@ export const chartCatalog = [
         description: 'Kamp\u00e1nyok r\u00e9szletes teljes\u00edtm\u00e9nye',
         category: CHART_CATEGORIES.ADS,
         type: 'table',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'TIKTOK_ADS',
         windsorFields: ['campaign_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions']
     },
@@ -522,7 +522,7 @@ export const chartCatalog = [
         description: 'Oldal vide\u00f3 megtekint\u00e9sek trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_video_views', 'date']
     },
@@ -532,7 +532,7 @@ export const chartCatalog = [
         description: 'K\u00f6vet\u0151/k\u00f6vet\u00e9st\u00f6rl\u00e9s napi trend',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_daily_follows', 'page_daily_unfollows', 'date']
     },
@@ -542,7 +542,7 @@ export const chartCatalog = [
         description: 'Reakci\u00f3 t\u00edpus eloszl\u00e1s (like/love/wow/haha)',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['post_reactions_like_total', 'post_reactions_love_total', 'post_reactions_wow_total', 'post_reactions_haha_total', 'date']
     },
@@ -562,7 +562,7 @@ export const chartCatalog = [
         description: 'Facebook Reel tartalmak teljes\u00edtm\u00e9nye',
         category: CHART_CATEGORIES.POST,
         type: 'table',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['post_id', 'post_message', 'post_created_time', 'post_video_views', 'post_reactions_like_total', 'post_reactions_love_total', 'post_activity_by_action_type_comment', 'post_activity_by_action_type_share', 'post_permalink']
     },
@@ -584,7 +584,7 @@ export const chartCatalog = [
         description: 'Reel megtekint\u00e9sek \u00e9s interakci\u00f3k',
         category: CHART_CATEGORIES.MEDIA,
         type: 'bar',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_reel_video_views', 'media_reel_avg_watch_time', 'date']
     },
@@ -604,7 +604,7 @@ export const chartCatalog = [
         description: 'Ment\u00e9si ar\u00e1ny trend',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['media_saved', 'media_reach', 'date'],
         calculated: true
@@ -615,7 +615,7 @@ export const chartCatalog = [
         description: '\u00d6sszes k\u00f6vet\u0151sz\u00e1m alakul\u00e1sa',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['follower_count', 'date']
     },
@@ -638,7 +638,7 @@ export const chartCatalog = [
         description: 'Napi oldal megtekint\u00e9sek trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#9d4edd',
+        color: '#0d3b5e',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_views_total', 'date']
     },
@@ -652,7 +652,7 @@ export const chartCatalog = [
         type: 'bar',
         color: '#ffce44',
         platform: 'YOUTUBE',
-        windsorFields: ['average_view_percentage', 'video_title', 'video_id']
+        windsorFields: ['average_view_percentage', 'date']
     },
     {
         key: 'yt_playlist_adds',
@@ -660,7 +660,7 @@ export const chartCatalog = [
         description: 'Playlisthez ad\u00e1s trend',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'YOUTUBE',
         windsorFields: ['videos_added_to_playlists', 'date']
     },
@@ -680,7 +680,7 @@ export const chartCatalog = [
         description: 'Like \u00e9s dislike ar\u00e1ny trend',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'YOUTUBE',
         windsorFields: ['likes', 'dislikes', 'date']
     },
@@ -693,7 +693,7 @@ export const chartCatalog = [
         description: 'Szerzett \u00e9s elvesztett k\u00f6vet\u0151k napi bont\u00e1sban',
         category: CHART_CATEGORIES.TREND,
         type: 'bar',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['daily_lost_followers', 'date']
     },
@@ -703,7 +703,7 @@ export const chartCatalog = [
         description: 'K\u00f6vet\u0151k megoszl\u00e1sa orsz\u00e1gonk\u00e9nt',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['audience_country', 'audience_country_percentage']
     },
@@ -713,7 +713,7 @@ export const chartCatalog = [
         description: 'K\u00f6vet\u0151k megoszl\u00e1sa v\u00e1rosonk\u00e9nt',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'TIKTOK_ORGANIC',
         windsorFields: ['audience_cities_city', 'audience_cities_percentage']
     },
@@ -745,7 +745,7 @@ export const chartCatalog = [
         description: 'Impresszi\u00f3k trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_impressions', 'date']
     },
@@ -765,7 +765,7 @@ export const chartCatalog = [
         description: 'Oldal k\u00f6vet\u0151k megoszl\u00e1sa orsz\u00e1gonk\u00e9nt',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_fans_country_name', 'page_fans_country_value']
     },
@@ -775,7 +775,7 @@ export const chartCatalog = [
         description: 'Oldal k\u00f6vet\u0151k megoszl\u00e1sa v\u00e1rosonk\u00e9nt',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#9d4edd',
+        color: '#0d3b5e',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_fans_city_name', 'page_fans_city_value']
     },
@@ -785,7 +785,7 @@ export const chartCatalog = [
         description: 'Oldal \u00f6sszes akci\u00f3 \u00e9s poszt engagement',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['page_total_actions', 'page_post_engagements', 'date']
     },
@@ -795,7 +795,7 @@ export const chartCatalog = [
         description: 'Facebook Reels lej\u00e1tsz\u00e1sok trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'FACEBOOK_ORGANIC',
         windsorFields: ['blue_reels_play_count', 'fb_reels_total_plays', 'date']
     },
@@ -827,7 +827,7 @@ export const chartCatalog = [
         description: 'K\u00f6vet\u0151k megoszl\u00e1sa orsz\u00e1gonk\u00e9nt',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['audience_country_name', 'audience_country_size']
     },
@@ -837,7 +837,7 @@ export const chartCatalog = [
         description: 'K\u00f6vet\u0151k megoszl\u00e1sa v\u00e1rosonk\u00e9nt',
         category: CHART_CATEGORIES.AUDIENCE,
         type: 'bar',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['city', 'audience_city_size']
     },
@@ -847,7 +847,7 @@ export const chartCatalog = [
         description: 'Weboldal kattint\u00e1sok napi trendje',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['website_clicks_1d', 'date']
     },
@@ -867,7 +867,7 @@ export const chartCatalog = [
         description: 'El\u0151re/h\u00e1tra \u00e9rint\u00e9sek, kil\u00e9p\u00e9sek',
         category: CHART_CATEGORIES.MEDIA,
         type: 'bar',
-        color: '#9d4edd',
+        color: '#0d3b5e',
         platform: 'INSTAGRAM_ORGANIC',
         windsorFields: ['story_taps_forward', 'story_taps_back', 'story_swipe_forward', 'date']
     },
@@ -919,7 +919,7 @@ export const chartCatalog = [
         description: 'Napi k\u00f6zz\u00e9tett vide\u00f3k sz\u00e1ma',
         category: CHART_CATEGORIES.TREND,
         type: 'bar',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'YOUTUBE',
         windsorFields: ['videos_published', 'date']
     },
@@ -939,9 +939,91 @@ export const chartCatalog = [
         description: 'K\u00e1rtya \u00e1tkattint\u00e1si ar\u00e1ny trend',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
-        color: '#bc6aff',
+        color: '#0d3b5e',
         platform: 'YOUTUBE',
         windsorFields: ['card_click_rate', 'date']
+    },
+
+    // ========== YOUTUBE DAILY CHARTS ==========
+    {
+        key: 'yt_daily_views',
+        title: 'Napi n\u00e9z\u00e9sek',
+        description: 'Napi megtekint\u00e9sek sz\u00e1ma',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['views', 'date']
+    },
+    {
+        key: 'yt_daily_watch_time',
+        title: 'Napi n\u00e9z\u00e9si id\u0151 (perc)',
+        description: 'Napi becs\u00fclt n\u00e9z\u00e9si id\u0151 percben',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#8ec8d8',
+        platform: 'YOUTUBE',
+        windsorFields: ['estimated_minutes_watched', 'date']
+    },
+    {
+        key: 'yt_daily_subscribers',
+        title: 'Napi feliratkoz\u00f3k',
+        description: 'Napi \u00faj \u00e9s elvesztett feliratkoz\u00f3k',
+        category: CHART_CATEGORIES.TREND,
+        type: 'bar',
+        color: '#ff0000',
+        platform: 'YOUTUBE',
+        windsorFields: ['subscribers_gained', 'subscribers_lost', 'date']
+    },
+    {
+        key: 'yt_daily_likes',
+        title: 'Napi kedvel\u00e9sek',
+        description: 'Napi kedvel\u00e9sek sz\u00e1ma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#0d3b5e',
+        platform: 'YOUTUBE',
+        windsorFields: ['likes', 'date']
+    },
+    {
+        key: 'yt_daily_comments',
+        title: 'Napi kommentek',
+        description: 'Napi kommentek sz\u00e1ma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#ffce44',
+        platform: 'YOUTUBE',
+        windsorFields: ['comments', 'date']
+    },
+    {
+        key: 'yt_daily_shares',
+        title: 'Napi megoszt\u00e1sok',
+        description: 'Napi megoszt\u00e1sok sz\u00e1ma',
+        category: CHART_CATEGORIES.ENGAGEMENT,
+        type: 'bar',
+        color: '#4d96ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['shares', 'date']
+    },
+    {
+        key: 'yt_avg_view_pct_trend',
+        title: '\u00c1tlagos megtekint\u00e9si %',
+        description: '\u00c1tlagos megtekint\u00e9si sz\u00e1zal\u00e9k napi trend',
+        category: CHART_CATEGORIES.TREND,
+        type: 'line',
+        color: '#00d4aa',
+        platform: 'YOUTUBE',
+        windsorFields: ['average_view_percentage', 'date']
+    },
+    {
+        key: 'yt_video_performance',
+        title: 'Vide\u00f3 teljes\u00edtm\u00e9ny',
+        description: 'Vide\u00f3k \u00f6sszesítített teljesítm\u00e9nye',
+        category: CHART_CATEGORIES.VIDEO,
+        type: 'table',
+        color: '#00d4ff',
+        platform: 'YOUTUBE',
+        windsorFields: ['video', 'views', 'likes', 'comments', 'date']
     },
 
     // ========== TIKTOK ADS (NEW WINDSOR FIELDS) ==========
@@ -951,7 +1033,7 @@ export const chartCatalog = [
         description: '1000 el\u00e9r\u00e9sre jut\u00f3 k\u00f6lts\u00e9g trend',
         category: CHART_CATEGORIES.TREND,
         type: 'line',
-        color: '#9d4edd',
+        color: '#0d3b5e',
         platform: 'TIKTOK_ADS',
         windsorFields: ['cost_per_1000_reached', 'date']
     },
@@ -961,7 +1043,7 @@ export const chartCatalog = [
         description: '\u00c1tlagos vide\u00f3 lej\u00e1tsz\u00e1si id\u0151 \u00e9s per-user',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'line',
-        color: '#00d4aa',
+        color: '#4da8bf',
         platform: 'TIKTOK_ADS',
         windsorFields: ['average_video_play', 'average_video_play_per_user', 'date']
     },
@@ -971,7 +1053,7 @@ export const chartCatalog = [
         description: 'App telep\u00edt\u00e9sek \u00e9s k\u00f6lts\u00e9g/telep\u00edt\u00e9s',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#00ff95',
+        color: '#8ec8d8',
         platform: 'TIKTOK_ADS',
         windsorFields: ['app_install', 'cost_per_app_install', 'date']
     },
@@ -991,7 +1073,7 @@ export const chartCatalog = [
         description: 'Hirdet\u00e9scsoportok r\u00e9szletes teljes\u00edtm\u00e9nye',
         category: CHART_CATEGORIES.ADS,
         type: 'table',
-        color: '#4d96ff',
+        color: '#1a6b8a',
         platform: 'TIKTOK_ADS',
         windsorFields: ['adgroup_name', 'impressions', 'clicks', 'spend', 'cpc', 'ctr', 'conversions']
     },
@@ -1001,7 +1083,7 @@ export const chartCatalog = [
         description: 'Regisztr\u00e1ci\u00f3k \u00e9s k\u00f6lts\u00e9g/regisztr\u00e1ci\u00f3',
         category: CHART_CATEGORIES.ENGAGEMENT,
         type: 'bar',
-        color: '#00d4ff',
+        color: '#b8dce8',
         platform: 'TIKTOK_ADS',
         windsorFields: ['registration', 'cost_per_registration', 'date']
     },

@@ -14,7 +14,7 @@ class ChartGenerator {
             const daily = [];
             const video = [];
             for (const row of windsorData) {
-                if (row.video_id || row.post_id || row.media_id) {
+                if (row.video_id || row.video || row.post_id || row.media_id) {
                     video.push(row);
                 } else {
                     daily.push(row);
@@ -622,46 +622,92 @@ class ChartGenerator {
     }
 
     generate_yt_avg_view_pct() {
-        const videos = this.video.filter(v => v.average_view_percentage);
-        return {
-            labels: videos.map(v => (v.video_title || '').substring(0, 30) || v.video_id || '-'),
-            series: [{ name: 'Nézési %', data: videos.map(v => parseFloat((parseFloat(v.average_view_percentage) || 0).toFixed(2))) }]
-        };
+        return this.dailyAvg(this.daily, 'average_view_percentage', 'Átl. megtekintés%');
     }
 
     generate_yt_playlist_adds() { return this.dailyMetric(this.daily, 'videos_added_to_playlists', 'Playlisthez adva'); }
     generate_yt_premium_views() { return this.dailyMetric(this.daily, 'red_views', 'Premium nézések'); }
     generate_yt_likes_dislikes() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['dislikes', 'Dislike-ok']]); }
 
+    // NEW YouTube daily charts
+    generate_yt_daily_views() { return this.dailyMetric(this.daily, 'views', 'Nézések'); }
+    generate_yt_daily_watch_time() { return this.dailyMetric(this.daily, 'estimated_minutes_watched', 'Nézési idő (perc)'); }
+    generate_yt_daily_subscribers() { return this.dailyMultiMetric(this.daily, [['subscribers_gained', 'Új feliratkozó'], ['subscribers_lost', 'Leiratkozó']]); }
+    generate_yt_daily_likes() { return this.dailyMetric(this.daily, 'likes', 'Kedvelések'); }
+    generate_yt_daily_comments() { return this.dailyMetric(this.daily, 'comments', 'Kommentek'); }
+    generate_yt_daily_shares() { return this.dailyMetric(this.daily, 'shares', 'Megosztások'); }
+    generate_yt_avg_view_pct_trend() { return this.dailyAvg(this.daily, 'average_view_percentage', 'Átl. megtekintés%'); }
+    generate_yt_subscriber_count() { return this.dailyMax(this.daily, 'subscriber_count', 'Feliratkozók'); }
+    generate_yt_card_performance() { return this.dailyMultiMetric(this.daily, [['card_clicks', 'Kattintások'], ['card_impressions', 'Megjelenések']]); }
+    generate_yt_card_ctr() { return this.dailyAvg(this.daily, 'card_click_rate', 'CTR %'); }
+    generate_yt_red_watch_time() { return this.dailyMetric(this.daily, 'estimated_red_minutes_watched', 'Premium nézési idő (perc)'); }
+    generate_yt_playlist_removes() { return this.dailyMetric(this.daily, 'videos_removed_from_playlists', 'Eltávolítva'); }
+    generate_yt_videos_published() { return this.dailyMetric(this.daily, 'videos_published', 'Közzétéve'); }
+
+    generate_yt_video_performance() {
+        // Aggregate by video ID, sum views/likes/comments
+        const videoMap = {};
+        this.video.forEach(row => {
+            const vid = row.video;
+            if (!vid) return;
+            if (!videoMap[vid]) videoMap[vid] = { views: 0, likes: 0, comments: 0 };
+            videoMap[vid].views += parseInt(row.views) || 0;
+            videoMap[vid].likes += parseInt(row.likes) || 0;
+            videoMap[vid].comments += parseInt(row.comments) || 0;
+        });
+        const tableData = Object.entries(videoMap)
+            .map(([videoId, s]) => ({
+                title: videoId,
+                views: s.views,
+                likes: s.likes,
+                comments: s.comments
+            }))
+            .sort((a, b) => b.views - a.views);
+        return { labels: ['Videó ID', 'Nézések', 'Kedvelések', 'Kommentek'], series: [{ name: 'Videos', data: tableData }] };
+    }
+
     generate_yt_top_5_videos() {
-        const sorted = [...this.video].sort((a, b) => (parseInt(b.views) || 0) - (parseInt(a.views) || 0));
-        return this.generateYouTubeVideoTable(sorted.slice(0, 5));
+        const aggregated = this._aggregateYouTubeVideos();
+        const sorted = [...aggregated].sort((a, b) => b.views - a.views);
+        return this._buildYouTubeVideoTable(sorted.slice(0, 5));
     }
     generate_yt_worst_5_videos() {
-        const sorted = [...this.video].filter(v => parseInt(v.views) > 0)
-            .sort((a, b) => (parseInt(a.views) || 0) - (parseInt(b.views) || 0));
-        return this.generateYouTubeVideoTable(sorted.slice(0, 5));
+        const aggregated = this._aggregateYouTubeVideos().filter(v => v.views > 0);
+        const sorted = [...aggregated].sort((a, b) => a.views - b.views);
+        return this._buildYouTubeVideoTable(sorted.slice(0, 5));
     }
-    generate_yt_all_videos() { return this.generateYouTubeVideoTable(this.video); }
+    generate_yt_all_videos() { return this._buildYouTubeVideoTable(this._aggregateYouTubeVideos()); }
 
-    generateYouTubeVideoTable(videos) {
+    /** Aggregate YouTube video rows by video ID (field: `video`) */
+    _aggregateYouTubeVideos() {
+        const videoMap = {};
+        this.video.forEach(row => {
+            const vid = row.video || row.video_id;
+            if (!vid) return;
+            if (!videoMap[vid]) videoMap[vid] = { video: vid, views: 0, likes: 0, comments: 0, shares: 0 };
+            videoMap[vid].views += parseInt(row.views) || 0;
+            videoMap[vid].likes += parseInt(row.likes) || 0;
+            videoMap[vid].comments += parseInt(row.comments) || 0;
+            videoMap[vid].shares += parseInt(row.shares) || 0;
+        });
+        return Object.values(videoMap);
+    }
+
+    _buildYouTubeVideoTable(videos) {
         const tableData = videos.map(v => {
-            const views = parseInt(v.views) || 0;
-            const likes = parseInt(v.likes) || 0;
-            const comments = parseInt(v.comments) || 0;
-            const shares = parseInt(v.shares) || 0;
+            const views = v.views || 0;
+            const likes = v.likes || 0;
+            const comments = v.comments || 0;
+            const shares = v.shares || 0;
             const er = this.engagementRate(likes, comments, shares, views);
             return {
-                id: v.video_id, title: v.video_title || '-',
-                date: v.video_published_at ? v.video_published_at.substring(0, 10) : '-',
+                title: v.video || '-',
                 views, likes, comments, shares,
-                avgViewDuration: parseInt(v.average_view_duration) || 0,
-                avgViewPercentage: parseFloat(v.average_view_percentage) || 0,
                 engagementRate: er,
-                link: v.video_id ? `https://youtube.com/watch?v=${v.video_id}` : '#'
+                link: v.video ? `https://youtube.com/watch?v=${v.video}` : '#'
             };
         });
-        return { labels: ['Dátum', 'Cím', 'Views', 'Likes', 'Comments', 'Shares', 'Átl. nézési idő', 'Nézési%', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó ID', 'Views', 'Likes', 'Comments', 'Shares', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====

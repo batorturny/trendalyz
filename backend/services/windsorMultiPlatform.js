@@ -228,14 +228,13 @@ const PLATFORM_CONFIG = {
   },
   YOUTUBE: {
     endpoint: 'youtube',
-    dailyFields: ['date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost', 'estimated_minutes_watched'],
-    contentFields: ['date', 'video_id', 'video_title', 'video_published_at', 'views', 'likes', 'comments', 'shares', 'average_view_duration', 'estimated_minutes_watched'],
+    dailyFields: ['date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost', 'estimated_minutes_watched', 'average_view_percentage', 'dislikes'],
+    contentFields: ['date', 'video', 'views', 'likes', 'comments'],
     audienceFields: ['date', 'viewer_percentage', 'country'],
     demographicFields: null,
     allChartFields: [
       'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
-      'estimated_minutes_watched', 'video_id', 'video_title', 'video_published_at',
-      'average_view_duration',
+      'estimated_minutes_watched', 'video',
       'average_view_percentage', 'videos_added_to_playlists', 'red_views', 'dislikes',
     ],
   },
