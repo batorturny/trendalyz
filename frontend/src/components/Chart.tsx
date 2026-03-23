@@ -51,8 +51,9 @@ export const Chart = memo(function Chart({ type, labels, data, label, color = '#
     const minVal = Math.min(...nums);
     const maxVal = Math.max(...nums);
     const range = maxVal - minVal;
-    // If variation is < 20% of max, zoom in to show growth
-    return range / maxVal > 0.2;
+    // If variation is < 20% of max → zoom in (don't start at zero)
+    if (range / maxVal < 0.2) return false;
+    return true;
   })();
 
   const textColor = theme === 'dark' ? '#e5e5e5' : '#374151';
