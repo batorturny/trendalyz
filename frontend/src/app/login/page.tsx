@@ -11,7 +11,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo - server rendered, no JS needed */}
         <div className="text-center mb-8 flex flex-col items-center">
-          <TrendalyzLogo size="lg" />
+          <TrendalyzLogo size="lg" showSubtitle />
           <p className="text-[var(--text-secondary)] text-sm mt-3 max-w-xs">
             {t('Havi riportok marketing ügynökségeknek — minden partner, egy helyen')}
           </p>
