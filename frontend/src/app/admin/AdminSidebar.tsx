@@ -35,7 +35,7 @@ function SidebarContent({ userName, onNavigate }: { userName: string; onNavigate
     <>
       {/* Logo */}
       <div className="p-6 border-b border-[var(--border)]">
-        <TrendalyzLogo size="md" />
+        <TrendalyzLogo size="md" showSubtitle />
         <p className="text-[10px] text-[var(--text-secondary)] font-semibold mt-1.5 uppercase tracking-wider">{t('Admin Panel')}</p>
       </div>
 
