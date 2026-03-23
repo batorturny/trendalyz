@@ -228,6 +228,7 @@ const PLATFORM_CONFIG = {
   },
   YOUTUBE: {
     endpoint: 'youtube',
+    skipSelectAccounts: true,
     dailyFields: ['date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost', 'estimated_minutes_watched', 'average_view_percentage', 'dislikes'],
     contentFields: ['date', 'video', 'views', 'likes', 'comments'],
     audienceFields: ['date', 'viewer_percentage', 'country'],
@@ -263,7 +264,9 @@ class WindsorMultiPlatform {
   async fetchData(provider, accountId, dateFrom, dateTo, fields) {
     const config = this.getConfig(provider);
     const fieldStr = Array.isArray(fields) ? fields.join(',') : fields;
-    const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fieldStr}&select_accounts=${accountId}`;
+    // Some connectors (YouTube) don't support select_accounts filter
+    const accountFilter = config.skipSelectAccounts ? '' : `&select_accounts=${accountId}`;
+    const url = `${WINDSOR_BASE}/${config.endpoint}?api_key=${this.apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fieldStr}${accountFilter}`;
 
     try {
       const response = await axios.get(url, { timeout: 120000, httpsAgent });
