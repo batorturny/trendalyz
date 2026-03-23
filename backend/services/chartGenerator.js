@@ -650,16 +650,17 @@ class ChartGenerator {
         this.video.forEach(row => {
             const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video_title: row.video_title || '', views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
             videoMap[vid].shares += parseInt(row.shares) || 0;
             videoMap[vid].estimated_minutes_watched += parseFloat(row.estimated_minutes_watched) || 0;
+            if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
         });
         const tableData = Object.entries(videoMap)
             .map(([videoId, s]) => ({
-                title: videoId.slice(0, 11),
+                title: s.video_title || videoId,
                 views: s.views,
                 likes: s.likes,
                 comments: s.comments,
@@ -690,11 +691,12 @@ class ChartGenerator {
         this.video.forEach(row => {
             const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { video: vid, views: 0, likes: 0, comments: 0, shares: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video: vid, video_title: row.video_title || '', views: 0, likes: 0, comments: 0, shares: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
             videoMap[vid].shares += parseInt(row.shares) || 0;
+            if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
         });
         return Object.values(videoMap);
     }
@@ -706,14 +708,15 @@ class ChartGenerator {
             const comments = v.comments || 0;
             const shares = v.shares || 0;
             const er = this.engagementRate(likes, comments, shares, views);
+            const displayTitle = v.video_title || v.video || '-';
             return {
-                title: v.video || '-',
+                title: displayTitle,
                 views, likes, comments, shares,
                 engagementRate: er,
                 link: v.video ? `https://youtube.com/watch?v=${v.video}` : '#'
             };
         });
-        return { labels: ['Videó ID', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====
