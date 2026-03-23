@@ -60,7 +60,7 @@ function CustomSelect({
               onClick={() => { onChange(o.value); setOpen(false); }}
               className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
                 o.value === value
-                  ? 'bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white'
+                  ? 'bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white'
                   : 'text-[var(--text-primary)] hover:bg-[var(--surface)]'
               }`}
             >
@@ -134,7 +134,7 @@ export function EmailSchedule({
         <button
           onClick={handleSave}
           disabled={isPending || !hasChanges}
-          className="rounded-lg px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 hover:from-emerald-400 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          className="rounded-lg px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] hover:from-[#8ec8d8] hover:to-[#1a6b8a] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
           {isPending ? t('Mentés...') : saved ? t('Mentve!') : t('Mentés')}
         </button>

@@ -22,7 +22,7 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
             datasets: [{
                 label: 'Aktivitás',
                 data: demographics.activity,
-                borderColor: '#6366f1',
+                borderColor: '#1a6b8a',
                 fill: false,
                 borderWidth: 2,
                 tension: 0.3
@@ -53,7 +53,7 @@ export function DemographicsCard({ demographics }: DemographicsCardProps) {
                     </thead>
                     <tbody>
                         <tr className="border-t border-[var(--border)]">
-                            <td className="px-3 py-2 text-[var(--text-secondary)]"><span className="inline-block w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>Nő</td>
+                            <td className="px-3 py-2 text-[var(--text-secondary)]"><span className="inline-block w-2 h-2 rounded-full bg-[#8ec8d8] mr-2"></span>Nő</td>
                             <td className="px-3 py-2 text-right font-bold text-[var(--text-primary)]">{demographics.gender.female.toFixed(2)}%</td>
                         </tr>
                         <tr className="border-t border-[var(--border)]">

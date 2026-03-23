@@ -59,8 +59,8 @@ export function CompanyUsers({ companyId, users }: Props) {
                   <span className="text-sm font-semibold text-[var(--text-primary)] truncate max-w-[200px] sm:max-w-none">{user.email}</span>
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
                     user.role === 'ADMIN'
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300'
-                      : 'bg-blue-100 text-blue-700 dark:bg-cyan-500/20 dark:text-cyan-300'
+                      ? 'bg-[#0d3b5e]/10 text-[#0d3b5e] dark:bg-[#8ec8d8]/20 dark:text-[#8ec8d8]'
+                      : 'bg-[#1a6b8a]/10 text-[#1a6b8a] dark:bg-[#8ec8d8]/15 dark:text-[#b8dce8]'
                   }`}>
                     {user.role}
                   </span>
@@ -109,7 +109,7 @@ export function CompanyUsers({ companyId, users }: Props) {
         />
         <button
           type="submit"
-          className="px-4 py-2 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] transition-all duration-150"
+          className="px-4 py-2 bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] text-sm font-bold rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] active:scale-[0.97] transition-all duration-150"
         >
           Meghívás
         </button>

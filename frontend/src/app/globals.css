@@ -9,8 +9,8 @@
     --border: #e0e0e4;
     --text-primary: #1a1a1e;
     --text-secondary: #6b6b72;
-    --accent: #1a1a1e;
-    --accent-subtle: rgba(26, 26, 30, 0.06);
+    --accent: #1a6b8a;
+    --accent-subtle: rgba(26, 107, 138, 0.08);
     --success: #059669;
     --error: #dc2626;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -31,8 +31,8 @@
     --border: #3a3a40;
     --text-primary: #f0f0f2;
     --text-secondary: #9a9aa0;
-    --accent: #f0f0f2;
-    --accent-subtle: rgba(240, 240, 242, 0.06);
+    --accent: #8ec8d8;
+    --accent-subtle: rgba(142, 200, 216, 0.08);
     --success: #34d399;
     --error: #f87171;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -102,7 +102,7 @@
     transition: filter 0.15s ease, transform 0.1s ease;
     cursor: pointer;
   }
-  .dark .btn-primary { color: var(--surface); }
+  .dark .btn-primary { color: #1a1a1e; }
   .btn-primary:hover { filter: brightness(1.1); }
   .btn-primary:active { transform: scale(0.97); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -125,13 +125,13 @@
 
   /* Gradient button */
   .btn-gradient {
-    background: linear-gradient(135deg, #0d9488, #06b6d4, #6366f1);
+    background: linear-gradient(135deg, #1a6b8a, #0d3b5e);
     background-size: 200% 200%;
     color: #fff;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
   }
-  .btn-gradient:hover { opacity: 0.92; box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3); }
+  .btn-gradient:hover { opacity: 0.92; box-shadow: 0 4px 20px rgba(26, 107, 138, 0.3); }
   .btn-gradient:active { transform: scale(0.95); transition: transform 0.08s ease-in; }
   .btn-gradient:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 

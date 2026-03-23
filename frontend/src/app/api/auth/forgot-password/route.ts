@@ -57,10 +57,10 @@ export async function POST(req: Request) {
       subject: 'Jelszó visszaállítás - Trendalyz',
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0891b2;">Trendalyz</h2>
+          <h2 style="color: #0d3b5e;">Trendalyz</h2>
           <p>Jelszó-visszaállítási kérelmet kaptunk a fiókodhoz.</p>
           <p>Kattints az alábbi gombra az új jelszó beállításához:</p>
-          <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
             Új jelszó beállítása
           </a>
           <p style="color: #64748b; font-size: 12px; margin-top: 20px;">

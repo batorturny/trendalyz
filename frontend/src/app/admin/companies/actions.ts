@@ -132,10 +132,10 @@ export async function createCompany(formData: FormData) {
         subject: `Meghívó - ${name} Trendalyz`,
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #0891b2;">Trendalyz</h2>
+            <h2 style="color: #0d3b5e;">Trendalyz</h2>
             <p>Meghívást kaptál a <strong>${name}</strong> cég riportjainak megtekintéséhez.</p>
             <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
-            <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
               Jelszó beállítása
             </a>
             <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
@@ -260,10 +260,10 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
       subject: `Meghívó - ${company.name} Trendalyz`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0891b2;">Trendalyz</h2>
+          <h2 style="color: #0d3b5e;">Trendalyz</h2>
           <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
           <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
-          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
             Jelszó beállítása
           </a>
           <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
@@ -310,10 +310,10 @@ export async function resendInvite(userId: string, companyId: string) {
       subject: `Meghívó újraküldve - ${company.name} Trendalyz`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0891b2;">Trendalyz</h2>
+          <h2 style="color: #0d3b5e;">Trendalyz</h2>
           <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
           <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
-          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
             Jelszó beállítása
           </a>
           <p style="color: #64748b; font-size: 12px; margin-top: 20px;">

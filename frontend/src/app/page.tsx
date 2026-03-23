@@ -96,7 +96,7 @@ function BarChart({ bars }: { bars: { h: number; label: string }[] }) {
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80, padding: '0 4px' }}>
       {bars.map((b, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1 }}>
-          <div style={{ width: '100%', height: b.h, background: 'linear-gradient(180deg,#6366f1,#8b5cf6)', borderRadius: '3px 3px 0 0', opacity: 0.85 }} />
+          <div style={{ width: '100%', height: b.h, background: 'linear-gradient(180deg,#1a6b8a,#0d3b5e)', borderRadius: '3px 3px 0 0', opacity: 0.85 }} />
           <span style={{ color: '#9a9aa0', fontSize: 8 }}>{b.label}</span>
         </div>
       ))}
@@ -109,11 +109,11 @@ function LineChart() {
     <svg viewBox="0 0 220 60" style={{ width: '100%', height: 60 }}>
       <defs>
         <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+          <stop offset="0%" stopColor="#1a6b8a" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#1a6b8a" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d="M0,50 L27,42 L55,38 L82,30 L110,32 L137,22 L165,18 L192,10 L220,6" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
+      <path d="M0,50 L27,42 L55,38 L82,30 L110,32 L137,22 L165,18 L192,10 L220,6" fill="none" stroke="#1a6b8a" strokeWidth="2" strokeLinecap="round" />
       <path d="M0,50 L27,42 L55,38 L82,30 L110,32 L137,22 L165,18 L192,10 L220,6 L220,60 L0,60Z" fill="url(#lg1)" />
     </svg>
   );
@@ -168,7 +168,8 @@ export default function LandingPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <TrendalyzLogo size="md" showText={false} />
             <span style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f2', letterSpacing: '-0.02em' }}>
-              Trend<span style={{ color: '#a5b4fc' }}>alyz</span>
+              Trend<span style={{ color: '#8ec8d8' }}>alyz</span>
+
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -182,12 +183,12 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 24px 60px', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#6366f122', border: '1px solid #6366f144', borderRadius: 999, padding: '4px 14px', fontSize: 11, color: '#a5b4fc', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 24 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#1a6b8a22', border: '1px solid #1a6b8a44', borderRadius: 999, padding: '4px 14px', fontSize: 11, color: '#8ec8d8', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 24 }}>
           {t('MARKETING ÜGYNÖKSÉGEKNEK')}
         </div>
         <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 20 }}>
           {t('Havi riport minden')}<br />
-          <span style={{ background: 'linear-gradient(135deg,#0d9488,#06b6d4,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ background: 'linear-gradient(135deg,#8ec8d8,#1a6b8a,#0d3b5e)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             {t('partnerednek. Automatikusan.')}
           </span>
         </h1>
@@ -245,7 +246,7 @@ export default function LandingPage() {
           {/* Step 1 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 80 }}>
             <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#6366f122', border: '1px solid #6366f144', color: '#a5b4fc', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>1</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#1a6b8a22', border: '1px solid #1a6b8a44', color: '#8ec8d8', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>1</div>
               <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>{t('Kösd be a platformokat')}</h3>
               <p style={{ color: '#9a9aa0', lineHeight: 1.7, marginBottom: 16 }}>
                 {t('Egy kattintással engedélyezd a hozzáférést a TikTok, Facebook, Instagram és YouTube fiókokhoz. Az OAuth tokeneket titkosítva tároljuk, jelszavadat soha nem látjuk.')}
@@ -300,7 +301,7 @@ export default function LandingPage() {
               </div>
             </MockBrowser>
             <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#6366f122', border: '1px solid #6366f144', color: '#a5b4fc', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>2</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#1a6b8a22', border: '1px solid #1a6b8a44', color: '#8ec8d8', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>2</div>
               <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>{t('Tekintsd meg az analitikát')}</h3>
               <p style={{ color: '#9a9aa0', lineHeight: 1.7, marginBottom: 16 }}>
                 {t('A dashboard valós időben mutatja az összes platform összesített adatait. Napi bontású grafikonok, poszt-szintű statisztikák, elérés, engagement és videó metrikák.')}
@@ -318,7 +319,7 @@ export default function LandingPage() {
           {/* Step 3 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
             <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#6366f122', border: '1px solid #6366f144', color: '#a5b4fc', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>3</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#1a6b8a22', border: '1px solid #1a6b8a44', color: '#8ec8d8', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>3</div>
               <h3 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.01em' }}>{t('Automatikus havi riportok')}</h3>
               <p style={{ color: '#9a9aa0', lineHeight: 1.7, marginBottom: 16 }}>
                 {t('Állítsd be a hónap napját és az időpontot. Minden hónapban a Trendalyz automatikusan összeállítja a riportot és elküldi emailben PDF formátumban az ügyfelednek.')}
@@ -347,14 +348,14 @@ export default function LandingPage() {
               {/* Fake email preview */}
               <div style={{ background: '#1a1a1e', border: '1px solid #3a3a40', borderRadius: 8, padding: '12px 14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#0d9488,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>T</div>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg,#1a6b8a,#0d3b5e)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>T</div>
                   <div>
                     <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: '#f0f0f2' }}>{t('Trendalyz — Havi riport kész')}</p>
                     <p style={{ margin: 0, fontSize: 10, color: '#9a9aa0' }}>noreply@trendalyz.hu</p>
                   </div>
                 </div>
                 <p style={{ color: '#9a9aa0', fontSize: 11, lineHeight: 1.5, margin: 0 }}>
-                  {t('A február havi riportod elkészült.')} {t('Letöltés')}: <span style={{ color: '#6366f1' }}>riport-2026-02.pdf</span>
+                  {t('A február havi riportod elkészült.')} {t('Letöltés')}: <span style={{ color: '#8ec8d8' }}>riport-2026-02.pdf</span>
                 </p>
               </div>
             </MockBrowser>
@@ -366,7 +367,7 @@ export default function LandingPage() {
       <section style={{ borderTop: '1px solid #3a3a40', padding: '80px 24px', background: '#0d0d10' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <p style={{ color: '#a5b4fc', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>{t('ÜGYNÖKSÉGEKNEK TERVEZVE')}</p>
+            <p style={{ color: '#8ec8d8', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>{t('ÜGYNÖKSÉGEKNEK TERVEZVE')}</p>
             <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 16 }}>
               {t('Te kezeled. Ők kapják a riportot.')}
             </h2>
@@ -379,17 +380,17 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 48 }}>
             {[
               {
-                icon: <IconBuilding size={28} color="#a5b4fc" />,
+                icon: <IconBuilding size={28} color="#8ec8d8" />,
                 title: t('Több partner, egy felület'),
                 text: t('Minden ügyfeled külön cégnél kezeled. Platformonkénti kapcsolatok, saját hozzáférések, saját riportok — minden rendezett és elkülönített.'),
               },
               {
-                icon: <IconBarChart size={28} color="#a5b4fc" />,
+                icon: <IconBarChart size={28} color="#8ec8d8" />,
                 title: t('Automatikus havi riport'),
                 text: t('Állítsd be egyszer, és minden hónapban automatikusan megy ki az email a partnernek — PDF-ben, az előző hónaphoz képesti változással.'),
               },
               {
-                icon: <IconUsers size={28} color="#a5b4fc" />,
+                icon: <IconUsers size={28} color="#8ec8d8" />,
                 title: t('Ügyfél dashboard hozzáférés'),
                 text: t('Minden partner saját bejelentkezőt kap, ahol megnézheti az adatait. Nincs több "küld el Excel-ben" — ők is élőben látnak mindent.'),
               },
@@ -406,7 +407,7 @@ export default function LandingPage() {
           <div style={{ background: '#1a1a1e', border: '1px solid #3a3a40', borderRadius: 20, padding: '32px', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
             {/* Agency node */}
             <div style={{ textAlign: 'center', minWidth: 120 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg,#0d9488,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg,#1a6b8a,#0d3b5e)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
                 <IconBuilding size={26} color="white" />
               </div>
               <p style={{ color: '#f0f0f2', fontWeight: 700, fontSize: 13, margin: 0 }}>{t('Te (ügynökség)')}</p>
@@ -416,7 +417,7 @@ export default function LandingPage() {
             {/* Arrow */}
             <div style={{ flex: 1, minWidth: 60, textAlign: 'center' }}>
               <div style={{ borderTop: '2px dashed #3a3a40', position: 'relative' }}>
-                <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: '#6366f1', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 999 }}>Trendalyz</span>
+                <span style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: '#1a6b8a', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 999 }}>Trendalyz</span>
               </div>
               <p style={{ color: '#9a9aa0', fontSize: 11, marginTop: 14 }}>{t('minden hónapban automatikusan')}</p>
             </div>

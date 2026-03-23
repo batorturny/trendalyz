@@ -36,7 +36,7 @@ export async function sendEmail(opts: {
 function layout(content: string): string {
   return `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-      <div style="background: linear-gradient(135deg, #06b6d4, #8b5cf6); padding: 24px 32px;">
+      <div style="background: linear-gradient(135deg, #1a6b8a, #0d3b5e); padding: 24px 32px;">
         <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">📈 Trendalyz</h1>
       </div>
       <div style="padding: 32px;">
@@ -52,7 +52,7 @@ function layout(content: string): string {
 }
 
 function button(href: string, text: string): string {
-  return `<a href="${href}" style="display: inline-block; background: linear-gradient(to right, #06b6d4, #a855f7); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">${text}</a>`;
+  return `<a href="${href}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">${text}</a>`;
 }
 
 export function inviteEmailHtml(companyName: string, token: string): string {
@@ -120,7 +120,7 @@ export function reportEmailHtml(opts: {
 
     <table style="width: 100%; border-collapse: collapse; background: #f8fafc; border-radius: 12px; overflow: hidden;">
       <thead>
-        <tr style="background: linear-gradient(135deg, #06b6d4, #8b5cf6);">
+        <tr style="background: linear-gradient(135deg, #1a6b8a, #0d3b5e);">
           <th style="padding: 12px 16px; text-align: left; color: white; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Metrika</th>
           <th style="padding: 12px 16px; text-align: right; color: white; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Érték</th>
         </tr>

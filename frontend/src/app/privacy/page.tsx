@@ -165,7 +165,7 @@ const sections = [
         </div>
         <p className="text-gray-500 text-sm">
           Jogai gyakorlásához írjon a{' '}
-          <a href="mailto:bator.turny@gmail.com" className="text-indigo-600 hover:underline">
+          <a href="mailto:bator.turny@gmail.com" className="text-[#1a6b8a] hover:underline">
             bator.turny@gmail.com
           </a>{' '}
           címre. 30 napon belül válaszolunk.
@@ -236,7 +236,7 @@ export default function PrivacyPage() {
         <div className="max-w-3xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <Link href="/"><TrendalyzLogo size="sm" /></Link>
           <div className="text-center md:text-right">
-            <a href="mailto:bator.turny@gmail.com" className="text-sm text-indigo-600 hover:underline">
+            <a href="mailto:bator.turny@gmail.com" className="text-sm text-[#1a6b8a] hover:underline">
               bator.turny@gmail.com
             </a>
             <p className="text-gray-400 text-xs mt-1">

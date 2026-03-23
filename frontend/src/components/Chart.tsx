@@ -38,7 +38,7 @@ interface ChartProps {
   beginAtZero?: boolean;
 }
 
-export const Chart = memo(function Chart({ type, labels, data, label, color = '#bc6aff', height = 300, title, beginAtZero: beginAtZeroProp }: ChartProps) {
+export const Chart = memo(function Chart({ type, labels, data, label, color = '#1a6b8a', height = 300, title, beginAtZero: beginAtZeroProp }: ChartProps) {
   const { theme } = useTheme();
   const chartRef = useRef<ChartJS<'bar' | 'line'>>(null);
 

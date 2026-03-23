@@ -48,7 +48,7 @@ export default async function NewCompanyPage() {
           <div className="flex gap-3 justify-center">
             <Link
               href="/admin/billing"
-              className="px-6 py-3 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400 transition-all"
+              className="px-6 py-3 bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] font-bold rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] transition-all"
             >
               Előfizetés váltása
             </Link>

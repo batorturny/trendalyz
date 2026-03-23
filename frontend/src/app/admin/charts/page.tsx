@@ -957,7 +957,7 @@ export default function AdminChartsPage() {
               <button
                 onClick={handleGenerate}
                 disabled={loading || allSelectedChartKeys.size === 0}
-                className="w-full bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                className="w-full bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
                 {loading
                   ? isAllCompanies

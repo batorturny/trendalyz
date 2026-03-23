@@ -106,13 +106,13 @@ export default function ChartsPage() {
     return (
         <div className="min-h-screen bg-[var(--surface)] text-[var(--text-primary)]">
             {/* Header */}
-            <header className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-b border-[var(--border)]">
+            <header className="bg-gradient-to-r from-[#1a6b8a]/10 to-[#0d3b5e]/10 border-b border-[var(--border)]">
                 <div className="max-w-7xl mx-auto px-6 py-8">
                     <div className="flex items-center gap-3">
-                        <BarChart3 className="w-8 h-8 text-emerald-500" strokeWidth={1.5} />
+                        <BarChart3 className="w-8 h-8 text-[var(--accent)]" strokeWidth={1.5} />
                         <h1 className="text-4xl font-black text-[var(--text-primary)]">TikTok Chart Dashboard</h1>
                     </div>
-                    <p className="text-emerald-500 font-semibold mt-2">Válaszd ki a chartokat és generáld az elemzést</p>
+                    <p className="text-[var(--accent)] font-semibold mt-2">Válaszd ki a chartokat és generáld az elemzést</p>
                 </div>
             </header>
 
@@ -153,7 +153,7 @@ export default function ChartsPage() {
                             <button
                                 onClick={handleGenerate}
                                 disabled={loading || selectedCharts.length === 0}
-                                className="w-full bg-gradient-to-r from-emerald-400 to-cyan-400 text-white font-bold py-3 px-6 rounded-xl hover:from-emerald-300 hover:to-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                                className="w-full bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white font-bold py-3 px-6 rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                             >
                                 {loading ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> Generálás...</>
@@ -169,7 +169,7 @@ export default function ChartsPage() {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase">Chartok kiválasztása</h3>
                             <div className="flex gap-2">
-                                <button onClick={selectAll} className="text-xs px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500/20">
+                                <button onClick={selectAll} className="text-xs px-3 py-1 bg-[#1a6b8a]/10 text-[var(--accent)] rounded-lg hover:bg-[#1a6b8a]/20">
                                     Mind kijelöl
                                 </button>
                                 <button onClick={clearAll} className="text-xs px-3 py-1 bg-red-500/10 text-[var(--error)] rounded-lg hover:bg-red-500/20">
@@ -192,7 +192,7 @@ export default function ChartsPage() {
                                                     type="checkbox"
                                                     checked={selectedCharts.includes(chart.key)}
                                                     onChange={() => toggleChart(chart.key)}
-                                                    className="w-4 h-4 rounded accent-emerald-500"
+                                                    className="w-4 h-4 rounded accent-[#1a6b8a]"
                                                 />
                                                 <div className="flex-1">
                                                     <div className="text-sm font-semibold text-[var(--text-primary)]">{chart.title}</div>
@@ -220,7 +220,7 @@ export default function ChartsPage() {
                 {/* Results */}
                 {results.length > 0 && (
                     <div className="space-y-6">
-                        <h2 className="text-2xl font-bold border-l-4 border-emerald-500 pl-3 flex items-center gap-2">
+                        <h2 className="text-2xl font-bold border-l-4 border-[var(--accent)] pl-3 flex items-center gap-2">
                             <TrendingUp className="w-6 h-6" /> Generált chartok
                         </h2>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

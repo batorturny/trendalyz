@@ -16,7 +16,7 @@ export default function Error({
         </p>
         <button
           onClick={reset}
-          className="px-6 py-3 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white font-bold rounded-xl hover:from-emerald-400 hover:to-cyan-400"
+          className="px-6 py-3 bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white font-bold rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a]"
         >
           Újrapróbálás
         </button>

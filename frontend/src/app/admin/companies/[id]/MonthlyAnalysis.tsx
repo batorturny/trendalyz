@@ -77,7 +77,7 @@ export function MonthlyAnalysis({ companyId }: Props) {
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="flex items-center gap-2 bg-gradient-to-r from-emerald-400/80 to-cyan-400/80 text-white dark:text-[var(--surface)] font-bold py-2 px-4 rounded-xl hover:from-emerald-400 hover:to-cyan-400 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
+          className="flex items-center gap-2 bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] font-bold py-2 px-4 rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shrink-0"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
