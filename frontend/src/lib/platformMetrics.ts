@@ -47,7 +47,6 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'tt_total_reach', label: 'Össz. elérés', chartKeys: ['all_videos'] },
       // tt_daily_reached_total and tt_engaged_total removed — engaged_audience metric produces broken data
       { key: 'tt_email_clicks_total', label: 'Email kattintások', chartKeys: ['tt_email_clicks'] },
-      { key: 'tt_phone_clicks_total', label: 'Telefonszám kattintások', chartKeys: ['tt_phone_clicks'] },
     ],
     daily: [
       { key: 'followers_growth', label: 'Napi követők trend', chartKeys: ['followers_growth'] },
@@ -60,7 +59,6 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       // tt_daily_reached and tt_engaged_audience removed — engaged_audience metric produces broken data
       { key: 'tt_follower_change', label: 'Követő változás ±', chartKeys: ['tt_follower_change'] },
       { key: 'tt_email_clicks', label: 'Email kattintások', chartKeys: ['tt_email_clicks'] },
-      { key: 'tt_phone_clicks', label: 'Telefonszám kattintások', chartKeys: ['tt_phone_clicks'] },
     ],
     distributions: [
       { key: 'engagement_by_day', label: 'Engagement napok szerint', chartKeys: ['engagement_by_day'] },
