@@ -390,7 +390,11 @@ export function ClientPlatformPage({
 
             {/* KPI Header */}
             {(() => {
-              const displayKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
+              const rawKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
+              const displayKpis = rawKpis.filter(kpi => {
+                const v = kpi.value;
+                return v !== 0 && v !== '0' && v !== '0.0' && v !== '0.00%' && v !== '0.0%';
+              });
               return displayKpis.length > 0 ? (
                 <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-4 md:p-6">
                   {periodMonths > 1 && (

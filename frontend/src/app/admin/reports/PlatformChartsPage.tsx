@@ -327,7 +327,13 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     ? (aggregatedKPIs && aggregatedKPIs.length > 0)
     : (periodMonths > 1 ? (aggregatedKPIs && aggregatedKPIs.length > 0) : results.length > 0);
 
-  const displayKpis = periodMonths > 1 && !isAllCompanies ? (aggregatedKPIs || []) : kpis;
+  const rawKpis = periodMonths > 1 && !isAllCompanies ? (aggregatedKPIs || []) : kpis;
+  // Hide KPIs with zero/empty values — they clutter the dashboard
+  const displayKpis = rawKpis.filter(kpi => {
+    const v = kpi.value;
+    if (v === 0 || v === '0' || v === '0.0' || v === '0.00%' || v === '0.0%') return false;
+    return true;
+  });
 
   return (
     <WindsorKeyGuard>
