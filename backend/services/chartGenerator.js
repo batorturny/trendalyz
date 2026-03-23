@@ -645,25 +645,30 @@ class ChartGenerator {
     generate_yt_videos_published() { return this.dailyMetric(this.daily, 'videos_published', 'Közzétéve'); }
 
     generate_yt_video_performance() {
-        // Aggregate by video ID, sum views/likes/comments
+        // Aggregate by video ID, sum views/likes/comments/shares/watch time for the period
         const videoMap = {};
         this.video.forEach(row => {
-            const vid = row.video;
+            const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { views: 0, likes: 0, comments: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
+            videoMap[vid].shares += parseInt(row.shares) || 0;
+            videoMap[vid].estimated_minutes_watched += parseFloat(row.estimated_minutes_watched) || 0;
         });
         const tableData = Object.entries(videoMap)
             .map(([videoId, s]) => ({
                 title: videoId,
                 views: s.views,
                 likes: s.likes,
-                comments: s.comments
+                comments: s.comments,
+                shares: s.shares,
+                estimated_minutes_watched: Math.round(s.estimated_minutes_watched),
+                link: `https://youtube.com/watch?v=${videoId}`
             }))
             .sort((a, b) => b.views - a.views);
-        return { labels: ['Videó ID', 'Nézések', 'Kedvelések', 'Kommentek'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó ID', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Nézési idő (perc)', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     generate_yt_top_5_videos() {

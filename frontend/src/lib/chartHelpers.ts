@@ -210,33 +210,31 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const totalVidReach = tableSum(videos, 'reach');
 
       return addDescriptions([
-        { key: 'tt_followers', label: 'Össz. követőnövekedés', value: sumSeries(followers) },
-        { key: 'tt_total_followers', label: 'Összes követő', value: lastValue(totalFollowersChart), agg: 'last' },
-        { key: 'tt_total_views', label: 'Össz. megtekintés', value: totalVidViews },
-        { key: 'tt_profile_views', label: 'Profilnézetek', value: sumSeries(profileViews) },
-        { key: 'tt_likes', label: 'Like-ok', value: totalLikes },
-        { key: 'tt_comments', label: 'Kommentek', value: totalComments },
-        { key: 'tt_shares', label: 'Megosztások', value: totalShares },
-        // User requested average of individual video ERs: sum(video_ER) / count(videos)
+        { key: 'tt_followers', label: 'Össz. követőnövekedés', value: `${sumSeries(followers).toLocaleString('hu-HU')} fő` },
+        { key: 'tt_total_followers', label: 'Összes követő', value: `${((lastValue(totalFollowersChart) as number) || 0).toLocaleString('hu-HU')} fő`, agg: 'last' },
+        { key: 'tt_total_views', label: 'Össz. megtekintés', value: `${totalVidViews.toLocaleString('hu-HU')} db` },
+        { key: 'tt_profile_views', label: 'Profilnézetek', value: `${sumSeries(profileViews).toLocaleString('hu-HU')} db` },
+        { key: 'tt_likes', label: 'Like-ok', value: `${totalLikes.toLocaleString('hu-HU')} db` },
+        { key: 'tt_comments', label: 'Kommentek', value: `${totalComments.toLocaleString('hu-HU')} db` },
+        { key: 'tt_shares', label: 'Megosztások', value: `${totalShares.toLocaleString('hu-HU')} db` },
         { key: 'tt_er', label: 'ER%', value: `${tableAvg(videos, 'engagementRate').toFixed(2)}%`, agg: 'avg' },
-        { key: 'tt_videos', label: 'Videók száma', value: vidCount },
-        { key: 'tt_bio_clicks', label: 'Bio link kattintás', value: sumSeries(bioClicks) },
+        { key: 'tt_videos', label: 'Videók száma', value: `${vidCount} db` },
+        { key: 'tt_bio_clicks', label: 'Bio link kattintás', value: `${sumSeries(bioClicks).toLocaleString('hu-HU')} db` },
         { key: 'tt_like_per_view', label: 'Like / megtekintés', value: fmtPct(totalVidViews > 0 ? totalLikes / totalVidViews * 100 : 0), agg: 'avg' },
         { key: 'tt_comment_per_view', label: 'Komment / megtekintés', value: fmtPct(totalVidViews > 0 ? totalComments / totalVidViews * 100 : 0), agg: 'avg' },
         { key: 'tt_share_per_view', label: 'Megosztás / megtekintés', value: fmtPct(totalVidViews > 0 ? totalShares / totalVidViews * 100 : 0), agg: 'avg' },
-        { key: 'tt_interactions_total', label: 'Összes interakció', value: totalLikes + totalComments + totalShares },
-        { key: 'tt_avg_views', label: 'Átl. megtekintés/videó', value: vidCount > 0 ? Math.round(totalVidViews / vidCount) : 0, agg: 'avg' },
-        { key: 'tt_avg_likes', label: 'Átl. like/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount) : 0, agg: 'avg' },
-        { key: 'tt_avg_comments', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount) : 0, agg: 'avg' },
-        { key: 'tt_avg_shares', label: 'Átl. megosztás/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'shares') / vidCount) : 0, agg: 'avg' },
+        { key: 'tt_interactions_total', label: 'Összes interakció', value: `${(totalLikes + totalComments + totalShares).toLocaleString('hu-HU')} db` },
+        { key: 'tt_avg_views', label: 'Átl. megtekintés/videó', value: `${vidCount > 0 ? Math.round(totalVidViews / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'tt_avg_likes', label: 'Átl. like/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'tt_avg_comments', label: 'Átl. komment/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'tt_avg_shares', label: 'Átl. megosztás/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'shares') / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
         { key: 'tt_avg_er', label: 'Átl. ER%/videó', value: `${tableAvg(videos, 'engagementRate').toFixed(2)}%`, agg: 'avg' },
-        { key: 'tt_avg_watch_time', label: 'Átl. nézési idő (mp)', value: fmtDec1(tableAvg(videos, 'avgWatchTime')), agg: 'avg' },
+        { key: 'tt_avg_watch_time', label: 'Átl. nézési idő', value: `${fmtDec1(tableAvg(videos, 'avgWatchTime'))} mp`, agg: 'avg' },
         { key: 'tt_avg_full_watch', label: 'Átl. végignézés%', value: `${tableAvg(videos, 'fullWatchRate').toFixed(2)}%`, agg: 'avg' },
-        { key: 'tt_avg_new_followers', label: 'Átl. új követő/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'newFollowers') / vidCount) : 0, agg: 'avg' },
-        { key: 'tt_total_reach', label: 'Össz. elérés', value: totalVidReach },
-        // tt_daily_reached_total and tt_engaged_total removed — engaged_audience metric produces broken data
-        { key: 'tt_email_clicks_total', label: 'Email kattintások', value: sumSeries(findChart(results, 'tt_email_clicks')) },
-        { key: 'tt_phone_clicks_total', label: 'Telefonszám kattintások', value: sumSeries(findChart(results, 'tt_phone_clicks')) },
+        { key: 'tt_avg_new_followers', label: 'Átl. új követő/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'newFollowers') / vidCount).toLocaleString('hu-HU') : 0} fő`, agg: 'avg' },
+        { key: 'tt_total_reach', label: 'Össz. elérés', value: `${totalVidReach.toLocaleString('hu-HU')} fő` },
+        { key: 'tt_email_clicks_total', label: 'Email kattintások', value: `${sumSeries(findChart(results, 'tt_email_clicks')).toLocaleString('hu-HU')} db` },
+        { key: 'tt_phone_clicks_total', label: 'Telefonszám kattintások', value: `${sumSeries(findChart(results, 'tt_phone_clicks')).toLocaleString('hu-HU')} db` },
       ]);
     }
     case 'TIKTOK_ADS': {
@@ -254,21 +252,21 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
 
       return addDescriptions([
         { key: 'ttads_spend', label: 'Költés', value: fmtFt(totalSpend) },
-        { key: 'ttads_impressions', label: 'Impressziók', value: totalImpressions },
-        { key: 'ttads_clicks', label: 'Kattintások', value: totalClicks },
+        { key: 'ttads_impressions', label: 'Impressziók', value: `${totalImpressions.toLocaleString('hu-HU')} db` },
+        { key: 'ttads_clicks', label: 'Kattintások', value: `${totalClicks.toLocaleString('hu-HU')} db` },
         { key: 'ttads_ctr', label: 'CTR%', value: fmtPct(avgSeries(ctr)), agg: 'avg' },
         { key: 'ttads_cpc', label: 'CPC (kattintás ára)', value: fmtDecFt(avgSeries(cpcCpm, 0)), agg: 'avg' },
         { key: 'ttads_cpm', label: 'CPM (1000 megj. ára)', value: fmtDecFt(avgSeries(cpcCpm, 1)), agg: 'avg' },
-        { key: 'ttads_conv', label: 'Konverziók', value: totalConversions },
+        { key: 'ttads_conv', label: 'Konverziók', value: `${totalConversions.toLocaleString('hu-HU')} db` },
         { key: 'ttads_cost_conv', label: 'Költség/konverzió', value: fmtDecFt(avgSeries(costConv)), agg: 'avg' },
         { key: 'ttads_roas', label: 'ROAS', value: totalSpend > 0 ? fmtDec(totalConversions / totalSpend) : '0.00', agg: 'avg' },
         { key: 'ttads_conv_rate', label: 'Konverziós arány%', value: fmtPct(totalClicks > 0 ? totalConversions / totalClicks * 100 : 0), agg: 'avg' },
         { key: 'ttads_spend_per_click', label: 'Költés/kattintás', value: totalClicks > 0 ? fmtDecFt(totalSpend / totalClicks) : '0 Ft', agg: 'avg' },
         { key: 'ttads_cpr', label: 'CPR (1000 elérés ára)', value: fmtDecFt(avgSeries(findChart(results, 'ttads_reach_cost'))), agg: 'avg' },
-        { key: 'ttads_app_installs', label: 'App telepítések', value: sumSeries(findChart(results, 'ttads_app_install')) },
-        { key: 'ttads_payments', label: 'Fizetés konverziók', value: sumSeries(findChart(results, 'ttads_payment_trend')) },
-        { key: 'ttads_registrations', label: 'Regisztrációk', value: sumSeries(findChart(results, 'ttads_registration')) },
-        { key: 'ttads_reach_total', label: 'Elérés', value: sumSeries(findChart(results, 'ttads_reach_cost'), 1) },
+        { key: 'ttads_app_installs', label: 'App telepítések', value: `${sumSeries(findChart(results, 'ttads_app_install')).toLocaleString('hu-HU')} db` },
+        { key: 'ttads_payments', label: 'Fizetés konverziók', value: `${sumSeries(findChart(results, 'ttads_payment_trend')).toLocaleString('hu-HU')} db` },
+        { key: 'ttads_registrations', label: 'Regisztrációk', value: `${sumSeries(findChart(results, 'ttads_registration')).toLocaleString('hu-HU')} db` },
+        { key: 'ttads_reach_total', label: 'Elérés', value: `${sumSeries(findChart(results, 'ttads_reach_cost'), 1).toLocaleString('hu-HU')} fő` },
       ]);
     }
     case 'FACEBOOK_ORGANIC': {
@@ -296,26 +294,26 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
 
       return addDescriptions([
         // Alap metrikák
-        { key: 'fb_followers', label: 'Követők', value: lastValue(fans), agg: 'last' },
-        { key: 'fb_reach', label: 'Elérés', value: totalReach },
-        { key: 'fb_impressions', label: 'Impressziók', value: totalImpressions },
-        { key: 'fb_engagement', label: 'Engagement', value: totalEngagement },
-        { key: 'fb_reactions', label: 'Reakciók (posztok)', value: totalPostReactions },
-        { key: 'fb_comments', label: 'Kommentek (posztok)', value: totalPostComments },
-        { key: 'fb_shares', label: 'Megosztások (posztok)', value: totalPostShares },
-        { key: 'fb_posts', label: 'Posztok', value: postCount },
-        { key: 'fb_new_follows', label: 'Napi új követők', value: sumSeries(follows, 0) },
-        { key: 'fb_video_views', label: 'Videó nézések', value: sumSeries(videoViews) },
-        { key: 'fb_page_views', label: 'Oldal megtekintések', value: sumSeries(pageViews) },
+        { key: 'fb_followers', label: 'Követők', value: `${(lastValue(fans) as number).toLocaleString('hu-HU')} fő`, agg: 'last' },
+        { key: 'fb_reach', label: 'Elérés', value: `${totalReach.toLocaleString('hu-HU')} fő` },
+        { key: 'fb_impressions', label: 'Impressziók', value: `${totalImpressions.toLocaleString('hu-HU')} db` },
+        { key: 'fb_engagement', label: 'Engagement', value: `${totalEngagement.toLocaleString('hu-HU')} db` },
+        { key: 'fb_reactions', label: 'Reakciók (posztok)', value: `${totalPostReactions.toLocaleString('hu-HU')} db` },
+        { key: 'fb_comments', label: 'Kommentek (posztok)', value: `${totalPostComments.toLocaleString('hu-HU')} db` },
+        { key: 'fb_shares', label: 'Megosztások (posztok)', value: `${totalPostShares.toLocaleString('hu-HU')} db` },
+        { key: 'fb_posts', label: 'Posztok', value: `${postCount} db` },
+        { key: 'fb_new_follows', label: 'Napi új követők', value: `${sumSeries(follows, 0).toLocaleString('hu-HU')} fő` },
+        { key: 'fb_video_views', label: 'Videó nézések', value: `${sumSeries(videoViews).toLocaleString('hu-HU')} db` },
+        { key: 'fb_page_views', label: 'Oldal megtekintések', value: `${sumSeries(pageViews).toLocaleString('hu-HU')} db` },
         // Arány metrikák
         { key: 'fb_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalEngagement / totalReach * 100 : 0), agg: 'avg' },
         // Átlag poszt KPI-ok
-        { key: 'fb_avg_reach_post', label: 'Átl. elérés/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'reach') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'likes') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', value: postCount > 0 ? Math.round(tableSum(posts, 'clicks') / postCount) : 0, agg: 'avg' },
-        { key: 'fb_reels_plays_total', label: 'Reels lejátszások', value: sumSeries(findChart(results, 'fb_reels_plays')) },
+        { key: 'fb_avg_reach_post', label: 'Átl. elérés/poszt', value: `${postCount > 0 ? Math.round(tableSum(posts, 'reach') / postCount).toLocaleString('hu-HU') : 0} fő`, agg: 'avg' },
+        { key: 'fb_avg_reactions_post', label: 'Átl. reakció/poszt', value: `${postCount > 0 ? Math.round(tableSum(posts, 'likes') / postCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'fb_avg_comments_post', label: 'Átl. komment/poszt', value: `${postCount > 0 ? Math.round(tableSum(posts, 'comments') / postCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'fb_avg_shares_post', label: 'Átl. megosztás/poszt', value: `${postCount > 0 ? Math.round(tableSum(posts, 'shares') / postCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'fb_avg_clicks_post', label: 'Átl. kattintás/poszt', value: `${postCount > 0 ? Math.round(tableSum(posts, 'clicks') / postCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'fb_reels_plays_total', label: 'Reels lejátszások', value: `${sumSeries(findChart(results, 'fb_reels_plays')).toLocaleString('hu-HU')} db` },
       ]);
     }
     case 'INSTAGRAM_ORGANIC': {
@@ -339,30 +337,30 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
 
       return addDescriptions([
         // Alap metrikák
-        { key: 'ig_followers', label: 'Követők', value: lastValue(totalFollowers), agg: 'last' },
-        { key: 'ig_reach_kpi', label: 'Elérés', value: totalReach },
-        { key: 'ig_impressions', label: 'Impressziók', value: sumSeries(reach, 1) },
-        { key: 'ig_likes', label: 'Like-ok', value: totalLikes },
-        { key: 'ig_comments', label: 'Kommentek', value: totalComments },
-        { key: 'ig_shares', label: 'Megosztások', value: totalShares },
-        { key: 'ig_saves', label: 'Mentések', value: totalSaves },
-        { key: 'ig_profile_views', label: 'Profilnézetek', value: sumSeries(profile, 0) },
-        { key: 'ig_media_count', label: 'Tartalmak', value: mediaCount },
-        { key: 'ig_new_followers', label: 'Új követők', value: sumSeries(newFollowers) },
+        { key: 'ig_followers', label: 'Követők', value: `${(lastValue(totalFollowers) as number).toLocaleString('hu-HU')} fő`, agg: 'last' },
+        { key: 'ig_reach_kpi', label: 'Elérés', value: `${totalReach.toLocaleString('hu-HU')} fő` },
+        { key: 'ig_impressions', label: 'Impressziók', value: `${sumSeries(reach, 1).toLocaleString('hu-HU')} db` },
+        { key: 'ig_likes', label: 'Like-ok', value: `${totalLikes.toLocaleString('hu-HU')} db` },
+        { key: 'ig_comments', label: 'Kommentek', value: `${totalComments.toLocaleString('hu-HU')} db` },
+        { key: 'ig_shares', label: 'Megosztások', value: `${totalShares.toLocaleString('hu-HU')} db` },
+        { key: 'ig_saves', label: 'Mentések', value: `${totalSaves.toLocaleString('hu-HU')} db` },
+        { key: 'ig_profile_views', label: 'Profilnézetek', value: `${sumSeries(profile, 0).toLocaleString('hu-HU')} db` },
+        { key: 'ig_media_count', label: 'Tartalmak', value: `${mediaCount} db` },
+        { key: 'ig_new_followers', label: 'Új követők', value: `${sumSeries(newFollowers).toLocaleString('hu-HU')} fő` },
         { key: 'ig_save_rate_kpi', label: 'Mentési arány', value: fmtPct(avgSeries(saveRate)), agg: 'avg' },
-        { key: 'ig_story_reach', label: 'Story elérés', value: sumSeries(storyOverview, 0) },
+        { key: 'ig_story_reach', label: 'Story elérés', value: `${sumSeries(storyOverview, 0).toLocaleString('hu-HU')} fő` },
         // Arány metrikák
-        { key: 'ig_interactions_total', label: 'Összes interakció', value: totalInteractions },
+        { key: 'ig_interactions_total', label: 'Összes interakció', value: `${totalInteractions.toLocaleString('hu-HU')} db` },
         { key: 'ig_like_per_reach', label: 'Like / elérés', value: fmtPct(totalReach > 0 ? totalLikes / totalReach * 100 : 0), agg: 'avg' },
         { key: 'ig_er', label: 'Engagement rate%', value: fmtPct(totalReach > 0 ? totalInteractions / totalReach * 100 : 0), agg: 'avg' },
         // Átlag tartalom KPI-ok
-        { key: 'ig_avg_reach_media', label: 'Átl. elérés/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'reach') / mediaCount) : 0, agg: 'avg' },
-        { key: 'ig_avg_likes_media', label: 'Átl. like/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'likes') / mediaCount) : 0, agg: 'avg' },
-        { key: 'ig_avg_comments_media', label: 'Átl. komment/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'comments') / mediaCount) : 0, agg: 'avg' },
-        { key: 'ig_avg_saves_media', label: 'Átl. mentés/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'saved') / mediaCount) : 0, agg: 'avg' },
-        { key: 'ig_avg_shares_media', label: 'Átl. megosztás/tartalom', value: mediaCount > 0 ? Math.round(tableSum(media, 'shares') / mediaCount) : 0, agg: 'avg' },
-        { key: 'ig_website_clicks_total', label: 'Weboldal kattintások', value: sumSeries(findChart(results, 'ig_website_clicks_trend')) },
-        { key: 'ig_total_clicks', label: 'Összes profil kattintás', value: sumSeries(findChart(results, 'ig_clicks')) },
+        { key: 'ig_avg_reach_media', label: 'Átl. elérés/tartalom', value: `${mediaCount > 0 ? Math.round(tableSum(media, 'reach') / mediaCount).toLocaleString('hu-HU') : 0} fő`, agg: 'avg' },
+        { key: 'ig_avg_likes_media', label: 'Átl. like/tartalom', value: `${mediaCount > 0 ? Math.round(tableSum(media, 'likes') / mediaCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'ig_avg_comments_media', label: 'Átl. komment/tartalom', value: `${mediaCount > 0 ? Math.round(tableSum(media, 'comments') / mediaCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'ig_avg_saves_media', label: 'Átl. mentés/tartalom', value: `${mediaCount > 0 ? Math.round(tableSum(media, 'saved') / mediaCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'ig_avg_shares_media', label: 'Átl. megosztás/tartalom', value: `${mediaCount > 0 ? Math.round(tableSum(media, 'shares') / mediaCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'ig_website_clicks_total', label: 'Weboldal kattintások', value: `${sumSeries(findChart(results, 'ig_website_clicks_trend')).toLocaleString('hu-HU')} db` },
+        { key: 'ig_total_clicks', label: 'Összes profil kattintás', value: `${sumSeries(findChart(results, 'ig_clicks')).toLocaleString('hu-HU')} db` },
       ]);
     }
     case 'YOUTUBE': {
@@ -383,32 +381,35 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const vidRows = getTableData(videos);
       const vidCount = vidRows.length;
 
+      const watchMin = sumSeries(watchTime);
+      const redWatch = sumSeries(findChart(results, 'yt_red_watch_time'));
+
       return addDescriptions([
         // Alap metrikák
-        { key: 'yt_subs', label: 'Új feliratkozók', value: sumSeries(subs) },
-        { key: 'yt_views_kpi', label: 'Megtekintések', value: totalViews },
-        { key: 'yt_watch', label: 'Nézési idő (perc)', value: sumSeries(watchTime) },
-        { key: 'yt_likes_kpi', label: 'Like-ok', value: totalLikes },
-        { key: 'yt_comments_kpi', label: 'Kommentek', value: totalComments },
-        { key: 'yt_shares_kpi', label: 'Megosztások', value: totalShares },
+        { key: 'yt_subs', label: 'Új feliratkozók', value: `${sumSeries(subs).toLocaleString('hu-HU')} fő` },
+        { key: 'yt_views_kpi', label: 'Megtekintések', value: `${totalViews.toLocaleString('hu-HU')} db` },
+        { key: 'yt_watch', label: 'Nézési idő', value: `${watchMin.toLocaleString('hu-HU')} perc` },
+        { key: 'yt_likes_kpi', label: 'Like-ok', value: `${totalLikes.toLocaleString('hu-HU')} db` },
+        { key: 'yt_comments_kpi', label: 'Kommentek', value: `${totalComments.toLocaleString('hu-HU')} db` },
+        { key: 'yt_shares_kpi', label: 'Megosztások', value: `${totalShares.toLocaleString('hu-HU')} db` },
         { key: 'yt_er', label: 'ER%', value: fmtPct(totalViews > 0 ? totalInteractions / totalViews * 100 : 0), agg: 'avg' },
-        { key: 'yt_video_count', label: 'Videók', value: vidCount },
-        { key: 'yt_avg_view', label: 'Átl. nézési %', value: `${avgSeries(avgViewPct).toFixed(1)}%`, agg: 'avg' },
-        { key: 'yt_playlist', label: 'Playlist hozzáadás', value: sumSeries(playlistAdds) },
+        { key: 'yt_video_count', label: 'Videók', value: `${vidCount} db` },
+        { key: 'yt_avg_view', label: 'Átl. végignézés %', value: `${avgSeries(avgViewPct).toFixed(1)}%`, agg: 'avg' },
+        { key: 'yt_playlist', label: 'Playlist hozzáadás', value: `${sumSeries(playlistAdds).toLocaleString('hu-HU')} db` },
         // Arány metrikák
         { key: 'yt_like_per_view', label: 'Like / megtekintés', value: fmtPct(totalViews > 0 ? totalLikes / totalViews * 100 : 0), agg: 'avg' },
         { key: 'yt_comment_per_view', label: 'Komment / megtekintés', value: fmtPct(totalViews > 0 ? totalComments / totalViews * 100 : 0), agg: 'avg' },
-        { key: 'yt_interactions_total', label: 'Összes interakció', value: totalInteractions },
+        { key: 'yt_interactions_total', label: 'Összes interakció', value: `${totalInteractions.toLocaleString('hu-HU')} db` },
         // Átlag videó KPI-ok
-        { key: 'yt_avg_views_video', label: 'Átl. megtekintés/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'views') / vidCount) : 0, agg: 'avg' },
-        { key: 'yt_avg_likes_video', label: 'Átl. like/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount) : 0, agg: 'avg' },
-        { key: 'yt_avg_comments_video', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount) : 0, agg: 'avg' },
-        { key: 'yt_avg_watch_time_video', label: 'Átl. nézési idő/videó', value: vidCount > 0 ? fmtDec1(tableAvg(videos, 'avgViewDuration')) : '0.0', agg: 'avg' },
+        { key: 'yt_avg_views_video', label: 'Átl. megtekintés/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'views') / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'yt_avg_likes_video', label: 'Átl. like/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'yt_avg_comments_video', label: 'Átl. komment/videó', value: `${vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount).toLocaleString('hu-HU') : 0} db`, agg: 'avg' },
+        { key: 'yt_avg_watch_time_video', label: 'Átl. nézési idő/videó', value: `${vidCount > 0 ? fmtDec1(tableAvg(videos, 'avgViewDuration')) : '0.0'} mp`, agg: 'avg' },
         { key: 'yt_avg_er_video', label: 'Átl. ER%/videó', value: fmtPct(tableAvg(videos, 'engagementRate')), agg: 'avg' },
-        { key: 'yt_total_subs', label: 'Összes feliratkozó', value: lastValue(findChart(results, 'yt_subscriber_count')), agg: 'last' },
-        { key: 'yt_card_clicks_kpi', label: 'Kártya kattintások', value: sumSeries(findChart(results, 'yt_card_performance'), 0) },
+        { key: 'yt_total_subs', label: 'Összes feliratkozó', value: `${(lastValue(findChart(results, 'yt_subscriber_count')) as number || 0).toLocaleString('hu-HU')} fő`, agg: 'last' },
+        { key: 'yt_card_clicks_kpi', label: 'Kártya kattintások', value: `${sumSeries(findChart(results, 'yt_card_performance'), 0).toLocaleString('hu-HU')} db` },
         { key: 'yt_card_ctr_kpi', label: 'Kártya CTR%', value: fmtPct(avgSeries(findChart(results, 'yt_card_ctr'))), agg: 'avg' },
-        { key: 'yt_red_watch', label: 'Premium nézési idő', value: sumSeries(findChart(results, 'yt_red_watch_time')) },
+        { key: 'yt_red_watch', label: 'Premium nézési idő', value: `${redWatch.toLocaleString('hu-HU')} perc` },
       ]);
     }
     default:
