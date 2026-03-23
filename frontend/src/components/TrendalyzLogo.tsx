@@ -2,17 +2,18 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   showText?: boolean;
   showSubtitle?: boolean;
+  showIcon?: boolean;
   className?: string;
 }
 
-export function TrendalyzLogo({ size = 'md', showText = true, showSubtitle = false, className = '' }: LogoProps) {
+export function TrendalyzLogo({ size = 'md', showText = true, showSubtitle = false, showIcon = true, className = '' }: LogoProps) {
   const iconSize = size === 'sm' ? 32 : size === 'md' ? 42 : 58;
   const textSize = size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl';
   const subtitleSize = size === 'sm' ? 'text-[7px]' : size === 'md' ? 'text-[8px]' : 'text-[10px]';
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      <svg
+      {showIcon && <svg
         width={iconSize}
         height={iconSize}
         viewBox="0 0 120 120"
@@ -46,7 +47,7 @@ export function TrendalyzLogo({ size = 'md', showText = true, showSubtitle = fal
         {/* Upward trend arrow */}
         <line x1="14" y1="98" x2="94" y2="22" stroke="white" strokeWidth="7" strokeLinecap="round" />
         <polyline points="76,18 94,22 90,40" stroke="white" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
+      </svg>}
       {showText && (
         <div className="flex flex-col">
           <span className={`${textSize} font-black tracking-tight uppercase leading-tight`}>
