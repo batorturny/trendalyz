@@ -184,7 +184,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
               }}
               className="text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              Elozo honap
+              Előző hónap
             </button>
             <button
               type="button"
@@ -194,7 +194,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
               }}
               className="text-xs font-semibold text-[var(--text-primary)] hover:opacity-70 transition-colors"
             >
-              Aktualis honap
+              Aktuális hónap
             </button>
           </div>
 
