@@ -17,6 +17,7 @@ COPY prisma/ /app/prisma/
 COPY package.json /app/package.json
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # Generate Prisma client + build Next.js
 RUN npx prisma generate --schema=/app/prisma/schema.prisma
