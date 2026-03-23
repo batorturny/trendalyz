@@ -18,6 +18,7 @@ interface FieldGroup {
 interface PlatformConfig {
   endpoint: string;
   fieldGroups: FieldGroup[];
+  skipSelectAccounts?: boolean;
 }
 
 const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
@@ -144,33 +145,36 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   },
   YOUTUBE: {
     endpoint: 'youtube',
+    skipSelectAccounts: true,
     fieldGroups: [
       {
         name: 'daily',
         fields: [
           'date', 'views', 'likes', 'comments', 'shares',
           'subscribers_gained', 'subscribers_lost', 'subscriber_count',
-          'estimated_minutes_watched', 'estimated_red_minutes_watched',
-          'videos_added_to_playlists', 'videos_removed_from_playlists',
-          'red_views', 'dislikes', 'videos_published',
-          'card_clicks', 'card_impressions', 'card_click_rate',
+          'estimated_minutes_watched', 'average_view_percentage',
         ],
       },
       {
         name: 'videos',
-        fields: [
-          'video_id', 'video_title', 'video_published_at',
-          'views', 'likes', 'comments', 'shares',
-          'average_view_duration', 'average_view_percentage',
-        ],
+        fields: ['date', 'video', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
+      },
+      {
+        name: 'extras',
+        fields: ['date', 'dislikes', 'card_clicks', 'card_impressions', 'videos_added_to_playlists'],
+      },
+      {
+        name: 'premium',
+        fields: ['date', 'red_views'],
       },
     ],
   },
 };
 
 /** Fetch a single field group from Windsor. Always resolves (returns [] on error). */
-async function fetchWindsorGroup(apiKey: string, endpoint: string, accountId: string, dateFrom: string, dateTo: string, fields: string, groupName: string): Promise<any[]> {
-  const url = `${WINDSOR_BASE}/${endpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}&select_accounts=${accountId}`;
+async function fetchWindsorGroup(apiKey: string, endpoint: string, accountId: string, dateFrom: string, dateTo: string, fields: string, groupName: string, skipSelectAccounts = false): Promise<any[]> {
+  const accountFilter = skipSelectAccounts ? '' : `&select_accounts=${accountId}`;
+  const url = `${WINDSOR_BASE}/${endpoint}?api_key=${apiKey}&date_from=${dateFrom}&date_to=${dateTo}&fields=${fields}${accountFilter}`;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(WINDSOR_TIMEOUT) });
     if (!res.ok) {
@@ -208,9 +212,10 @@ async function fetchWindsorChartData(apiKey: string, platform: string, accountId
   if (!config) throw new Error(`Unknown platform: ${platform}`);
 
   // All groups fetched in parallel — each one is fault-tolerant
+  const skip = config.skipSelectAccounts ?? false;
   const results = await Promise.all(
     config.fieldGroups.map(group =>
-      fetchWindsorGroup(apiKey, config.endpoint, accountId, dateFrom, dateTo, group.fields.join(','), group.name)
+      fetchWindsorGroup(apiKey, config.endpoint, accountId, dateFrom, dateTo, group.fields.join(','), group.name, skip)
     )
   );
 
@@ -685,10 +690,19 @@ export async function POST(req: Request) {
           let data: any[];
 
           if (platform === 'YOUTUBE' && (connection.metadata as any)?.encryptedAccessToken) {
-            // Use YouTube Analytics API directly
-            const token = decrypt((connection.metadata as any).encryptedAccessToken as string);
-            console.log(`[Chart API] YouTube direct fetch for channel ${connection.externalAccountId}`);
-            data = await fetchYouTubeDirectData(connection.externalAccountId, token, startDate, endDate);
+            // Try YouTube Analytics API directly, fall back to Windsor if it fails
+            try {
+              const token = decrypt((connection.metadata as any).encryptedAccessToken as string);
+              console.log(`[Chart API] YouTube direct fetch for channel ${connection.externalAccountId}`);
+              data = await fetchYouTubeDirectData(connection.externalAccountId, token, startDate, endDate);
+              if (!data || data.length === 0) throw new Error('YouTube direct returned no data');
+            } catch (ytErr: any) {
+              console.warn(`[Chart API] YouTube direct failed (${ytErr.message}), falling back to Windsor`);
+              if (!windsorApiKey) {
+                return platformCharts.map((c: any) => ({ key: c.key, empty: true, error: 'Windsor API key not configured' }));
+              }
+              data = await fetchWindsorChartData(windsorApiKey, platform, connection.externalAccountId, startDate, endDate);
+            }
           } else if (META_DIRECT_PROVIDERS.has(platform) && (connection.metadata as any)?.encryptedAccessToken) {
             // Use Meta Graph API directly
             console.log(`[Chart API] Meta direct fetch for ${platform}`);
