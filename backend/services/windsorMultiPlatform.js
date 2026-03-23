@@ -229,21 +229,23 @@ const PLATFORM_CONFIG = {
   YOUTUBE: {
     endpoint: 'youtube',
     skipSelectAccounts: true,
-    dailyFields: ['date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost', 'estimated_minutes_watched', 'average_view_percentage', 'dislikes'],
-    contentFields: ['date', 'video', 'views', 'likes', 'comments'],
-    audienceFields: ['date', 'viewer_percentage', 'country'],
+    dailyFields: ['date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost', 'estimated_minutes_watched', 'average_view_percentage', 'subscriber_count'],
+    contentFields: ['date', 'video', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
+    audienceFields: null,
     demographicFields: null,
     separateChartCalls: {
       daily: [
         'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
-        'estimated_minutes_watched', 'average_view_percentage', 'dislikes',
+        'estimated_minutes_watched', 'average_view_percentage', 'subscriber_count',
       ],
-      content: ['date', 'video', 'views', 'likes', 'comments'],
+      content: ['date', 'video', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
+      extras: ['date', 'dislikes', 'card_clicks', 'card_impressions', 'videos_added_to_playlists'],
+      premium: ['date', 'red_views'],
     },
     allChartFields: [
       'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
-      'estimated_minutes_watched', 'video',
-      'average_view_percentage', 'dislikes',
+      'estimated_minutes_watched', 'average_view_percentage', 'subscriber_count', 'video',
+      'dislikes', 'card_clicks', 'card_impressions', 'videos_added_to_playlists', 'red_views',
     ],
   },
 };
