@@ -232,10 +232,17 @@ const PLATFORM_CONFIG = {
     contentFields: ['date', 'video', 'views', 'likes', 'comments'],
     audienceFields: ['date', 'viewer_percentage', 'country'],
     demographicFields: null,
+    separateChartCalls: {
+      daily: [
+        'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
+        'estimated_minutes_watched', 'average_view_percentage', 'dislikes',
+      ],
+      content: ['date', 'video', 'views', 'likes', 'comments'],
+    },
     allChartFields: [
       'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
       'estimated_minutes_watched', 'video',
-      'average_view_percentage', 'videos_added_to_playlists', 'red_views', 'dislikes',
+      'average_view_percentage', 'dislikes',
     ],
   },
 };
