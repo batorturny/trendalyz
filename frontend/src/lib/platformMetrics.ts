@@ -270,8 +270,6 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'yt_card_ctr', label: 'Kártya CTR', chartKeys: ['yt_card_ctr'] },
     ],
     distributions: [
-      { key: 'yt_top_countries', label: 'Top országok', chartKeys: ['yt_top_countries'] },
-      { key: 'yt_avg_view_pct', label: 'Átl. nézési %', chartKeys: ['yt_avg_view_pct'] },
       { key: 'yt_video_performance', label: 'Videó teljesítmény', chartKeys: ['yt_video_performance'] },
       { key: 'yt_all_videos', label: 'Összes videó', chartKeys: ['yt_all_videos'] },
       { key: 'yt_top_5_videos', label: 'Top 5 videó', chartKeys: ['yt_top_5_videos'] },

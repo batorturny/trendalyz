@@ -50,6 +50,11 @@ const LABEL_TO_KEY: Record<string, string> = {
     '6s nézés': 'video_watched_6s',
     'Átl. lejátszás': 'average_video_play',
     'Hirdetés': 'ad_name',
+    // YouTube
+    'Videó': 'title',
+    'Videó ID': 'title',
+    'Nézési idő (perc)': 'estimated_minutes_watched',
+    'Nézések': 'views',
 };
 
 const TEXT_COLUMNS = new Set(['date', 'caption', 'link', 'type', 'title']);

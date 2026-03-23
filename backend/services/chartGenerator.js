@@ -659,7 +659,7 @@ class ChartGenerator {
         });
         const tableData = Object.entries(videoMap)
             .map(([videoId, s]) => ({
-                title: videoId,
+                title: videoId.slice(0, 11),
                 views: s.views,
                 likes: s.likes,
                 comments: s.comments,
@@ -667,8 +667,9 @@ class ChartGenerator {
                 estimated_minutes_watched: Math.round(s.estimated_minutes_watched),
                 link: `https://youtube.com/watch?v=${videoId}`
             }))
+            .filter(v => v.views > 0 || v.likes > 0 || v.comments > 0)
             .sort((a, b) => b.views - a.views);
-        return { labels: ['Videó ID', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Nézési idő (perc)', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Nézési idő (perc)', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     generate_yt_top_5_videos() {
