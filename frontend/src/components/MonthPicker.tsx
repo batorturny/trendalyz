@@ -1,17 +1,30 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n';
 
-const MONTH_NAMES = [
+const MONTH_NAMES_HU = [
   'Január', 'Február', 'Március', 'Április',
   'Május', 'Június', 'Július', 'Augusztus',
   'Szeptember', 'Október', 'November', 'December',
 ];
 
-const MONTH_SHORT = [
+const MONTH_NAMES_EN = [
+  'January', 'February', 'March', 'April',
+  'May', 'June', 'July', 'August',
+  'September', 'October', 'November', 'December',
+];
+
+const MONTH_SHORT_HU = [
   'Jan', 'Feb', 'Már', 'Ápr',
   'Máj', 'Jún', 'Júl', 'Aug',
   'Sze', 'Okt', 'Nov', 'Dec',
+];
+
+const MONTH_SHORT_EN = [
+  'Jan', 'Feb', 'Mar', 'Apr',
+  'May', 'Jun', 'Jul', 'Aug',
+  'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
 interface MonthPickerProps {
@@ -29,6 +42,9 @@ function subtractMonths(yyyyMm: string, n: number): string {
 }
 
 export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange }: MonthPickerProps) {
+  const { lang, t } = useI18n();
+  const MONTH_NAMES = lang === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_HU;
+  const MONTH_SHORT = lang === 'en' ? MONTH_SHORT_EN : MONTH_SHORT_HU;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -84,11 +100,11 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
   // Build display text
   let displayText: string;
   if (!value) {
-    displayText = 'Válassz hónapot...';
+    displayText = t('Válassz hónapot...');
   } else if (periodMonths > 1) {
     const startMonth = subtractMonths(value, periodMonths - 1);
     const [sy, sm] = startMonth.split('-').map(Number);
-    displayText = `${sy}. ${MONTH_NAMES[sm - 1]} – ${selectedYear}. ${MONTH_NAMES[selectedMonthIdx - 1]} (${periodMonths} hó)`;
+    displayText = `${sy}. ${MONTH_NAMES[sm - 1]} – ${selectedYear}. ${MONTH_NAMES[selectedMonthIdx - 1]} (${periodMonths} ${lang === 'en' ? 'mo' : 'hó'})`;
   } else {
     displayText = `${selectedYear}. ${MONTH_NAMES[selectedMonthIdx - 1]}`;
   }
@@ -184,7 +200,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
               }}
               className="text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              Előző hónap
+              {t('Előző hónap')}
             </button>
             <button
               type="button"
@@ -194,14 +210,14 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
               }}
               className="text-xs font-semibold text-[var(--text-primary)] hover:opacity-70 transition-colors"
             >
-              Aktuális hónap
+              {t('Aktuális hónap')}
             </button>
           </div>
 
           {/* Period quick buttons */}
           {onPeriodChange && (
             <div className="flex items-center gap-2 px-4 py-2.5 border-t border-[var(--border)]">
-              <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mr-auto">Időszak</span>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mr-auto">{t('IDŐSZAK')}</span>
               <button
                 type="button"
                 onClick={() => handlePeriod(3)}
@@ -211,7 +227,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
                     : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                 }`}
               >
-                3 hónap
+                {lang === 'en' ? '3 months' : '3 hónap'}
               </button>
               <button
                 type="button"
@@ -222,7 +238,7 @@ export function MonthPicker({ value, onChange, periodMonths = 1, onPeriodChange 
                     : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                 }`}
               >
-                6 hónap
+                {lang === 'en' ? '6 months' : '6 hónap'}
               </button>
             </div>
           )}
