@@ -403,8 +403,8 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         // Átlag videó KPI-ok
         { key: 'yt_avg_views_video', label: 'Átl. megtekintés/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'views') / vidCount) : 0, agg: 'avg' },
         { key: 'yt_avg_likes_video', label: 'Átl. like/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'likes') / vidCount) : 0, agg: 'avg' },
-        { key: 'yt_avg_comments_video', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(tableSum(videos, 'comments') / vidCount) : 0, agg: 'avg' },
-        { key: 'yt_avg_watch_time_video', label: 'Átl. nézési idő/videó', value: vidCount > 0 ? fmtDec1(tableAvg(videos, 'avgViewDuration')) : '0.0', agg: 'avg' },
+        { key: 'yt_avg_comments_video', label: 'Átl. komment/videó', value: vidCount > 0 ? Math.round(totalComments / vidCount) : 0, agg: 'avg' },
+        { key: 'yt_avg_watch_time_video', label: 'Átl. nézési idő/videó', value: vidCount > 0 ? fmtDec1(watchMin / vidCount) : '0.0', agg: 'avg' },
         { key: 'yt_avg_er_video', label: 'Átl. ER%/videó', value: fmtPct(tableAvg(videos, 'engagementRate')), agg: 'avg' },
         { key: 'yt_total_subs', label: 'Összes feliratkozó', value: lastValue(findChart(results, 'yt_subscriber_count')), agg: 'last' },
         { key: 'yt_card_clicks_kpi', label: 'Kártya kattintások', value: sumSeries(findChart(results, 'yt_card_performance'), 0) },
