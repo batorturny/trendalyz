@@ -238,7 +238,7 @@ const PLATFORM_CONFIG = {
         'date', 'views', 'likes', 'comments', 'shares', 'subscribers_gained', 'subscribers_lost',
         'estimated_minutes_watched', 'average_view_percentage', 'subscriber_count',
       ],
-      content: ['date', 'video', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
+      content: ['published_at', 'video', 'video_title', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
       extras: ['date', 'dislikes', 'card_clicks', 'card_impressions', 'videos_added_to_playlists'],
       premium: ['date', 'red_views'],
     },

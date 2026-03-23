@@ -230,7 +230,7 @@ export const PLATFORM_METRICS: Record<string, PlatformMetricConfig> = {
       { key: 'yt_shares_kpi', label: 'Megosztások', chartKeys: ['yt_daily_engagement'] },
       { key: 'yt_er', label: 'ER%', chartKeys: ['yt_engagement_rate'] },
       { key: 'yt_video_count', label: 'Videók', chartKeys: ['yt_all_videos'] },
-      { key: 'yt_avg_view', label: 'Átl. nézési %', chartKeys: ['yt_avg_view_pct'] },
+
       { key: 'yt_playlist', label: 'Playlist hozzáadás', chartKeys: ['yt_playlist_adds'] },
       { key: 'yt_like_per_view', label: 'Like / megtekintés', chartKeys: ['yt_daily_engagement', 'yt_views_trend'] },
       { key: 'yt_comment_per_view', label: 'Komment / megtekintés', chartKeys: ['yt_daily_engagement', 'yt_views_trend'] },

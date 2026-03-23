@@ -54,7 +54,7 @@ const PLATFORM_CHART_KEYS: Record<string, string[]> = {
   TIKTOK_ADS: ['ttads_spend_trend', 'ttads_impressions_clicks', 'ttads_ctr_trend', 'ttads_cpc_cpm', 'ttads_conversions', 'ttads_cost_per_conversion'],
   FACEBOOK_ORGANIC: ['fb_page_reach', 'fb_page_fans', 'fb_engagement', 'fb_all_posts', 'fb_follows_trend', 'fb_video_views'],
   INSTAGRAM_ORGANIC: ['ig_reach', 'ig_follower_growth', 'ig_engagement', 'ig_profile_activity', 'ig_all_media', 'ig_daily_followers', 'ig_save_rate', 'ig_story_overview'],
-  YOUTUBE: ['yt_subscribers_growth', 'yt_views_trend', 'yt_watch_time', 'yt_daily_engagement', 'yt_engagement_rate', 'yt_all_videos', 'yt_avg_view_pct', 'yt_playlist_adds'],
+  YOUTUBE: ['yt_subscribers_growth', 'yt_views_trend', 'yt_watch_time', 'yt_daily_engagement', 'yt_engagement_rate', 'yt_all_videos', 'yt_playlist_adds'],
 };
 
 function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
@@ -153,7 +153,6 @@ function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const engagement = find(results, 'yt_daily_engagement');
       const er = find(results, 'yt_engagement_rate');
       const videos = find(results, 'yt_all_videos');
-      const avgViewPct = find(results, 'yt_avg_view_pct');
       const playlistAdds = find(results, 'yt_playlist_adds');
       return [
         { label: 'Új feliratkozók', value: sumSeries(subs) },
@@ -164,7 +163,6 @@ function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { label: 'Megosztások', value: sumSeries(engagement, 2) },
         { label: 'ER%', value: `${avgSeries(er).toFixed(2)}%` },
         { label: 'Videók', value: tableCount(videos) },
-        { label: 'Átl. nézési %', value: `${avgSeries(avgViewPct).toFixed(1)}%` },
         { label: 'Playlist hozzáadás', value: sumSeries(playlistAdds) },
       ];
     }

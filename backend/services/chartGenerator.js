@@ -621,10 +621,6 @@ class ChartGenerator {
         return this._aggregateByField(this.data, 'country', 'viewer_percentage', 'Nézők %', false, 10);
     }
 
-    generate_yt_avg_view_pct() {
-        return this.dailyAvg(this.daily, 'average_view_percentage', 'Átl. megtekintés%');
-    }
-
     generate_yt_playlist_adds() { return this.dailyMetric(this.daily, 'videos_added_to_playlists', 'Playlisthez adva'); }
     generate_yt_premium_views() { return this.dailyMetric(this.daily, 'red_views', 'Premium nézések'); }
     generate_yt_likes_dislikes() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['dislikes', 'Dislike-ok']]); }
@@ -650,15 +646,31 @@ class ChartGenerator {
         this.video.forEach(row => {
             const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { video_title: row.video_title || '', views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video_title: row.video_title || '', published_at: row.published_at || row.publish_date || '', views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
             videoMap[vid].shares += parseInt(row.shares) || 0;
             videoMap[vid].estimated_minutes_watched += parseFloat(row.estimated_minutes_watched) || 0;
             if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
+            if ((row.published_at || row.publish_date) && !videoMap[vid].published_at) videoMap[vid].published_at = row.published_at || row.publish_date;
         });
-        const tableData = Object.entries(videoMap)
+
+        // Only include videos published in the report period
+        const startDate = this.startDate;
+        const endDate = this.endDate;
+        const hasPublishDates = Object.values(videoMap).some(v => v.published_at);
+
+        let entries = Object.entries(videoMap);
+        if (hasPublishDates && startDate && endDate) {
+            entries = entries.filter(([, s]) => {
+                if (!s.published_at) return false; // exclude videos without publish date
+                const pd = s.published_at.slice(0, 10); // YYYY-MM-DD from ISO timestamp
+                return pd >= startDate && pd <= endDate;
+            });
+        }
+
+        const tableData = entries
             .map(([videoId, s]) => ({
                 title: s.video_title || videoId,
                 views: s.views,
@@ -685,20 +697,31 @@ class ChartGenerator {
     }
     generate_yt_all_videos() { return this._buildYouTubeVideoTable(this._aggregateYouTubeVideos()); }
 
-    /** Aggregate YouTube video rows by video ID (field: `video`) */
+    /** Aggregate YouTube video rows by video ID, filter to report period by published_at */
     _aggregateYouTubeVideos() {
         const videoMap = {};
         this.video.forEach(row => {
             const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { video: vid, video_title: row.video_title || '', views: 0, likes: 0, comments: 0, shares: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video: vid, video_title: row.video_title || '', published_at: row.published_at || '', views: 0, likes: 0, comments: 0, shares: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
             videoMap[vid].shares += parseInt(row.shares) || 0;
             if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
+            if ((row.published_at) && !videoMap[vid].published_at) videoMap[vid].published_at = row.published_at;
         });
-        return Object.values(videoMap);
+        // Filter to videos published in report period
+        let results = Object.values(videoMap);
+        const hasPublishDates = results.some(v => v.published_at);
+        if (hasPublishDates && this.startDate && this.endDate) {
+            results = results.filter(v => {
+                if (!v.published_at) return false;
+                const pd = v.published_at.slice(0, 10);
+                return pd >= this.startDate && pd <= this.endDate;
+            });
+        }
+        return results;
     }
 
     _buildYouTubeVideoTable(videos) {

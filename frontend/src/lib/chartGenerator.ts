@@ -549,10 +549,6 @@ export default class ChartGenerator {
         return this._aggregateByField(this.data, 'country', 'viewer_percentage', 'N\u00e9z\u0151k %', false, 10);
     }
 
-    generate_yt_avg_view_pct() {
-        return this.dailyAvg(this.daily, 'average_view_percentage', 'Átl. megtekintés%');
-    }
-
     generate_yt_playlist_adds() { return this.dailyMetric(this.daily, 'videos_added_to_playlists', 'Playlisthez adva'); }
     generate_yt_premium_views() { return this.dailyMetric(this.daily, 'red_views', 'Premium nézések'); }
     generate_yt_likes_dislikes() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['dislikes', 'Dislike-ok']]); }

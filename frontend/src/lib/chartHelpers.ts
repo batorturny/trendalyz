@@ -370,7 +370,6 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const engagement = findChart(results, 'yt_daily_engagement');
       const er = findChart(results, 'yt_engagement_rate');
       const videos = findChart(results, 'yt_all_videos');
-      const avgViewPct = findChart(results, 'yt_avg_view_pct');
       const playlistAdds = findChart(results, 'yt_playlist_adds');
 
       const totalViews = sumSeries(views);
@@ -394,7 +393,6 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'yt_shares_kpi', label: 'Megosztások', value: totalShares },
         { key: 'yt_er', label: 'ER%', value: fmtPct(totalViews > 0 ? totalInteractions / totalViews * 100 : 0), agg: 'avg' },
         { key: 'yt_video_count', label: 'Videók', value: vidCount },
-        { key: 'yt_avg_view', label: 'Átl. végignézés %', value: `${avgSeries(avgViewPct).toFixed(1)}%`, agg: 'avg' },
         { key: 'yt_playlist', label: 'Playlist hozzáadás', value: sumSeries(playlistAdds) },
         // Arány metrikák
         { key: 'yt_like_per_view', label: 'Like / megtekintés', value: fmtPct(totalViews > 0 ? totalLikes / totalViews * 100 : 0), agg: 'avg' },

@@ -157,7 +157,7 @@ const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
       },
       {
         name: 'videos',
-        fields: ['date', 'video', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
+        fields: ['published_at', 'video', 'video_title', 'views', 'likes', 'comments', 'shares', 'estimated_minutes_watched'],
       },
       {
         name: 'extras',
@@ -604,6 +604,41 @@ async function fetchYouTubeDirectData(channelId: string, token: string, dateFrom
   return rows;
 }
 
+/**
+ * Enrich YouTube video rows with titles & publish dates from YouTube Data API.
+ * Uses the channel's OAuth token. Batches up to 50 IDs per request.
+ */
+async function enrichYouTubeVideoTitles(data: any[], token: string): Promise<any[]> {
+  const videoIds = [...new Set(data.filter(r => r.video).map(r => r.video))] as string[];
+  if (videoIds.length === 0) return data;
+
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const batch = videoIds.slice(i, i + 50);
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${batch.join(',')}&fields=items(id,snippet(title,publishedAt))`;
+      const json = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(10000),
+      }).then(r => r.json()) as any;
+
+      if (Array.isArray(json.items)) {
+        for (const item of json.items) {
+          for (const row of data) {
+            if (row.video === item.id) {
+              row.video_title = item.snippet.title;
+              row.publish_date = item.snippet.publishedAt;
+            }
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn('[YouTube] Video title enrichment failed:', e.message);
+    }
+  }
+
+  return data;
+}
+
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -713,6 +748,14 @@ export async function POST(req: Request) {
             }
             console.log(`[Chart API] Windsor fetch for ${platform}`);
             data = await fetchWindsorChartData(windsorApiKey, platform, connection.externalAccountId, startDate, endDate);
+          }
+
+          // Enrich YouTube video data with titles from YouTube Data API
+          if (platform === 'YOUTUBE' && (connection.metadata as any)?.encryptedAccessToken) {
+            try {
+              const token = decrypt((connection.metadata as any).encryptedAccessToken as string);
+              data = await enrichYouTubeVideoTitles(data, token);
+            } catch { /* title enrichment is best-effort */ }
           }
 
           const generator = new ChartGenerator(data, startDate, endDate);

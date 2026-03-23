@@ -802,16 +802,6 @@ const chartCatalog = [
 
     // ========== YOUTUBE (NEW) ==========
     {
-        key: 'yt_avg_view_pct',
-        title: 'Átlagos nézési %',
-        description: 'Átlagos nézési százalék videónként',
-        category: CHART_CATEGORIES.VIDEO,
-        type: 'bar',
-        color: '#ffce44',
-        platform: 'YOUTUBE',
-        windsorFields: ['average_view_percentage', 'date']
-    },
-    {
         key: 'yt_playlist_adds',
         title: 'Playlisthez adás',
         description: 'Playlisthez adás trend',

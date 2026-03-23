@@ -139,7 +139,7 @@ const KPI_CHART_KEYS = [
   'all_videos',
   'fb_page_reach', 'fb_engagement', 'fb_page_fans', 'fb_all_posts', 'fb_follows_trend', 'fb_video_views',
   'ig_reach', 'ig_engagement', 'ig_follower_growth', 'ig_all_media', 'ig_daily_followers', 'ig_save_rate', 'ig_story_overview', 'ig_profile_activity',
-  'yt_views_trend', 'yt_daily_engagement', 'yt_subscribers_growth', 'yt_watch_time', 'yt_engagement_rate', 'yt_all_videos', 'yt_avg_view_pct', 'yt_playlist_adds',
+  'yt_views_trend', 'yt_daily_engagement', 'yt_subscribers_growth', 'yt_watch_time', 'yt_engagement_rate', 'yt_all_videos', 'yt_playlist_adds',
   'ttads_spend_trend', 'ttads_impressions_clicks', 'ttads_ctr_trend', 'ttads_cpc_cpm', 'ttads_conversions', 'ttads_cost_per_conversion',
   'tt_bio_link_clicks', 'tt_total_followers',
 ];

@@ -645,16 +645,6 @@ export const chartCatalog = [
 
     // ========== YOUTUBE (NEW) ==========
     {
-        key: 'yt_avg_view_pct',
-        title: '\u00c1tlagos n\u00e9z\u00e9si %',
-        description: '\u00c1tlagos n\u00e9z\u00e9si sz\u00e1zal\u00e9k vide\u00f3nk\u00e9nt',
-        category: CHART_CATEGORIES.VIDEO,
-        type: 'bar',
-        color: '#ffce44',
-        platform: 'YOUTUBE',
-        windsorFields: ['average_view_percentage', 'date']
-    },
-    {
         key: 'yt_playlist_adds',
         title: 'Playlisthez ad\u00e1s',
         description: 'Playlisthez ad\u00e1s trend',

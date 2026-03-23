@@ -60,8 +60,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
-    })
+})
   );
 } else {
   console.warn('[AUTH] Google OAuth disabled — GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not set');
@@ -130,12 +129,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           include: { company: { select: { status: true } } },
         });
         if (!existingUser) {
-          // Create new admin user from Google sign-in (no company, no API keys)
+          // Create new user from Google sign-in (no company, no API keys)
           const newUser = await prisma.user.create({
             data: {
               email: user.email!,
               name: user.name || user.email!.split('@')[0],
-              role: 'ADMIN',
+              role: 'CLIENT',
             },
           });
           // Link Google account to the new user
