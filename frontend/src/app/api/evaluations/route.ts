@@ -13,8 +13,8 @@ export async function GET(req: Request) {
   const platform = searchParams.get('platform');
   const month = searchParams.get('month');
 
-  if (!companyId || !platform || !month) {
-    return NextResponse.json({ error: 'companyId, platform and month are required' }, { status: 400 });
+  if (!companyId) {
+    return NextResponse.json({ error: 'companyId is required' }, { status: 400 });
   }
 
   // Access check: admin owns the company OR client belongs to it
@@ -24,11 +24,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const evaluation = await prisma.evaluation.findUnique({
-    where: { companyId_platform_month: { companyId, platform, month } },
-  });
+  // If all 3 params → return single evaluation
+  if (platform && month) {
+    const evaluation = await prisma.evaluation.findUnique({
+      where: { companyId_platform_month: { companyId, platform, month } },
+    });
+    return NextResponse.json(evaluation);
+  }
 
-  return NextResponse.json(evaluation);
+  // Otherwise return all evaluations for this company (with optional filters)
+  const where: any = { companyId };
+  if (platform) where.platform = platform;
+  if (month) where.month = month;
+
+  const evaluations = await prisma.evaluation.findMany({
+    where,
+    orderBy: [{ month: 'desc' }, { platform: 'asc' }],
+  });
+  return NextResponse.json(evaluations);
 }
 
 export async function POST(req: Request) {
