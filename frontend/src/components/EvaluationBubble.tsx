@@ -119,9 +119,9 @@ export function EvaluationBubble({ companyId }: Props) {
         {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">{unreadCount}</span>}
       </button>
 
-      {/* Panel */}
-      <div className={`fixed bottom-20 right-6 w-80 z-50 rounded-2xl shadow-2xl border border-[var(--border)] bg-[var(--surface-raised)] flex flex-col overflow-hidden transition-all duration-300 ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}`}
-        style={{ height: '450px' }}>
+      {/* Panel — 25% larger */}
+      <div className={`fixed bottom-20 right-6 w-96 z-50 rounded-2xl shadow-2xl border border-[var(--border)] bg-[var(--surface-raised)] flex flex-col overflow-hidden transition-all duration-300 ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+        style={{ height: '560px' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
           <h3 className="text-sm font-bold">Értékelés</h3>
@@ -151,8 +151,8 @@ export function EvaluationBubble({ companyId }: Props) {
                     </button>
                   ) : (
                     <button onClick={() => setShowEmojiPicker(v => !v)}
-                      className="absolute -bottom-3 right-2 text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)] opacity-0 group-hover:opacity-100"
-                      title="Reakció">+</button>
+                      className="absolute -bottom-3 right-2 text-xs bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)]"
+                      title="Reakció hozzáadása">+</button>
                   )
                 )}
               </div>
