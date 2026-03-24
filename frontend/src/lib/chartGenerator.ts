@@ -552,7 +552,22 @@ export default class ChartGenerator {
     generate_yt_playlist_adds() { return this.dailyMetric(this.daily, 'videos_added_to_playlists', 'Playlisthez adva'); }
     generate_yt_premium_views() { return this.dailyMetric(this.daily, 'red_views', 'Premium nézések'); }
     generate_yt_likes_dislikes() { return this.dailyMultiMetric(this.daily, [['likes', 'Like-ok'], ['dislikes', 'Dislike-ok']]); }
-    generate_yt_subscriber_count() { return this.dailyMax(this.daily, 'subscriber_count', 'Feliratkozók'); }
+    generate_yt_subscriber_count() {
+        const withSubs = this.daily.filter((r: any) => r.date && r.subscriber_count !== undefined && r.subscriber_count !== null);
+        const byDate: Record<string, any> = {};
+        withSubs.forEach((r: any) => { if (!byDate[r.date]) byDate[r.date] = r; });
+        const sorted = Object.values(byDate).sort((a: any, b: any) => a.date.localeCompare(b.date));
+        if (sorted.length === 0) return { labels: [], series: [{ name: 'Feliratkozók', data: [] }] };
+        const lastCount = parseInt(sorted[sorted.length - 1].subscriber_count) || 0;
+        const counts: number[] = new Array(sorted.length);
+        counts[sorted.length - 1] = lastCount;
+        for (let i = sorted.length - 2; i >= 0; i--) {
+            const nextGained = parseInt(sorted[i + 1].subscribers_gained) || 0;
+            const nextLost = parseInt(sorted[i + 1].subscribers_lost) || 0;
+            counts[i] = counts[i + 1] - nextGained + nextLost;
+        }
+        return { labels: sorted.map((r: any) => r.date), series: [{ name: 'Feliratkozók', data: counts }] };
+    }
     generate_yt_card_performance() { return this.dailyMultiMetric(this.daily, [['card_clicks', 'Kattintások'], ['card_impressions', 'Megjelenések']]); }
     generate_yt_card_ctr() { return this.dailyAvg(this.daily, 'card_click_rate', 'CTR %'); }
     generate_yt_red_watch_time() { return this.dailyMetric(this.daily, 'estimated_red_minutes_watched', 'Premium nézési idő (perc)'); }
@@ -621,15 +636,16 @@ export default class ChartGenerator {
 
     /** Aggregate YouTube video rows by video ID, filter to report period */
     _aggregateYouTubeVideos() {
-        const videoMap: Record<string, { video: string; video_title: string; published_at: string; views: number; likes: number; comments: number; shares: number }> = {};
+        const videoMap: Record<string, { video: string; video_title: string; published_at: string; views: number; likes: number; comments: number; shares: number; estimated_minutes_watched: number }> = {};
         this.video.forEach((row: any) => {
             const vid = row.video || row.video_id;
             if (!vid) return;
-            if (!videoMap[vid]) videoMap[vid] = { video: vid, video_title: row.video_title || '', published_at: row.published_at || '', views: 0, likes: 0, comments: 0, shares: 0 };
+            if (!videoMap[vid]) videoMap[vid] = { video: vid, video_title: row.video_title || '', published_at: row.published_at || '', views: 0, likes: 0, comments: 0, shares: 0, estimated_minutes_watched: 0 };
             videoMap[vid].views += parseInt(row.views) || 0;
             videoMap[vid].likes += parseInt(row.likes) || 0;
             videoMap[vid].comments += parseInt(row.comments) || 0;
             videoMap[vid].shares += parseInt(row.shares) || 0;
+            videoMap[vid].estimated_minutes_watched += parseFloat(row.estimated_minutes_watched) || 0;
             if (row.video_title && !videoMap[vid].video_title) videoMap[vid].video_title = row.video_title;
             if (row.published_at && !videoMap[vid].published_at) videoMap[vid].published_at = row.published_at;
         });
@@ -645,17 +661,18 @@ export default class ChartGenerator {
         return results;
     }
 
-    _buildYouTubeVideoTable(videos: { video: string; video_title: string; views: number; likes: number; comments: number; shares: number }[]) {
+    _buildYouTubeVideoTable(videos: { video: string; video_title: string; views: number; likes: number; comments: number; shares: number; estimated_minutes_watched: number }[]) {
         const tableData = videos.map(v => {
             const er = this.engagementRate(v.likes, v.comments, v.shares, v.views);
             return {
                 title: v.video_title || v.video || '-',
                 views: v.views, likes: v.likes, comments: v.comments, shares: v.shares,
+                estimated_minutes_watched: Math.round(v.estimated_minutes_watched),
                 engagementRate: er,
                 link: v.video ? `https://youtube.com/watch?v=${v.video}` : '#'
             };
         });
-        return { labels: ['Videó', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
+        return { labels: ['Videó', 'Megtekintés', 'Like-ok', 'Kommentek', 'Megosztások', 'Nézési idő (perc)', 'ER%', 'Link'], series: [{ name: 'Videos', data: tableData }] };
     }
 
     // ===== TIKTOK ADS =====
