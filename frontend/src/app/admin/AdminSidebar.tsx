@@ -17,6 +17,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; dis
   { href: '/admin/charts', label: 'Chartok', icon: BarChart3 },
   { href: '/admin/evaluations', label: 'Értékelések', icon: MessageCircle },
   { href: '/admin/settings', label: 'Beállítások', icon: Settings },
+  { href: '/admin/billing', label: 'Számlázás', icon: CreditCard },
 ];
 
 const platformItems = [
