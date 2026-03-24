@@ -64,12 +64,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
+  const newMsg = { role: 'admin' as const, text: adminMessage, at: new Date().toISOString() };
+
+  // Fetch existing messages for append
+  const existing = await prisma.evaluation.findUnique({
+    where: { companyId_platform_month: { companyId, platform, month } },
+    select: { messages: true },
+  });
+  const currentMessages = (existing?.messages as any[] || []);
+  currentMessages.push(newMsg);
+
   const evaluation = await prisma.evaluation.upsert({
     where: { companyId_platform_month: { companyId, platform, month } },
     update: {
       adminMessage,
       adminMessageAt: new Date(),
       adminUserId: session.user.id,
+      messages: currentMessages,
     },
     create: {
       companyId,
@@ -78,6 +89,7 @@ export async function POST(req: Request) {
       adminMessage,
       adminMessageAt: new Date(),
       adminUserId: session.user.id,
+      messages: [newMsg],
     },
   });
 

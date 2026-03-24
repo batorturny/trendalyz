@@ -46,12 +46,16 @@ export async function PATCH(
     return NextResponse.json({ error: 'Reply too long' }, { status: 400 });
   }
 
+  const currentMessages = (evaluation.messages as any[] || []);
+  currentMessages.push({ role: 'client', text: reply.trim(), at: new Date().toISOString() });
+
   const updated = await prisma.evaluation.update({
     where: { id },
     data: {
       clientReply: reply.trim(),
       clientReplyAt: new Date(),
       clientUserId: session.user.id,
+      messages: currentMessages,
     },
   });
 

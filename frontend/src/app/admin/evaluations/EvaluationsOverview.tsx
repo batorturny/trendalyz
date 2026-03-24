@@ -9,6 +9,13 @@ interface Company {
   platforms: string[];
 }
 
+interface ChatMessage {
+  role: 'admin' | 'client';
+  text: string;
+  at: string;
+  reaction?: string;
+}
+
 interface Evaluation {
   id: string;
   companyId: string;
@@ -20,6 +27,7 @@ interface Evaluation {
   clientReply: string | null;
   clientReplyAt: string | null;
   clientReadAt: string | null;
+  messages?: ChatMessage[];
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -53,14 +61,32 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
   const company = companies.find(c => c.id === selectedCompany);
   const monthEvals = evaluations.filter(e => e.companyId === selectedCompany && e.month === selectedMonth);
   const targetEvals = selectedPlatform === 'ALL' ? monthEvals : monthEvals.filter(e => e.platform === selectedPlatform);
-  const existingMessage = targetEvals.find(e => e.adminMessage)?.adminMessage || '';
 
-  // Sync message when selection changes
+  // Aggregate chat messages from all target evals
+  const allMessages: ChatMessage[] = targetEvals.flatMap(e => (e.messages as ChatMessage[] || []));
+  // Sort by timestamp
+  allMessages.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+  // Fallback: if no messages array but legacy fields exist, build from legacy
+  const legacyMessages: ChatMessage[] = [];
+  if (allMessages.length === 0) {
+    const firstEval = targetEvals.find(e => e.adminMessage);
+    if (firstEval?.adminMessage) {
+      legacyMessages.push({ role: 'admin', text: firstEval.adminMessage, at: firstEval.adminMessageAt || '' });
+    }
+    for (const ev of targetEvals) {
+      if (ev.clientReply) {
+        legacyMessages.push({ role: 'client', text: ev.clientReply, at: ev.clientReplyAt || '' });
+      }
+    }
+  }
+  const chatMessages = allMessages.length > 0 ? allMessages : legacyMessages;
+
+  // Sync message when selection changes - clear textarea
   const [lastKey, setLastKey] = useState('');
   const key = `${selectedCompany}-${selectedMonth}`;
   if (key !== lastKey) {
     setLastKey(key);
-    setMessage(existingMessage);
+    setMessage('');
     setSaved(false);
   }
 
@@ -84,6 +110,7 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
         const fresh = await res.json();
         setEvaluations(prev => [...prev.filter(e => e.companyId !== selectedCompany), ...fresh]);
       }
+      setMessage('');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
@@ -163,46 +190,43 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
 
         {/* Chat messages */}
         <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 min-h-[300px] flex flex-col">
-          <div className="flex-1 space-y-4 mb-4">
-            {/* Admin message (left side) */}
-            {existingMessage && (
-              <div className="flex justify-start">
-                <div className="relative max-w-[80%] bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-2xl rounded-bl-md p-3">
-                  <p className="text-xs text-[var(--accent)] font-bold mb-1">Te (admin)</p>
-                  <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{existingMessage}</p>
-                  {monthEvals[0]?.adminMessageAt && (
-                    <p className="text-[10px] text-[var(--text-secondary)] mt-1.5">{new Date(monthEvals[0].adminMessageAt).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                  )}
-                  {/* Status indicator */}
-                  <div className="flex items-center gap-1 mt-1">
-                    {monthEvals.some(e => e.clientReply) && <span className="text-[10px] text-green-500 font-bold">Válaszolt</span>}
-                    {!monthEvals.some(e => e.clientReply) && monthEvals.some(e => e.clientReadAt) && <span className="text-[10px] text-blue-500 font-bold">Olvasva</span>}
-                    {!monthEvals.some(e => e.clientReply) && !monthEvals.some(e => e.clientReadAt) && monthEvals.some(e => e.adminMessage) && <span className="text-[10px] text-yellow-500 font-bold">Elküldve</span>}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Client responses per platform (right side) */}
-            {targetEvals.filter(e => e.clientReaction || e.clientReply).map(ev => (
-              <div key={ev.id} className="flex justify-end">
-                <div className="relative max-w-[80%] bg-[var(--surface)] border border-[var(--border)] rounded-2xl rounded-br-md p-3">
-                  <p className="text-xs text-[var(--text-secondary)] font-bold mb-1">{PLATFORM_LABELS[ev.platform]} — ügyfél</p>
-                  {ev.clientReply && (
-                    <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{ev.clientReply}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-1.5">
-                    {ev.clientReplyAt && (
-                      <p className="text-[10px] text-[var(--text-secondary)]">{new Date(ev.clientReplyAt).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+          <div className="flex-1 space-y-3 mb-4 max-h-[400px] overflow-y-auto">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                <div className={`relative max-w-[80%] rounded-2xl p-3 ${
+                  msg.role === 'admin'
+                    ? 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-bl-md'
+                    : 'bg-[var(--surface)] border border-[var(--border)] rounded-br-md'
+                }`}>
+                  <p className={`text-xs font-bold mb-1 ${msg.role === 'admin' ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'}`}>
+                    {msg.role === 'admin' ? 'Te (admin)' : 'Ügyfél'}
+                  </p>
+                  <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{msg.text}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {msg.at && (
+                      <p className="text-[10px] text-[var(--text-secondary)]">
+                        {new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     )}
-                    {ev.clientReaction && <span className="text-lg">{ev.clientReaction}</span>}
+                    {msg.role === 'admin' && msg.reaction && <span className="text-lg">{msg.reaction}</span>}
                   </div>
                 </div>
               </div>
             ))}
 
+            {/* Status indicator after last message */}
+            {chatMessages.length > 0 && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1 px-1">
+                  {monthEvals.some(e => e.clientReply) && <span className="text-[10px] text-green-500 font-bold">Válaszolt</span>}
+                  {!monthEvals.some(e => e.clientReply) && monthEvals.some(e => e.clientReadAt) && <span className="text-[10px] text-blue-500 font-bold">Olvasva</span>}
+                  {!monthEvals.some(e => e.clientReply) && !monthEvals.some(e => e.clientReadAt) && monthEvals.some(e => e.adminMessage) && <span className="text-[10px] text-yellow-500 font-bold">Elküldve</span>}
+                </div>
+              </div>
+            )}
+
             {/* Empty state */}
-            {!existingMessage && (
+            {chatMessages.length === 0 && (
               <div className="flex-1 flex items-center justify-center text-[var(--text-secondary)] text-sm">
                 Írj értékelést az ügyfélnek erre a hónapra
               </div>
@@ -214,7 +238,7 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
             <textarea
               value={message}
               onChange={e => { setMessage(e.target.value); setSaved(false); }}
-              placeholder="Írd ide a havi értékelést..."
+              placeholder="Új üzenet írása..."
               className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-sm min-h-[80px] resize-y mb-2"
             />
             <button
@@ -223,7 +247,7 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
               className="btn-press px-5 py-2 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white font-bold text-sm disabled:opacity-50 flex items-center gap-2"
             >
               <Send className="w-4 h-4" />
-              {saving ? 'Küldés...' : existingMessage ? 'Frissítés' : 'Küldés'}
+              {saving ? 'Küldés...' : 'Küldés'}
             </button>
           </div>
         </div>

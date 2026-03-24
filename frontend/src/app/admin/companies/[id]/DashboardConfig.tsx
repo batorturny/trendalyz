@@ -210,7 +210,8 @@ export function DashboardConfig({ companyId, connections, dashboardConfig, dashb
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
-  const connectedProviders = [...new Set(connections.map(c => c.provider))].filter(p => PLATFORM_METRICS[p]);
+  const HIDDEN_PLATFORMS = new Set(['INSTAGRAM_ORGANIC', 'INSTAGRAM']);
+  const connectedProviders = [...new Set(connections.map(c => c.provider))].filter(p => PLATFORM_METRICS[p] && !HIDDEN_PLATFORMS.has(p));
 
   if (connectedProviders.length === 0) return null;
 

@@ -230,6 +230,9 @@ model Evaluation {
   clientReadAt    DateTime?
   clientUserId    String?
 
+  // Chat history: [{role:'admin'|'client', text:string, at:string, reaction?:string}]
+  messages        Json?     @default("[]")
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -3,6 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 
+interface ChatMessage {
+  role: 'admin' | 'client';
+  text: string;
+  at: string;
+  reaction?: string;
+}
+
 interface Evaluation {
   id: string;
   companyId: string;
@@ -14,6 +21,7 @@ interface Evaluation {
   clientReply: string | null;
   clientReplyAt: string | null;
   clientReadAt: string | null;
+  messages?: ChatMessage[];
 }
 
 interface EvaluationBubbleProps {
@@ -104,7 +112,11 @@ export function EvaluationBubble({ companyId, platform, month }: EvaluationBubbl
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reply: replyText.trim() }),
       });
-      if (res.ok) { const updated = await res.json(); setActiveEval(updated); setReplyText(''); }
+      if (res.ok) {
+        const updated = await res.json();
+        setActiveEval(updated);
+        setReplyText('');
+      }
     } catch { /* keep text */ } finally { setSending(false); }
   };
 
@@ -150,60 +162,95 @@ export function EvaluationBubble({ companyId, platform, month }: EvaluationBubbl
         )}
 
         {/* Active evaluation content */}
-        {activeEval && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold">
-              {PLATFORM_LABELS[activeEval.platform]} — {fmtMonth(activeEval.month)}
-            </p>
+        {activeEval && (() => {
+          // Build chat messages from messages array, fallback to legacy fields
+          const msgs: ChatMessage[] = (activeEval.messages as ChatMessage[] || []);
+          const chatMsgs = msgs.length > 0 ? [...msgs] : [];
+          // Legacy fallback: if no messages array, build from old fields
+          if (chatMsgs.length === 0) {
+            if (activeEval.adminMessage) {
+              chatMsgs.push({ role: 'admin', text: activeEval.adminMessage, at: activeEval.adminMessageAt || '' });
+            }
+            if (activeEval.clientReply) {
+              chatMsgs.push({ role: 'client', text: activeEval.clientReply, at: activeEval.clientReplyAt || '' });
+            }
+          }
+          chatMsgs.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 
-            <div className="relative bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)]">
-              <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{activeEval.adminMessage}</p>
-              {activeEval.adminMessageAt && (
-                <p className="text-[10px] text-[var(--text-secondary)] mt-2">{new Date(activeEval.adminMessageAt).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })}</p>
-              )}
-              {/* Messenger-style reaction on message */}
-              {activeEval.clientReaction ? (
-                <button
-                  onClick={() => setShowEmojiPicker(v => !v)}
-                  className="absolute -bottom-3 right-3 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
-                >{activeEval.clientReaction}</button>
-              ) : (
-                <button
-                  onClick={() => setShowEmojiPicker(v => !v)}
-                  className="absolute -bottom-3 right-3 text-xs bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)]"
-                >😊</button>
-              )}
-              {/* Emoji picker popup */}
-              {showEmojiPicker && (
-                <div className="absolute -bottom-12 right-0 flex gap-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-2 py-1 shadow-lg z-10">
-                  {EMOJIS.map(emoji => (
-                    <button key={emoji} onClick={() => { handleReaction(emoji); setShowEmojiPicker(false); }}
-                      className={`w-8 h-8 rounded-full text-lg flex items-center justify-center hover:scale-125 transition-transform ${activeEval.clientReaction === emoji ? 'bg-[var(--accent)]/20' : ''}`}
-                    >{emoji}</button>
-                  ))}
-                </div>
-              )}
-            </div>
+          // Find last admin message index for reaction display
+          const lastAdminIdx = chatMsgs.reduce((acc, m, i) => m.role === 'admin' ? i : acc, -1);
 
-            {/* Reply */}
-            {activeEval.clientReply ? (
-              <div className="bg-[var(--accent)]/10 rounded-xl p-3 border border-[var(--accent)]/20">
-                <p className="text-xs text-[var(--text-secondary)] mb-1">Válaszod</p>
-                <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{activeEval.clientReply}</p>
+          return (
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+              <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold">
+                {PLATFORM_LABELS[activeEval.platform]} — {fmtMonth(activeEval.month)}
+              </p>
+
+              {/* Chat messages */}
+              <div className="flex-1 space-y-2.5">
+                {chatMsgs.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                    <div className={`relative max-w-[85%] rounded-xl p-3 ${
+                      msg.role === 'admin'
+                        ? 'bg-[var(--surface)] border border-[var(--border)] rounded-bl-md'
+                        : 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-br-md'
+                    }`}>
+                      <p className={`text-[10px] font-bold mb-1 ${msg.role === 'admin' ? 'text-[var(--text-secondary)]' : 'text-[var(--accent)]'}`}>
+                        {msg.role === 'admin' ? 'Admin' : 'Te'}
+                      </p>
+                      <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                      {msg.at && (
+                        <p className="text-[10px] text-[var(--text-secondary)] mt-1.5">
+                          {new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
+                      {/* Messenger-style reaction on last admin message */}
+                      {msg.role === 'admin' && i === lastAdminIdx && (
+                        <>
+                          {activeEval.clientReaction ? (
+                            <button
+                              onClick={() => setShowEmojiPicker(v => !v)}
+                              className="absolute -bottom-3 right-3 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+                            >{activeEval.clientReaction}</button>
+                          ) : (
+                            <button
+                              onClick={() => setShowEmojiPicker(v => !v)}
+                              className="absolute -bottom-3 right-3 text-xs bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)]"
+                            >{'\u{1F60A}'}</button>
+                          )}
+                          {showEmojiPicker && (
+                            <div className="absolute -bottom-12 right-0 flex gap-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-2 py-1 shadow-lg z-10">
+                              {EMOJIS.map(emoji => (
+                                <button key={emoji} onClick={() => { handleReaction(emoji); setShowEmojiPicker(false); }}
+                                  className={`w-8 h-8 rounded-full text-lg flex items-center justify-center hover:scale-125 transition-transform ${activeEval.clientReaction === emoji ? 'bg-[var(--accent)]/20' : ''}`}
+                                >{emoji}</button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {/* Reaction display on admin messages (non-last) */}
+                      {msg.role === 'admin' && msg.reaction && i !== lastAdminIdx && (
+                        <span className="absolute -bottom-3 right-3 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm">{msg.reaction}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="space-y-2">
+
+              {/* Reply compose - always visible */}
+              <div className="space-y-2 pt-2 border-t border-[var(--border)]">
                 <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Válasz írása..." rows={3} maxLength={2000}
                   className="w-full px-3 py-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl resize-none outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]" />
                 <button onClick={handleReply} disabled={sending || !replyText.trim()}
                   className="w-full px-4 py-2 text-sm font-bold text-white bg-[var(--accent)] hover:brightness-110 disabled:opacity-50 rounded-xl flex items-center justify-center gap-2">
                   {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Posztolás
+                  Küldés
                 </button>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
