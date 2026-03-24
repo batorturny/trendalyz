@@ -40,8 +40,8 @@ export function EvaluationBubble({ companyId }: Props) {
     const msgs = (e.messages as ChatMessage[] || []);
     if (msgs.length > 0) return msgs;
     const legacy: ChatMessage[] = [];
-    if (e.adminMessage) legacy.push({ role: 'admin', text: e.adminMessage, at: '' });
-    if (e.clientReply) legacy.push({ role: 'client', text: e.clientReply, at: '' });
+    if (e.adminMessage) legacy.push({ role: 'admin', text: e.adminMessage, at: (e as any).adminMessageAt || '' });
+    if (e.clientReply) legacy.push({ role: 'client', text: e.clientReply, at: (e as any).clientReplyAt || '' });
     return legacy;
   });
   const seen = new Set<string>();

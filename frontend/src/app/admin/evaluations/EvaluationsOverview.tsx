@@ -30,8 +30,8 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
     if (msgs.length > 0) return msgs;
     // Legacy fallback
     const legacy: ChatMessage[] = [];
-    if (e.adminMessage) legacy.push({ role: 'admin', text: e.adminMessage, at: e.adminMessage || '' });
-    if (e.clientReply) legacy.push({ role: 'client', text: e.clientReply, at: e.clientReply || '' });
+    if (e.adminMessage) legacy.push({ role: 'admin', text: e.adminMessage, at: e.adminMessageAt || '' });
+    if (e.clientReply) legacy.push({ role: 'client', text: e.clientReply, at: e.clientReplyAt || '' });
     return legacy;
   });
   // Deduplicate by text+at (same message might be in multiple platform evals)
@@ -130,7 +130,7 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
                   <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{msg.text}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-[10px] text-[var(--text-secondary)]">
-                      {msg.at ? new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                      {msg.at && !isNaN(new Date(msg.at).getTime()) ? new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                     </p>
                     {msg.reaction && <span className="text-sm">{msg.reaction}</span>}
                   </div>

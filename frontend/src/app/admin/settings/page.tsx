@@ -42,6 +42,16 @@ export default async function SettingsPage() {
         </section>
 
         <section className="pt-6 border-t border-[var(--border)]">
+          <h2 className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-3">Számlázás</h2>
+          <a
+            href="/admin/billing"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--accent-subtle)] transition"
+          >
+            💳 Számlázás és előfizetés kezelése
+          </a>
+        </section>
+
+        <section className="pt-6 border-t border-[var(--border)]">
           <h2 className="text-xs font-bold text-[var(--error)] uppercase mb-3">Veszélyes zóna</h2>
           <p className="text-sm text-[var(--text-secondary)] mb-4">
             A fiók törlése végleges és visszavonhatatlan. Minden adatod elvész.
