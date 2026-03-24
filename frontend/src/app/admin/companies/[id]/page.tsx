@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { CompanyUsers } from './CompanyUsers';
 import { DashboardConfig } from './DashboardConfig';
 import { MonthlyAnalysis } from './MonthlyAnalysis';
+import { CompanyEvaluations } from './CompanyEvaluations';
 import { EmailSchedule } from './EmailSchedule';
 import { IntegrationConnections } from './IntegrationConnections';
 import { OAuthFeedback } from './OAuthFeedback';
@@ -95,6 +96,16 @@ export default async function CompanyDetailPage({
       <div className="mb-6">
         <MonthlyAnalysis companyId={company.id} />
       </div>
+
+      {/* Evaluations */}
+      {company.connections.length > 0 && (
+        <div className="mb-6">
+          <CompanyEvaluations
+            companyId={company.id}
+            platforms={[...new Set(company.connections.map(c => c.provider))]}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         {/* Users */}

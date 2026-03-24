@@ -100,6 +100,7 @@ model Company {
   connections     IntegrationConnection[]
   reportSummaries ReportSummary[]
   reportCaches    ReportCache[]
+  evaluations     Evaluation[]
   messages        Message[]
   messageReadStatuses MessageReadStatus[]
 
@@ -211,6 +212,30 @@ model Subscription {
   updatedAt            DateTime           @updatedAt
 }
 
+
+model Evaluation {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  platform        String    // TIKTOK_ORGANIC, FACEBOOK_ORGANIC, etc.
+  month           String    // YYYY-MM
+
+  adminMessage    String?   @db.Text
+  adminMessageAt  DateTime?
+  adminUserId     String?
+
+  clientReaction  String?   // emoji: 👍❤️🔥🤔
+  clientReply     String?   @db.Text
+  clientReplyAt   DateTime?
+  clientReadAt    DateTime?
+  clientUserId    String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([companyId, platform, month])
+  @@index([companyId])
+}
 
 model Message {
   id        String   @id @default(cuid())

@@ -12,6 +12,7 @@ import { MonthPicker } from '@/components/MonthPicker';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
 import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { useT } from '@/lib/i18n';
+import { EvaluationBubble } from '@/components/EvaluationBubble';
 
 interface PlatformConfig {
   platformKey: string;
@@ -452,6 +453,14 @@ export function ClientPlatformPage({
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{t('Nincs adat')}</h2>
           <p className="text-[var(--text-secondary)]">{t('Ehhez a hónaphoz nem található adat. Próbálj másik hónapot választani.')}</p>
         </div>
+      )}
+      {/* Evaluation floating bubble */}
+      {companyId && selectedMonth && (
+        <EvaluationBubble
+          companyId={companyId}
+          platform={platform.platformKey}
+          month={selectedMonth}
+        />
       )}
     </div>
   );
