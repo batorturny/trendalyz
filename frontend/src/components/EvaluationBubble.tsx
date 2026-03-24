@@ -42,6 +42,7 @@ export function EvaluationBubble({ companyId, platform, month }: EvaluationBubbl
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [reactingEmoji, setReactingEmoji] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const fetchEvaluations = useCallback(async () => {
@@ -155,20 +156,33 @@ export function EvaluationBubble({ companyId, platform, month }: EvaluationBubbl
               {PLATFORM_LABELS[activeEval.platform]} — {fmtMonth(activeEval.month)}
             </p>
 
-            <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)]">
+            <div className="relative bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)]">
               <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{activeEval.adminMessage}</p>
               {activeEval.adminMessageAt && (
                 <p className="text-[10px] text-[var(--text-secondary)] mt-2">{new Date(activeEval.adminMessageAt).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })}</p>
               )}
-            </div>
-
-            {/* Emoji reactions */}
-            <div className="flex items-center gap-2">
-              {EMOJIS.map(emoji => (
-                <button key={emoji} onClick={() => handleReaction(emoji)} disabled={reactingEmoji !== null}
-                  className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center transition-all ${activeEval.clientReaction === emoji ? 'bg-[var(--accent)]/15 ring-2 ring-[var(--accent)] scale-110' : 'bg-[var(--surface)] hover:bg-[var(--border)]'}`}
-                >{emoji}</button>
-              ))}
+              {/* Messenger-style reaction on message */}
+              {activeEval.clientReaction ? (
+                <button
+                  onClick={() => setShowEmojiPicker(v => !v)}
+                  className="absolute -bottom-3 right-3 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+                >{activeEval.clientReaction}</button>
+              ) : (
+                <button
+                  onClick={() => setShowEmojiPicker(v => !v)}
+                  className="absolute -bottom-3 right-3 text-xs bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)]"
+                >😊</button>
+              )}
+              {/* Emoji picker popup */}
+              {showEmojiPicker && (
+                <div className="absolute -bottom-12 right-0 flex gap-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-2 py-1 shadow-lg z-10">
+                  {EMOJIS.map(emoji => (
+                    <button key={emoji} onClick={() => { handleReaction(emoji); setShowEmojiPicker(false); }}
+                      className={`w-8 h-8 rounded-full text-lg flex items-center justify-center hover:scale-125 transition-transform ${activeEval.clientReaction === emoji ? 'bg-[var(--accent)]/20' : ''}`}
+                    >{emoji}</button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Reply */}
