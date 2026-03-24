@@ -132,7 +132,7 @@ export function EvaluationBubble({ companyId }: Props) {
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
           {chatMessages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'admin' ? 'justify-start' : 'justify-end'}`}>
-              <div className={`relative max-w-[85%] rounded-xl px-3 py-2 ${
+              <div className={`group relative max-w-[85%] rounded-xl px-3 py-2 ${
                 msg.role === 'admin'
                   ? 'bg-[var(--surface)] border border-[var(--border)] rounded-bl-md'
                   : 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-br-md'
@@ -144,10 +144,16 @@ export function EvaluationBubble({ companyId }: Props) {
                 {fmtDate(msg.at) && <p className="text-[9px] text-[var(--text-secondary)] mt-1">{fmtDate(msg.at)}</p>}
                 {/* Emoji on last admin message */}
                 {msg.role === 'admin' && i === lastAdminIdx && (
-                  <button onClick={() => setShowEmojiPicker(v => !v)}
-                    className="absolute -bottom-3 right-2 text-sm bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                    {evaluations[0]?.clientReaction || '😊'}
-                  </button>
+                  evaluations[0]?.clientReaction ? (
+                    <button onClick={() => setShowEmojiPicker(v => !v)}
+                      className="absolute -bottom-3 right-2 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
+                      {evaluations[0].clientReaction}
+                    </button>
+                  ) : (
+                    <button onClick={() => setShowEmojiPicker(v => !v)}
+                      className="absolute -bottom-3 right-2 text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)] opacity-0 group-hover:opacity-100"
+                      title="Reakció">+</button>
+                  )
                 )}
               </div>
             </div>
