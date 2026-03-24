@@ -64,7 +64,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const newMsg = { role: 'admin' as const, text: adminMessage, at: new Date().toISOString() };
+  const senderName = session.user.name || session.user.email || 'Admin';
+  const newMsg = { role: 'admin' as const, text: adminMessage, at: new Date().toISOString(), name: senderName };
 
   // Fetch existing messages for append
   const existing = await prisma.evaluation.findUnique({

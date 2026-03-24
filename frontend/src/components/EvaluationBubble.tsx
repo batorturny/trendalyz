@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 
-interface ChatMessage { role: 'admin' | 'client'; text: string; at: string; reaction?: string; }
+interface ChatMessage { role: 'admin' | 'client'; text: string; at: string; name?: string; reaction?: string; }
+function fmtDate(at: string): string {
+  if (!at) return '';
+  const d = new Date(at);
+  return isNaN(d.getTime()) ? '' : d.toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 interface Evaluation {
   id: string; companyId: string; platform: string; month: string;
   adminMessage: string | null; clientReaction: string | null;
@@ -132,8 +137,11 @@ export function EvaluationBubble({ companyId }: Props) {
                   ? 'bg-[var(--surface)] border border-[var(--border)] rounded-bl-md'
                   : 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-br-md'
               }`}>
+                <p className={`text-[10px] font-bold mb-0.5 ${msg.role === 'admin' ? 'text-[var(--text-secondary)]' : 'text-[var(--accent)]'}`}>
+                  {msg.name || (msg.role === 'admin' ? 'Admin' : 'Te')}
+                </p>
                 <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{msg.text}</p>
-                {msg.at && <p className="text-[9px] text-[var(--text-secondary)] mt-1">{new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
+                {fmtDate(msg.at) && <p className="text-[9px] text-[var(--text-secondary)] mt-1">{fmtDate(msg.at)}</p>}
                 {/* Emoji on last admin message */}
                 {msg.role === 'admin' && i === lastAdminIdx && (
                   <button onClick={() => setShowEmojiPicker(v => !v)}

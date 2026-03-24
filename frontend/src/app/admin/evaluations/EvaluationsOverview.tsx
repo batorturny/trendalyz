@@ -4,11 +4,20 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Send, ChevronRight } from 'lucide-react';
 
 interface Company { id: string; name: string; platforms: string[]; }
-interface ChatMessage { role: 'admin' | 'client'; text: string; at: string; reaction?: string; }
+interface ChatMessage { role: 'admin' | 'client'; text: string; at: string; name?: string; reaction?: string; }
+
+function fmtDate(at: string): string {
+  if (!at) return '';
+  const d = new Date(at);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 interface Evaluation {
   id: string; companyId: string; platform: string; month: string;
-  adminMessage: string | null; clientReply: string | null; clientReadAt: string | null;
-  clientReaction: string | null; messages?: ChatMessage[];
+  adminMessage: string | null; adminMessageAt: string | null;
+  clientReply: string | null; clientReplyAt: string | null;
+  clientReadAt: string | null; clientReaction: string | null;
+  messages?: ChatMessage[];
 }
 
 interface Props { companies: Company[]; evaluations: Evaluation[]; }
@@ -127,11 +136,12 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
                     ? 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-bl-md'
                     : 'bg-[var(--surface)] border border-[var(--border)] rounded-br-md'
                 }`}>
+                  <p className={`text-[10px] font-bold mb-0.5 ${msg.role === 'admin' ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'}`}>
+                    {msg.name || (msg.role === 'admin' ? 'Admin' : 'Ügyfél')}
+                  </p>
                   <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{msg.text}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-[10px] text-[var(--text-secondary)]">
-                      {msg.at && !isNaN(new Date(msg.at).getTime()) ? new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                    </p>
+                    {fmtDate(msg.at) && <p className="text-[10px] text-[var(--text-secondary)]">{fmtDate(msg.at)}</p>}
                     {msg.reaction && <span className="text-sm">{msg.reaction}</span>}
                   </div>
                 </div>
