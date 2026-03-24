@@ -7,7 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlatformIcon } from '@/components/PlatformIcon';
 import { useT } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { LayoutDashboard, Building2, BarChart3, Settings, CreditCard, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Settings, CreditCard, MessageCircle, Menu, X } from 'lucide-react';
 import { TrendalyzLogo } from '@/components/TrendalyzLogo';
 import { useState, useEffect } from 'react';
 
@@ -15,6 +15,7 @@ const navItems: { href: string; label: string; icon: typeof LayoutDashboard; dis
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/companies', label: 'Cégek', icon: Building2 },
   { href: '/admin/charts', label: 'Chartok', icon: BarChart3 },
+  { href: '/admin/evaluations', label: 'Értékelések', icon: MessageCircle },
   { href: '/admin/settings', label: 'Beállítások', icon: Settings },
   { href: '/admin/billing', label: 'Számlázás', icon: CreditCard },
 ];
