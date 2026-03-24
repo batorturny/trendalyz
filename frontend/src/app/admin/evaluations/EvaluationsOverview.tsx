@@ -45,13 +45,15 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [selectedPlatform, setSelectedPlatform] = useState('ALL');
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const company = companies.find(c => c.id === selectedCompany);
   const monthEvals = evaluations.filter(e => e.companyId === selectedCompany && e.month === selectedMonth);
-  const existingMessage = monthEvals.find(e => e.adminMessage)?.adminMessage || '';
+  const targetEvals = selectedPlatform === 'ALL' ? monthEvals : monthEvals.filter(e => e.platform === selectedPlatform);
+  const existingMessage = targetEvals.find(e => e.adminMessage)?.adminMessage || '';
 
   // Sync message when selection changes
   const [lastKey, setLastKey] = useState('');
@@ -65,9 +67,10 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
   async function handleSend() {
     if (!message.trim() || !company) return;
     setSaving(true);
+    const targetPlatforms = selectedPlatform === 'ALL' ? company.platforms : [selectedPlatform];
     try {
       await Promise.all(
-        company.platforms.map(platform =>
+        targetPlatforms.map(platform =>
           fetch('/api/evaluations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -141,7 +144,7 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
             <h2 className="text-lg font-bold">{company?.name || 'Válassz céget'}</h2>
           </div>
 
-          <div className="flex gap-3 mb-4 items-center">
+          <div className="flex flex-wrap gap-3 mb-4 items-center">
             <select
               value={selectedMonth}
               onChange={e => setSelectedMonth(e.target.value)}
@@ -152,9 +155,16 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
               ))}
             </select>
             {company && (
-              <span className="text-xs text-[var(--text-secondary)]">
-                → {company.platforms.map(p => PLATFORM_LABELS[p] || p).join(', ')}
-              </span>
+              <select
+                value={selectedPlatform}
+                onChange={e => setSelectedPlatform(e.target.value)}
+                className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-semibold"
+              >
+                <option value="ALL">Összes platform</option>
+                {company.platforms.map(p => (
+                  <option key={p} value={p}>{PLATFORM_LABELS[p] || p}</option>
+                ))}
+              </select>
             )}
             {saved && (
               <span className="text-green-500 text-xs font-bold animate-pulse">Elküldve!</span>
