@@ -79,6 +79,35 @@ export function resetPasswordEmailHtml(token: string): string {
   `);
 }
 
+export function evaluationReplyEmailHtml(opts: {
+  companyName: string;
+  platformLabel: string;
+  month: string;
+  clientReply: string;
+  clientReaction: string | null;
+}): string {
+  const [year, monthNum] = opts.month.split('-');
+  const monthNames = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+  const monthLabel = `${year}. ${monthNames[parseInt(monthNum) - 1]}`;
+  const reaction = opts.clientReaction ? `<span style="font-size: 24px; margin-right: 8px;">${opts.clientReaction}</span>` : '';
+
+  return layout(`
+    <h2 style="color: #0f172a; font-size: 20px; margin: 0 0 4px 0;">💬 Ügyfél válaszolt</h2>
+    <p style="color: #64748b; font-size: 14px; margin: 0 0 24px 0;">
+      <strong>${opts.companyName}</strong> — ${opts.platformLabel} — ${monthLabel}
+    </p>
+
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+      ${reaction}
+      <p style="color: #166534; font-size: 15px; margin: 8px 0 0 0; white-space: pre-wrap;">${opts.clientReply}</p>
+    </div>
+
+    <div style="text-align: center; margin: 24px 0;">
+      ${button(`${BASE_URL}/admin/evaluations`, 'Válaszok megtekintése')}
+    </div>
+  `);
+}
+
 interface ReportKPI {
   label: string;
   value: string | number;

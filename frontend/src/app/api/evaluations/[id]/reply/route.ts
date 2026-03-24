@@ -1,6 +1,15 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { sendEmail, evaluationReplyEmailHtml } from '@/lib/email';
+
+const PLATFORM_LABELS: Record<string, string> = {
+  TIKTOK_ORGANIC: 'TikTok',
+  FACEBOOK_ORGANIC: 'Facebook',
+  INSTAGRAM_ORGANIC: 'Instagram',
+  YOUTUBE: 'YouTube',
+  TIKTOK_ADS: 'TikTok Ads',
+};
 
 export async function PATCH(
   req: Request,
@@ -13,7 +22,10 @@ export async function PATCH(
 
   const { id } = await params;
 
-  const evaluation = await prisma.evaluation.findUnique({ where: { id } });
+  const evaluation = await prisma.evaluation.findUnique({
+    where: { id },
+    include: { company: { select: { name: true, adminId: true } } },
+  });
   if (!evaluation) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
@@ -42,6 +54,28 @@ export async function PATCH(
       clientUserId: session.user.id,
     },
   });
+
+  // Send email notification to admin
+  if (evaluation.company.adminId) {
+    const admin = await prisma.user.findUnique({
+      where: { id: evaluation.company.adminId },
+      select: { email: true },
+    });
+    if (admin?.email) {
+      const html = evaluationReplyEmailHtml({
+        companyName: evaluation.company.name,
+        platformLabel: PLATFORM_LABELS[evaluation.platform] || evaluation.platform,
+        month: evaluation.month,
+        clientReply: reply.trim(),
+        clientReaction: updated.clientReaction,
+      });
+      sendEmail({
+        to: admin.email,
+        subject: `💬 ${evaluation.company.name} válaszolt az értékelésre`,
+        html,
+      }).catch(err => console.error('[Evaluation email]', err));
+    }
+  }
 
   return NextResponse.json(updated);
 }
