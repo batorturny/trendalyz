@@ -135,82 +135,98 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
         </div>
       </div>
 
-      {/* Right: Editor + Responses */}
+      {/* Right: Chat-style view */}
       <div className="lg:col-span-2 space-y-4">
-        {/* Editor */}
-        <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <MessageCircle className="w-5 h-5 text-[var(--accent)]" />
-            <h2 className="text-lg font-bold">{company?.name || 'Válassz céget'}</h2>
+        {/* Header + selectors */}
+        <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="w-5 h-5 text-[var(--accent)]" />
+              <h2 className="text-lg font-bold">{company?.name || 'Válassz céget'}</h2>
+            </div>
+            {saved && <span className="text-green-500 text-xs font-bold animate-pulse">Elküldve!</span>}
           </div>
-
-          <div className="flex flex-wrap gap-3 mb-4 items-center">
-            <select
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(e.target.value)}
-              className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-semibold"
-            >
-              {months.map(m => (
-                <option key={m} value={m}>{formatMonth(m)}</option>
-              ))}
+          <div className="flex flex-wrap gap-3">
+            <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
+              className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-semibold">
+              {months.map(m => <option key={m} value={m}>{formatMonth(m)}</option>)}
             </select>
             {company && (
-              <select
-                value={selectedPlatform}
-                onChange={e => setSelectedPlatform(e.target.value)}
-                className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-semibold"
-              >
+              <select value={selectedPlatform} onChange={e => setSelectedPlatform(e.target.value)}
+                className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-semibold">
                 <option value="ALL">Összes platform</option>
-                {company.platforms.map(p => (
-                  <option key={p} value={p}>{PLATFORM_LABELS[p] || p}</option>
-                ))}
+                {company.platforms.map(p => <option key={p} value={p}>{PLATFORM_LABELS[p] || p}</option>)}
               </select>
             )}
-            {saved && (
-              <span className="text-green-500 text-xs font-bold animate-pulse">Elküldve!</span>
+          </div>
+        </div>
+
+        {/* Chat messages */}
+        <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 min-h-[300px] flex flex-col">
+          <div className="flex-1 space-y-4 mb-4">
+            {/* Admin message (left side) */}
+            {existingMessage && (
+              <div className="flex justify-start">
+                <div className="relative max-w-[80%] bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-2xl rounded-bl-md p-3">
+                  <p className="text-xs text-[var(--accent)] font-bold mb-1">Te (admin)</p>
+                  <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{existingMessage}</p>
+                  {monthEvals[0]?.adminMessageAt && (
+                    <p className="text-[10px] text-[var(--text-secondary)] mt-1.5">{new Date(monthEvals[0].adminMessageAt).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                  )}
+                  {/* Status indicator */}
+                  <div className="flex items-center gap-1 mt-1">
+                    {monthEvals.some(e => e.clientReply) && <span className="text-[10px] text-green-500 font-bold">Válaszolt</span>}
+                    {!monthEvals.some(e => e.clientReply) && monthEvals.some(e => e.clientReadAt) && <span className="text-[10px] text-blue-500 font-bold">Olvasva</span>}
+                    {!monthEvals.some(e => e.clientReply) && !monthEvals.some(e => e.clientReadAt) && monthEvals.some(e => e.adminMessage) && <span className="text-[10px] text-yellow-500 font-bold">Elküldve</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Client responses per platform (right side) */}
+            {targetEvals.filter(e => e.clientReaction || e.clientReply).map(ev => (
+              <div key={ev.id} className="flex justify-end">
+                <div className="relative max-w-[80%] bg-[var(--surface)] border border-[var(--border)] rounded-2xl rounded-br-md p-3">
+                  <p className="text-xs text-[var(--text-secondary)] font-bold mb-1">{PLATFORM_LABELS[ev.platform]} — ügyfél</p>
+                  {ev.clientReply && (
+                    <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{ev.clientReply}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-1.5">
+                    {ev.clientReplyAt && (
+                      <p className="text-[10px] text-[var(--text-secondary)]">{new Date(ev.clientReplyAt).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    )}
+                    {ev.clientReaction && <span className="text-lg">{ev.clientReaction}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Empty state */}
+            {!existingMessage && (
+              <div className="flex-1 flex items-center justify-center text-[var(--text-secondary)] text-sm">
+                Írj értékelést az ügyfélnek erre a hónapra
+              </div>
             )}
           </div>
 
-          <textarea
-            value={message}
-            onChange={e => { setMessage(e.target.value); setSaved(false); }}
-            placeholder="Írd ide a havi értékelést az ügyfélnek..."
-            className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-sm min-h-[120px] resize-y mb-3"
-          />
-          <button
-            onClick={handleSend}
-            disabled={saving || !message.trim() || !company}
-            className="btn-press px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white font-bold text-sm disabled:opacity-50 flex items-center gap-2"
-          >
-            <Send className="w-4 h-4" />
-            {saving ? 'Küldés...' : existingMessage ? 'Frissítés' : 'Küldés'}
-          </button>
-        </div>
-
-        {/* Client responses for this company+month */}
-        {monthEvals.filter(e => e.clientReaction || e.clientReply).length > 0 && (
-          <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
-            <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-3">
-              Ügyfél válaszai — {formatMonth(selectedMonth)}
-            </p>
-            <div className="space-y-3">
-              {monthEvals.filter(e => e.clientReaction || e.clientReply).map(ev => (
-                <div key={ev.id} className="p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-[var(--text-secondary)]">{PLATFORM_LABELS[ev.platform]}</span>
-                    {ev.clientReaction && <span className="text-xl">{ev.clientReaction}</span>}
-                  </div>
-                  {ev.clientReply && (
-                    <p className="text-sm text-[var(--text-primary)]">{ev.clientReply}</p>
-                  )}
-                  {ev.clientReplyAt && (
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">{new Date(ev.clientReplyAt).toLocaleString('hu-HU')}</p>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* Compose area (bottom, always visible) */}
+          <div className="border-t border-[var(--border)] pt-3">
+            <textarea
+              value={message}
+              onChange={e => { setMessage(e.target.value); setSaved(false); }}
+              placeholder="Írd ide a havi értékelést..."
+              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-sm min-h-[80px] resize-y mb-2"
+            />
+            <button
+              onClick={handleSend}
+              disabled={saving || !message.trim() || !company}
+              className="btn-press px-5 py-2 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white font-bold text-sm disabled:opacity-50 flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              {saving ? 'Küldés...' : existingMessage ? 'Frissítés' : 'Küldés'}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* All evaluations history for this company */}
         {evaluations.filter(e => e.companyId === selectedCompany && e.adminMessage).length > 0 && (
