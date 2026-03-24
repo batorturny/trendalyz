@@ -3,254 +3,172 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 
-interface ChatMessage {
-  role: 'admin' | 'client';
-  text: string;
-  at: string;
-  reaction?: string;
-}
-
+interface ChatMessage { role: 'admin' | 'client'; text: string; at: string; reaction?: string; }
 interface Evaluation {
-  id: string;
-  companyId: string;
-  platform: string;
-  month: string;
-  adminMessage: string | null;
-  adminMessageAt: string | null;
-  clientReaction: string | null;
-  clientReply: string | null;
-  clientReplyAt: string | null;
-  clientReadAt: string | null;
+  id: string; companyId: string; platform: string; month: string;
+  adminMessage: string | null; clientReaction: string | null;
+  clientReply: string | null; clientReadAt: string | null;
   messages?: ChatMessage[];
 }
 
-interface EvaluationBubbleProps {
-  companyId: string;
-  platform: string;
-  month: string;
-}
+interface Props { companyId: string; platform: string; month: string; }
 
 const EMOJIS = ['\u{1F44D}', '\u{2764}\u{FE0F}', '\u{1F525}', '\u{1F914}'];
 
-const PLATFORM_LABELS: Record<string, string> = {
-  TIKTOK_ORGANIC: 'TikTok',
-  FACEBOOK_ORGANIC: 'Facebook',
-  INSTAGRAM_ORGANIC: 'Instagram',
-  YOUTUBE: 'YouTube',
-  TIKTOK_ADS: 'TikTok Ads',
-};
-
-const MONTH_NAMES = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június', 'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December'];
-function fmtMonth(ym: string) { const [y, m] = ym.split('-').map(Number); return `${y}. ${MONTH_NAMES[m - 1]}`; }
-
-export function EvaluationBubble({ companyId, platform, month }: EvaluationBubbleProps) {
+export function EvaluationBubble({ companyId }: Props) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [activeEval, setActiveEval] = useState<Evaluation | null>(null);
   const [open, setOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
-  const [reactingEmoji, setReactingEmoji] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchEvaluations = useCallback(async () => {
     try {
       const res = await fetch(`/api/evaluations?companyId=${companyId}`);
       if (!res.ok) return;
       const data = await res.json();
-      const withMessage = (Array.isArray(data) ? data : []).filter((e: Evaluation) => e.adminMessage);
-      setEvaluations(withMessage);
-      // Set active: prefer current platform+month, then latest unread, then latest
-      const current = withMessage.find((e: Evaluation) => e.platform === platform && e.month === month);
-      const unread = withMessage.find((e: Evaluation) => !e.clientReadAt);
-      setActiveEval(current || unread || withMessage[0] || null);
+      setEvaluations(Array.isArray(data) ? data.filter((e: Evaluation) => e.adminMessage) : []);
     } catch { /* silent */ }
-  }, [companyId, platform, month]);
+  }, [companyId]);
 
   useEffect(() => { fetchEvaluations(); }, [fetchEvaluations]);
 
-  // Mark as read when panel opens
+  // Build unified chat from all evaluations
+  const allMessages: ChatMessage[] = evaluations.flatMap(e => {
+    const msgs = (e.messages as ChatMessage[] || []);
+    if (msgs.length > 0) return msgs;
+    const legacy: ChatMessage[] = [];
+    if (e.adminMessage) legacy.push({ role: 'admin', text: e.adminMessage, at: '' });
+    if (e.clientReply) legacy.push({ role: 'client', text: e.clientReply, at: '' });
+    return legacy;
+  });
+  const seen = new Set<string>();
+  const chatMessages = allMessages.filter(m => {
+    const key = `${m.role}:${m.text}:${m.at}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }).sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+
+  // Scroll to bottom
+  useEffect(() => { if (open) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [open, chatMessages.length]);
+
+  // Mark unread as read
   useEffect(() => {
-    if (!open || !activeEval?.id || activeEval.clientReadAt) return;
-    fetch(`/api/evaluations/${activeEval.id}/read`, { method: 'PATCH' })
-      .then(res => { if (res.ok) setActiveEval(prev => prev ? { ...prev, clientReadAt: new Date().toISOString() } : prev); })
-      .catch(() => {});
-  }, [open, activeEval?.id, activeEval?.clientReadAt]);
+    if (!open) return;
+    evaluations.filter(e => !e.clientReadAt && e.adminMessage).forEach(ev => {
+      fetch(`/api/evaluations/${ev.id}/read`, { method: 'PATCH' }).catch(() => {});
+    });
+  }, [open, evaluations]);
 
   // Outside click
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
-    };
+    const handler = (e: MouseEvent) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const handleReaction = async (emoji: string) => {
-    if (!activeEval?.id) return;
-    const isDeselect = activeEval.clientReaction === emoji;
-    const newEmoji = isDeselect ? null : emoji;
-    setReactingEmoji(emoji);
-    setActiveEval(prev => prev ? { ...prev, clientReaction: newEmoji } : prev);
-    try {
-      const res = await fetch(`/api/evaluations/${activeEval.id}/react`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emoji: newEmoji }),
-      });
-      if (!res.ok) setActiveEval(prev => prev ? { ...prev, clientReaction: isDeselect ? emoji : null } : prev);
-    } catch {
-      setActiveEval(prev => prev ? { ...prev, clientReaction: isDeselect ? emoji : null } : prev);
-    } finally { setReactingEmoji(null); }
-  };
-
+  // Send reply
   const handleReply = async () => {
-    if (!activeEval?.id || !replyText.trim()) return;
+    if (!replyText.trim()) return;
+    const ev = evaluations[0]; // use first eval for the reply endpoint
+    if (!ev) return;
     setSending(true);
     try {
-      const res = await fetch(`/api/evaluations/${activeEval.id}/reply`, {
+      const res = await fetch(`/api/evaluations/${ev.id}/reply`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reply: replyText.trim() }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setActiveEval(updated);
-        setReplyText('');
-      }
-    } catch { /* keep text */ } finally { setSending(false); }
+      if (res.ok) { setReplyText(''); await fetchEvaluations(); }
+    } catch {} finally { setSending(false); }
+  };
+
+  // Emoji reaction on last admin message
+  const handleReaction = async (emoji: string) => {
+    const ev = evaluations[0];
+    if (!ev) return;
+    const newEmoji = ev.clientReaction === emoji ? null : emoji;
+    try {
+      await fetch(`/api/evaluations/${ev.id}/react`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emoji: newEmoji }),
+      });
+      await fetchEvaluations();
+    } catch {}
+    setShowEmojiPicker(false);
   };
 
   if (evaluations.length === 0) return null;
 
-  const unreadCount = evaluations.filter(e => !e.clientReadAt).length;
+  const unreadCount = evaluations.filter(e => !e.clientReadAt && e.adminMessage).length;
+  const lastAdminIdx = chatMessages.reduce((acc, m, i) => m.role === 'admin' ? i : acc, -1);
 
   return (
     <div ref={panelRef}>
-      {/* Floating bubble */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[var(--accent)] text-white shadow-lg hover:brightness-110 transition-all flex items-center justify-center"
-      >
+      {/* Bubble */}
+      <button onClick={() => setOpen(v => !v)}
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[var(--accent)] text-white shadow-lg hover:brightness-110 transition-all flex items-center justify-center">
         <MessageCircle className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">{unreadCount}</span>
-        )}
+        {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">{unreadCount}</span>}
       </button>
 
       {/* Panel */}
-      <div className={`fixed bottom-20 right-6 w-80 max-h-[75vh] z-50 rounded-2xl shadow-2xl border border-[var(--border)] bg-[var(--surface-raised)] flex flex-col overflow-hidden transition-all duration-300 ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+      <div className={`fixed bottom-20 right-6 w-80 z-50 rounded-2xl shadow-2xl border border-[var(--border)] bg-[var(--surface-raised)] flex flex-col overflow-hidden transition-all duration-300 ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+        style={{ height: '450px' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-          <h3 className="text-sm font-bold">Havi értékelések</h3>
+          <h3 className="text-sm font-bold">Értékelés</h3>
           <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-[var(--surface)] text-[var(--text-secondary)]"><X className="w-4 h-4" /></button>
         </div>
 
-        {/* Evaluation tabs (if multiple) */}
-        {evaluations.length > 1 && (
-          <div className="flex gap-1 px-3 pt-2 overflow-x-auto">
-            {evaluations.map(ev => (
-              <button
-                key={ev.id}
-                onClick={() => setActiveEval(ev)}
-                className={`text-[10px] font-bold px-2 py-1 rounded-lg whitespace-nowrap transition ${activeEval?.id === ev.id ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--border)]'}`}
-              >
-                {PLATFORM_LABELS[ev.platform] || ev.platform} · {fmtMonth(ev.month)}
-                {!ev.clientReadAt && <span className="ml-1 w-1.5 h-1.5 bg-red-500 rounded-full inline-block" />}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Active evaluation content */}
-        {activeEval && (() => {
-          // Build chat messages from messages array, fallback to legacy fields
-          const msgs: ChatMessage[] = (activeEval.messages as ChatMessage[] || []);
-          const chatMsgs = msgs.length > 0 ? [...msgs] : [];
-          // Legacy fallback: if no messages array, build from old fields
-          if (chatMsgs.length === 0) {
-            if (activeEval.adminMessage) {
-              chatMsgs.push({ role: 'admin', text: activeEval.adminMessage, at: activeEval.adminMessageAt || '' });
-            }
-            if (activeEval.clientReply) {
-              chatMsgs.push({ role: 'client', text: activeEval.clientReply, at: activeEval.clientReplyAt || '' });
-            }
-          }
-          chatMsgs.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
-
-          // Find last admin message index for reaction display
-          const lastAdminIdx = chatMsgs.reduce((acc, m, i) => m.role === 'admin' ? i : acc, -1);
-
-          return (
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
-              <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold">
-                {PLATFORM_LABELS[activeEval.platform]} — {fmtMonth(activeEval.month)}
-              </p>
-
-              {/* Chat messages */}
-              <div className="flex-1 space-y-2.5">
-                {chatMsgs.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'admin' ? 'justify-start' : 'justify-end'}`}>
-                    <div className={`relative max-w-[85%] rounded-xl p-3 ${
-                      msg.role === 'admin'
-                        ? 'bg-[var(--surface)] border border-[var(--border)] rounded-bl-md'
-                        : 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-br-md'
-                    }`}>
-                      <p className={`text-[10px] font-bold mb-1 ${msg.role === 'admin' ? 'text-[var(--text-secondary)]' : 'text-[var(--accent)]'}`}>
-                        {msg.role === 'admin' ? 'Admin' : 'Te'}
-                      </p>
-                      <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-                      {msg.at && (
-                        <p className="text-[10px] text-[var(--text-secondary)] mt-1.5">
-                          {new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      )}
-                      {/* Messenger-style reaction on last admin message */}
-                      {msg.role === 'admin' && i === lastAdminIdx && (
-                        <>
-                          {activeEval.clientReaction ? (
-                            <button
-                              onClick={() => setShowEmojiPicker(v => !v)}
-                              className="absolute -bottom-3 right-3 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
-                            >{activeEval.clientReaction}</button>
-                          ) : (
-                            <button
-                              onClick={() => setShowEmojiPicker(v => !v)}
-                              className="absolute -bottom-3 right-3 text-xs bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)]"
-                            >{'\u{1F60A}'}</button>
-                          )}
-                          {showEmojiPicker && (
-                            <div className="absolute -bottom-12 right-0 flex gap-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-2 py-1 shadow-lg z-10">
-                              {EMOJIS.map(emoji => (
-                                <button key={emoji} onClick={() => { handleReaction(emoji); setShowEmojiPicker(false); }}
-                                  className={`w-8 h-8 rounded-full text-lg flex items-center justify-center hover:scale-125 transition-transform ${activeEval.clientReaction === emoji ? 'bg-[var(--accent)]/20' : ''}`}
-                                >{emoji}</button>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {/* Reaction display on admin messages (non-last) */}
-                      {msg.role === 'admin' && msg.reaction && i !== lastAdminIdx && (
-                        <span className="absolute -bottom-3 right-3 text-lg bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-7 h-7 flex items-center justify-center shadow-sm">{msg.reaction}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Reply compose - always visible */}
-              <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-                <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Válasz írása..." rows={3} maxLength={2000}
-                  className="w-full px-3 py-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl resize-none outline-none focus:border-[var(--accent)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]" />
-                <button onClick={handleReply} disabled={sending || !replyText.trim()}
-                  className="w-full px-4 py-2 text-sm font-bold text-white bg-[var(--accent)] hover:brightness-110 disabled:opacity-50 rounded-xl flex items-center justify-center gap-2">
-                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Küldés
-                </button>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5">
+          {chatMessages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'admin' ? 'justify-start' : 'justify-end'}`}>
+              <div className={`relative max-w-[85%] rounded-xl px-3 py-2 ${
+                msg.role === 'admin'
+                  ? 'bg-[var(--surface)] border border-[var(--border)] rounded-bl-md'
+                  : 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-br-md'
+              }`}>
+                <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{msg.text}</p>
+                {msg.at && <p className="text-[9px] text-[var(--text-secondary)] mt-1">{new Date(msg.at).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>}
+                {/* Emoji on last admin message */}
+                {msg.role === 'admin' && i === lastAdminIdx && (
+                  <button onClick={() => setShowEmojiPicker(v => !v)}
+                    className="absolute -bottom-3 right-2 text-sm bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
+                    {evaluations[0]?.clientReaction || '😊'}
+                  </button>
+                )}
               </div>
             </div>
-          );
-        })()}
+          ))}
+          {showEmojiPicker && (
+            <div className="flex gap-1 justify-center bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-2 py-1 shadow-lg mx-auto w-fit">
+              {EMOJIS.map(emoji => (
+                <button key={emoji} onClick={() => handleReaction(emoji)}
+                  className={`w-8 h-8 rounded-full text-lg flex items-center justify-center hover:scale-125 transition-transform ${evaluations[0]?.clientReaction === emoji ? 'bg-[var(--accent)]/20' : ''}`}
+                >{emoji}</button>
+              ))}
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Compose */}
+        <div className="px-3 py-2 border-t border-[var(--border)]">
+          <div className="flex gap-2">
+            <textarea value={replyText} onChange={e => setReplyText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
+              placeholder="Válasz..." rows={1} maxLength={2000}
+              className="flex-1 px-3 py-2 text-sm bg-[var(--surface)] border border-[var(--border)] rounded-xl resize-none outline-none focus:border-[var(--accent)] text-[var(--text-primary)]" />
+            <button onClick={handleReply} disabled={sending || !replyText.trim()}
+              className="px-3 py-2 text-sm font-bold text-white bg-[var(--accent)] hover:brightness-110 disabled:opacity-50 rounded-xl flex items-center">
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
