@@ -120,7 +120,9 @@ export function EvaluationBubble({ companyId }: Props) {
 
   if (evaluations.length === 0) return null;
 
-  const unreadCount = evaluations.filter(e => !e.clientReadAt && e.adminMessage).length;
+  // Show red dot on bubble if the last message is from admin (user hasn't responded yet)
+  const lastMsg = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1] : null;
+  const hasUnresponded = lastMsg?.role === 'admin';
 
   return (
     <div ref={panelRef}>
@@ -128,7 +130,7 @@ export function EvaluationBubble({ companyId }: Props) {
       <button onClick={() => setOpen(v => !v)}
         className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[var(--accent)] text-white shadow-lg hover:brightness-110 transition-all flex items-center justify-center">
         <MessageCircle className="w-5 h-5" />
-        {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">{unreadCount}</span>}
+        {hasUnresponded && <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full" />}
       </button>
 
       {/* Panel */}
@@ -141,44 +143,30 @@ export function EvaluationBubble({ companyId }: Props) {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-          {chatMessages.map((msg, i) => {
-            // Is this message new (after last read)?
-            const isNew = msg.role === 'admin' && lastReadAt && msg.at && msg.at > lastReadAt;
-
-            return (
+          {chatMessages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'admin' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`relative max-w-[85%] rounded-xl px-3 py-2 ${
+                <div className={`relative max-w-[85%] rounded-xl px-3 py-2 mb-1 ${
                   msg.role === 'admin'
                     ? 'bg-[var(--surface)] border border-[var(--border)] rounded-bl-md'
                     : 'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-br-md'
                 }`}>
-                  {/* New message dot */}
-                  {isNew && <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-red-500 rounded-full" />}
-
                   <p className={`text-[10px] font-bold mb-0.5 ${msg.role === 'admin' ? 'text-[var(--text-secondary)]' : 'text-[var(--accent)]'}`}>
                     {msg.name || (msg.role === 'admin' ? 'Admin' : 'Te')}
                   </p>
                   <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap">{msg.text}</p>
-                  {fmtDate(msg.at) && <p className="text-[9px] text-[var(--text-secondary)] mt-1">{fmtDate(msg.at)}</p>}
-
-                  {/* Per-message reaction — only on admin messages */}
-                  {msg.role === 'admin' && (
-                    msg.reaction ? (
+                  <div className="flex items-center justify-between mt-1">
+                    {fmtDate(msg.at) ? <p className="text-[9px] text-[var(--text-secondary)]">{fmtDate(msg.at)}</p> : <span />}
+                    {/* Reaction button — only on admin messages, inline */}
+                    {msg.role === 'admin' && (
                       <button onClick={() => setEmojiPickerIdx(emojiPickerIdx === i ? null : i)}
-                        className="absolute -bottom-2.5 right-2 text-sm bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                        {msg.reaction}
+                        className="text-sm hover:scale-110 transition-transform ml-2">
+                        {msg.reaction || <Plus className="w-3.5 h-3.5 text-[var(--text-secondary)]" />}
                       </button>
-                    ) : (
-                      <button onClick={() => setEmojiPickerIdx(emojiPickerIdx === i ? null : i)}
-                        className="absolute -bottom-2.5 right-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full w-5 h-5 flex items-center justify-center shadow-sm hover:scale-110 transition-transform text-[var(--text-secondary)]">
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    )
-                  )}
-
-                  {/* Emoji picker for this message */}
+                    )}
+                  </div>
+                  {/* Emoji picker */}
                   {emojiPickerIdx === i && (
-                    <div className="absolute -bottom-9 right-0 flex gap-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-1.5 py-0.5 shadow-lg z-10">
+                    <div className="flex gap-1 mt-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-full px-1.5 py-0.5">
                       {EMOJIS.map(emoji => (
                         <button key={emoji} onClick={() => handleMessageReaction(i, emoji)}
                           className={`w-7 h-7 rounded-full text-base flex items-center justify-center hover:scale-125 transition-transform ${msg.reaction === emoji ? 'bg-[var(--accent)]/20' : ''}`}
@@ -188,8 +176,7 @@ export function EvaluationBubble({ companyId }: Props) {
                   )}
                 </div>
               </div>
-            );
-          })}
+          ))}
           <div ref={chatEndRef} />
         </div>
 
