@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, Send, ChevronDown } from 'lucide-react';
+import { MessageCircle, Send } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 interface Evaluation {
@@ -40,21 +40,18 @@ export function CompanyEvaluations({ companyId, platforms }: Props) {
   const t = useT();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlatform, setSelectedPlatform] = useState(platforms[0] || 'TIKTOK_ORGANIC');
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const fetchEvaluations = useCallback(async () => {
     try {
       const res = await fetch(`/api/evaluations?companyId=${companyId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setEvaluations(data);
-      }
+      if (res.ok) setEvaluations(await res.json());
     } catch (e) {
       console.error('Failed to fetch evaluations:', e);
     } finally {
@@ -64,44 +61,47 @@ export function CompanyEvaluations({ companyId, platforms }: Props) {
 
   useEffect(() => { fetchEvaluations(); }, [fetchEvaluations]);
 
-  const currentEval = evaluations.find(e => e.platform === selectedPlatform && e.month === selectedMonth);
+  // Load existing message for selected month (from any platform — they're all the same)
+  const monthEvals = evaluations.filter(e => e.month === selectedMonth);
+  const existingMessage = monthEvals.find(e => e.adminMessage)?.adminMessage || '';
 
   useEffect(() => {
-    setMessage(currentEval?.adminMessage || '');
-  }, [currentEval?.id, currentEval?.adminMessage]);
+    setMessage(existingMessage);
+    setSaved(false);
+  }, [selectedMonth, existingMessage]);
 
-  async function handleSave() {
+  // Send to ALL platforms at once
+  async function handleSend() {
+    if (!message.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/evaluations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId,
-          platform: selectedPlatform,
-          month: selectedMonth,
-          adminMessage: message,
-        }),
-      });
-      if (res.ok) {
-        await fetchEvaluations();
-      }
+      await Promise.all(
+        platforms.map(platform =>
+          fetch('/api/evaluations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId, platform, month: selectedMonth, adminMessage: message }),
+          })
+        )
+      );
+      await fetchEvaluations();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (e) {
-      console.error('Failed to save evaluation:', e);
+      console.error('Failed to save evaluations:', e);
     } finally {
       setSaving(false);
     }
   }
 
-  // Status badge
-  function getStatus(ev: Evaluation | undefined) {
-    if (!ev?.adminMessage) return null;
+  function getStatus(ev: Evaluation) {
     if (ev.clientReply) return { label: 'Válaszolt', color: 'bg-green-500' };
     if (ev.clientReadAt) return { label: 'Olvasva', color: 'bg-blue-500' };
-    return { label: 'Elküldve', color: 'bg-yellow-500' };
+    if (ev.adminMessage) return { label: 'Elküldve', color: 'bg-yellow-500' };
+    return null;
   }
 
-  // Generate last 6 months
+  // Last 6 months
   const months: string[] = [];
   const now = new Date();
   for (let i = 0; i < 6; i++) {
@@ -109,7 +109,17 @@ export function CompanyEvaluations({ companyId, platforms }: Props) {
     months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   }
 
-  const status = getStatus(currentEval);
+  // Aggregate status across platforms for selected month
+  const hasReplies = monthEvals.some(e => e.clientReply);
+  const allRead = monthEvals.length > 0 && monthEvals.every(e => e.clientReadAt);
+  const hasSent = monthEvals.some(e => e.adminMessage);
+  const overallStatus = hasReplies
+    ? { label: 'Válaszolt', color: 'bg-green-500' }
+    : allRead
+    ? { label: 'Olvasva', color: 'bg-blue-500' }
+    : hasSent
+    ? { label: 'Elküldve', color: 'bg-yellow-500' }
+    : null;
 
   return (
     <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5">
@@ -118,17 +128,8 @@ export function CompanyEvaluations({ companyId, platforms }: Props) {
         <h2 className="text-lg font-bold">{t('Értékelések')}</h2>
       </div>
 
-      {/* Platform + Month selector */}
-      <div className="flex gap-3 mb-4">
-        <select
-          value={selectedPlatform}
-          onChange={e => setSelectedPlatform(e.target.value)}
-          className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm font-semibold"
-        >
-          {platforms.map(p => (
-            <option key={p} value={p}>{PLATFORM_LABELS[p] || p}</option>
-          ))}
-        </select>
+      {/* Month selector */}
+      <div className="flex gap-3 mb-4 items-center">
         <select
           value={selectedMonth}
           onChange={e => setSelectedMonth(e.target.value)}
@@ -138,68 +139,83 @@ export function CompanyEvaluations({ companyId, platforms }: Props) {
             <option key={m} value={m}>{formatMonth(m)}</option>
           ))}
         </select>
-        {status && (
-          <span className={`${status.color} text-white text-xs font-bold px-3 py-1 rounded-full self-center`}>
-            {status.label}
+        {overallStatus && (
+          <span className={`${overallStatus.color} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+            {overallStatus.label}
           </span>
+        )}
+        {saved && (
+          <span className="text-green-500 text-xs font-bold animate-pulse">Elküldve minden platformra!</span>
         )}
       </div>
 
-      {/* Admin message editor */}
+      <p className="text-xs text-[var(--text-secondary)] mb-2">
+        Az üzenet egyszerre megy ki minden platformra ({platforms.map(p => PLATFORM_LABELS[p] || p).join(', ')})
+      </p>
+
+      {/* Message editor */}
       <textarea
         value={message}
-        onChange={e => setMessage(e.target.value)}
+        onChange={e => { setMessage(e.target.value); setSaved(false); }}
         placeholder="Írd ide a havi értékelést az ügyfélnek..."
         className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 text-sm min-h-[100px] resize-y mb-3"
       />
       <button
-        onClick={handleSave}
+        onClick={handleSend}
         disabled={saving || !message.trim()}
         className="btn-press px-4 py-2 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white font-bold text-sm disabled:opacity-50 flex items-center gap-2"
       >
         <Send className="w-4 h-4" />
-        {saving ? 'Mentés...' : currentEval?.adminMessage ? 'Frissítés' : 'Küldés'}
+        {saving ? 'Küldés...' : existingMessage ? 'Frissítés' : 'Küldés'}
       </button>
 
-      {/* Client response */}
-      {currentEval?.clientReaction && (
-        <div className="mt-4 p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
-          <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-1">Ügyfél reakciója</p>
-          <span className="text-2xl">{currentEval.clientReaction}</span>
-        </div>
-      )}
-      {currentEval?.clientReply && (
-        <div className="mt-3 p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
-          <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-1">Ügyfél válasza</p>
-          <p className="text-sm text-[var(--text-primary)]">{currentEval.clientReply}</p>
-          {currentEval.clientReplyAt && (
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              {new Date(currentEval.clientReplyAt).toLocaleString('hu-HU')}
-            </p>
-          )}
+      {/* Client responses per platform */}
+      {monthEvals.filter(e => e.clientReaction || e.clientReply).length > 0 && (
+        <div className="mt-5 border-t border-[var(--border)] pt-4">
+          <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-3">Ügyfél reakciók — {formatMonth(selectedMonth)}</p>
+          <div className="space-y-3">
+            {monthEvals.filter(e => e.clientReaction || e.clientReply).map(ev => (
+              <div key={ev.id} className="p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-[var(--text-secondary)]">{PLATFORM_LABELS[ev.platform]}</span>
+                  {ev.clientReaction && <span className="text-xl">{ev.clientReaction}</span>}
+                </div>
+                {ev.clientReply && (
+                  <p className="text-sm text-[var(--text-primary)]">{ev.clientReply}</p>
+                )}
+                {ev.clientReplyAt && (
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">{new Date(ev.clientReplyAt).toLocaleString('hu-HU')}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* History list */}
+      {/* History */}
       {evaluations.filter(e => e.adminMessage).length > 0 && (
         <div className="mt-5 border-t border-[var(--border)] pt-4">
-          <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-3">Korábbi értékelések</p>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto">
-            {evaluations
-              .filter(e => e.adminMessage)
-              .sort((a, b) => b.month.localeCompare(a.month))
-              .map(ev => {
-                const st = getStatus(ev);
+          <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-3">Korábbi hónapok</p>
+          <div className="space-y-1 max-h-[200px] overflow-y-auto">
+            {[...new Set(evaluations.filter(e => e.adminMessage).map(e => e.month))]
+              .sort((a, b) => b.localeCompare(a))
+              .map(month => {
+                const evs = evaluations.filter(e => e.month === month && e.adminMessage);
+                const hasReply = evs.some(e => e.clientReply);
+                const read = evs.every(e => e.clientReadAt);
+                const reactions = evs.filter(e => e.clientReaction).map(e => e.clientReaction);
                 return (
                   <button
-                    key={ev.id}
-                    onClick={() => { setSelectedPlatform(ev.platform); setSelectedMonth(ev.month); }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between hover:bg-[var(--accent-subtle)] transition ${ev.platform === selectedPlatform && ev.month === selectedMonth ? 'bg-[var(--accent-subtle)]' : ''}`}
+                    key={month}
+                    onClick={() => setSelectedMonth(month)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between hover:bg-[var(--accent-subtle)] transition ${month === selectedMonth ? 'bg-[var(--accent-subtle)]' : ''}`}
                   >
-                    <span className="font-semibold">{PLATFORM_LABELS[ev.platform]} — {formatMonth(ev.month)}</span>
+                    <span className="font-semibold">{formatMonth(month)}</span>
                     <div className="flex items-center gap-2">
-                      {ev.clientReaction && <span>{ev.clientReaction}</span>}
-                      {st && <span className={`${st.color} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>{st.label}</span>}
+                      {reactions.length > 0 && <span>{[...new Set(reactions)].join('')}</span>}
+                      <span className={`${hasReply ? 'bg-green-500' : read ? 'bg-blue-500' : 'bg-yellow-500'} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>
+                        {hasReply ? 'Válaszolt' : read ? 'Olvasva' : 'Elküldve'}
+                      </span>
                     </div>
                   </button>
                 );
