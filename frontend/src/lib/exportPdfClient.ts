@@ -28,25 +28,24 @@ export async function exportPdfFromDOM({ element, filename, onProgress }: Export
   element.style.width = '1120px';
   element.style.maxWidth = '1120px';
 
-  // Wait for reflow
-  await new Promise(r => setTimeout(r, 100));
-
-  const pixelRatio = 2;
-  const dataUrl = await toPng(element, {
-    quality: 0.95,
-    pixelRatio,
-    backgroundColor: bgColor,
-    skipFonts: false,
-    cacheBust: true,
-    filter: (node: Node) => {
-      if (node instanceof HTMLElement && node.dataset?.pdfSkip === 'true') return false;
-      return true;
-    },
-  });
-
-  // Restore original styles
-  element.style.width = originalWidth;
-  element.style.maxWidth = originalMaxWidth;
+  let dataUrl: string;
+  try {
+    await new Promise(r => setTimeout(r, 100));
+    dataUrl = await toPng(element, {
+      quality: 0.95,
+      pixelRatio: 2,
+      backgroundColor: bgColor,
+      skipFonts: false,
+      cacheBust: true,
+      filter: (node: Node) => {
+        if (node instanceof HTMLElement && node.dataset?.pdfSkip === 'true') return false;
+        return true;
+      },
+    });
+  } finally {
+    element.style.width = originalWidth;
+    element.style.maxWidth = originalMaxWidth;
+  }
 
   onProgress?.('PDF generálás...');
 

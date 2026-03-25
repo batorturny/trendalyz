@@ -33,6 +33,10 @@ export async function sendEmail(opts: {
 // BRAND DESIGN SYSTEM
 // ============================================
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 const BRAND = {
   navy: '#0d3b5e',
   teal: '#1a6b8a',
@@ -150,11 +154,11 @@ export function evaluationReplyEmailHtml(opts: {
 
   return layout(`
     ${heading('💬 Ügyfél válaszolt')}
-    ${paragraph(`<strong>${opts.companyName}</strong> reagált a(z) ${opts.platformLabel} — ${monthLabel} értékelésre.`)}
+    ${paragraph(`<strong>${escapeHtml(opts.companyName)}</strong> reagált a(z) ${escapeHtml(opts.platformLabel)} — ${monthLabel} értékelésre.`)}
 
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:20px 0;">
       ${reaction}
-      <p style="color:#166534;font-size:15px;margin:0;white-space:pre-wrap;line-height:1.5;">${opts.clientReply}</p>
+      <p style="color:#166534;font-size:15px;margin:0;white-space:pre-wrap;line-height:1.5;">${escapeHtml(opts.clientReply)}</p>
     </div>
 
     ${button(`${BASE_URL}/admin/evaluations`, 'Válaszok megtekintése')}

@@ -148,11 +148,10 @@ export default class ChartGenerator {
         const byDate: Record<string, number> = {};
         sorted.forEach((r: any) => { if (!byDate[r.date]) byDate[r.date] = parseInt(r.total_followers_count) || 0; });
         const dates = Object.keys(byDate).sort();
-        if (dates.length < 2) return this.dailyMetric(this.daily, 'daily_lost_followers', 'Elvesztett követők');
+        if (dates.length < 2) return this.dailyMetric(this.daily, 'daily_lost_followers', 'Követő változás');
         const labels = dates.slice(1);
-        const gained = labels.map((d, i) => { const diff = byDate[d] - byDate[dates[i]]; return diff > 0 ? diff : 0; });
-        const lost = labels.map((d, i) => { const diff = byDate[d] - byDate[dates[i]]; return diff < 0 ? Math.abs(diff) : 0; });
-        return { labels, series: [{ name: 'Szerzett követők', data: gained }, { name: 'Elvesztett követők', data: lost }] };
+        const data = labels.map((d, i) => byDate[d] - byDate[dates[i]]);
+        return { labels, series: [{ name: 'Napi változás', data }] };
     }
     generate_profile_views() { return this.dailyMetric(this.daily, 'profile_views', 'Profil nézetek'); }
     generate_daily_likes() { return this.dailyMetric(this.daily, 'likes', 'Like-ok'); }

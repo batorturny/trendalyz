@@ -70,8 +70,12 @@ export const Chart = memo(function Chart({ type, labels, data, label, color = '#
         data: trimmedData,
         ...(type === 'bar'
           ? {
-            backgroundColor: color,
-            hoverBackgroundColor: `color-mix(in srgb, ${color} 80%, white)`,
+            backgroundColor: trimmedData.some(v => v < 0)
+              ? trimmedData.map(v => v >= 0 ? '#16a34a' : '#dc2626')
+              : color,
+            hoverBackgroundColor: trimmedData.some(v => v < 0)
+              ? trimmedData.map(v => v >= 0 ? '#22c55e' : '#ef4444')
+              : `color-mix(in srgb, ${color} 80%, white)`,
             borderRadius: 4,
             borderSkipped: 'bottom' as const,
           }
