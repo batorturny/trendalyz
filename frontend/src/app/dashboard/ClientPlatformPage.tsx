@@ -355,8 +355,7 @@ export function ClientPlatformPage({
                     );
                   })()}
                   <div
-                    className="kpi-grid grid gap-2 md:gap-3"
-                    style={{ gridTemplateColumns: `repeat(${bestCols(displayKpis.length)}, minmax(0, 1fr))` }}
+                    className="kpi-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3"
                   >
                     {displayKpis.map((kpi) => (
                       <KPICard key={kpi.label} label={kpi.label} value={kpi.value} change={kpi.change} description={kpi.description} />

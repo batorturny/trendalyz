@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { extractKPIs, mergeKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
 import { KPICard } from '@/components/KPICard';
@@ -16,6 +16,7 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { canUseFeature } from '@/lib/featureGate';
 import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
+import { ActivityHeatmap } from '@/components/ActivityHeatmap';
 
 export interface PlatformConfig {
   platformKey: string;
@@ -42,6 +43,72 @@ function bestCols(count: number): number {
   if (count >= 10) return 5;
   if (count >= 6) return count <= 8 ? 4 : 5;
   return 3;
+}
+
+// ===== Quick Evaluation =====
+
+function QuickEvaluation({ companyId, platformKey, month }: { companyId: string; platformKey: string; month: string }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = useCallback(async () => {
+    if (!text.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ companyId, platform: platformKey, month, adminMessage: text.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setSent(true);
+      setText('');
+      setTimeout(() => { setSent(false); setOpen(false); }, 1500);
+    } catch {
+      // silent fail
+    } finally {
+      setSending(false);
+    }
+  }, [companyId, platformKey, month, text]);
+
+  return (
+    <div className="mt-4">
+      <button
+        onClick={() => { setOpen(!open); setSent(false); }}
+        className="text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
+      >
+        <span>{open ? '\u25BE' : '\u25B8'}</span>
+        <span>Gyors \u00e9rt\u00e9kel\u00e9s</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2">
+          {sent ? (
+            <p className="text-sm font-semibold text-green-600 dark:text-green-400">Elk\u00fcldve!</p>
+          ) : (
+            <>
+              <textarea
+                value={text}
+                onChange={e => setText(e.target.value)}
+                placeholder="\u00cdrd ide az \u00e9rt\u00e9kel\u00e9st..."
+                rows={3}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
+              />
+              <button
+                onClick={handleSend}
+                disabled={sending || !text.trim()}
+                className="text-sm font-bold px-4 py-2 rounded-lg bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {sending ? 'K\u00fcld\u00e9s...' : 'K\u00fcld\u00e9s'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ===== Component =====
@@ -469,8 +536,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                 );
               })()}
               <div
-                className="grid gap-3"
-                style={{ gridTemplateColumns: `repeat(${bestCols(displayKpis.length)}, minmax(0, 1fr))` }}
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
               >
                 {displayKpis.map((kpi) => (
                   <KPICard
@@ -482,7 +548,22 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                   />
                 ))}
               </div>
+              {/* Quick evaluation — only for single company */}
+              {selectedCompany && !isAllCompanies && selectedMonth && (
+                <QuickEvaluation companyId={selectedCompany} platformKey={platform.platformKey} month={selectedMonth} />
+              )}
             </div>
+
+            {/* Activity Heatmap */}
+            {!isAllCompanies && periodMonths === 1 && results.length > 0 && (() => {
+              const dailyChart = results.find(c => c.data?.labels?.length > 7 && c.data?.series?.[0]?.data);
+              if (!dailyChart) return null;
+              const heatData = dailyChart.data.labels.map((d: string, i: number) => ({
+                date: d,
+                value: (dailyChart.data.series[0].data[i] as number) || 0,
+              }));
+              return <ActivityHeatmap data={heatData} title="Napi aktivitás" color={platform.borderColor} />;
+            })()}
 
             {/* Chart Sections - only for single company, single month */}
             {!isAllCompanies && periodMonths === 1 && sections.map(({ category, label, charts }) => (

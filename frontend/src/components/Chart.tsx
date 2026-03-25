@@ -77,7 +77,7 @@ export const Chart = memo(function Chart({ type, labels, data, label, color = '#
           }
           : {
             borderColor: color,
-            backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+            backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`,
             fill: true,
             borderWidth: 2.5,
             tension: 0.35,
