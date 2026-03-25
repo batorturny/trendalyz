@@ -99,23 +99,31 @@ export function EvaluationBubble({ companyId }: Props) {
 
   // Per-message emoji reaction (stored in messages JSON)
   const handleMessageReaction = async (msgIdx: number, emoji: string) => {
-    const ev = evaluations[0];
-    if (!ev) return;
-    // Update the message reaction in the messages array
-    const msgs = [...(ev.messages as ChatMessage[] || [])];
-    if (msgs[msgIdx]) {
-      msgs[msgIdx] = { ...msgs[msgIdx], reaction: msgs[msgIdx].reaction === emoji ? undefined : emoji };
-    }
-    // Optimistic update
-    setEvaluations(prev => prev.map(e => e.id === ev.id ? { ...e, messages: msgs } : e));
+    const targetMsg = chatMessages[msgIdx];
+    if (!targetMsg) return;
     setEmojiPickerIdx(null);
-    // Save to server — use the generic PATCH endpoint
-    try {
-      await fetch(`/api/evaluations/${ev.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: msgs }),
-      });
-    } catch {}
+
+    // Find which evaluation contains this message and update it
+    for (const ev of evaluations) {
+      const msgs = (ev.messages as ChatMessage[] || []);
+      const idx = msgs.findIndex(m => m.text === targetMsg.text && m.at === targetMsg.at && m.role === targetMsg.role);
+      if (idx === -1) continue;
+
+      const updated = [...msgs];
+      updated[idx] = { ...updated[idx], reaction: updated[idx].reaction === emoji ? undefined : emoji };
+
+      // Optimistic update
+      setEvaluations(prev => prev.map(e => e.id === ev.id ? { ...e, messages: updated } : e));
+
+      // Save to server
+      try {
+        await fetch(`/api/evaluations/${ev.id}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: updated }),
+        });
+      } catch {}
+      break;
+    }
   };
 
   if (evaluations.length === 0) return null;
