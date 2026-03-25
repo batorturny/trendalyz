@@ -6,6 +6,7 @@ import { chartCatalog, validateChartKeys } from '@/lib/chartCatalog';
 import ChartGenerator from '@/lib/chartGenerator';
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
+function redactKey(s: string) { return s.replace(/api_key=[^&\s]+/g, 'api_key=***'); }
 const WINDSOR_TIMEOUT = 30000; // 30s per API call
 
 // Each platform's fields are split into groups — each group becomes a separate
@@ -179,13 +180,13 @@ async function fetchWindsorGroup(apiKey: string, endpoint: string, accountId: st
     const res = await fetch(url, { signal: AbortSignal.timeout(WINDSOR_TIMEOUT) });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      console.warn(`[Windsor] Group "${groupName}" failed (${res.status}):`, text.slice(0, 150));
+      console.warn(`[Windsor] Group "${groupName}" failed (${res.status}):`, redactKey(text.slice(0, 150)));
       return [];
     }
     const raw = await res.json();
     return Array.isArray(raw) ? (raw[0]?.data || []) : (raw?.data || []);
   } catch (err: any) {
-    console.warn(`[Windsor] Group "${groupName}" error:`, err.message);
+    console.warn(`[Windsor] Group "${groupName}" error:`, redactKey(err.message));
     return [];
   }
 }

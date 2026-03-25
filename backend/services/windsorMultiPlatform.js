@@ -8,6 +8,11 @@ const https = require('https');
 
 const WINDSOR_BASE = 'https://connectors.windsor.ai';
 
+// Redact API key from URLs/messages before logging
+function redactKey(str) {
+  return str.replace(/api_key=[^&\s]+/g, 'api_key=***');
+}
+
 // Force IPv4 + keep-alive to avoid Hetzner dual-stack routing issues
 const httpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
@@ -279,7 +284,7 @@ class WindsorMultiPlatform {
       }
       return data?.data || [];
     } catch (error) {
-      console.error(`Windsor API error (${provider}):`, error.message);
+      console.error(`Windsor API error (${provider}):`, redactKey(error.message));
       throw error;
     }
   }
@@ -441,7 +446,7 @@ class WindsorMultiPlatform {
         hasData: info.rowCount > 0,
       }));
     } catch (error) {
-      console.error(`Windsor discover error (${provider}):`, error.message);
+      console.error(`Windsor discover error (${provider}):`, redactKey(error.message));
       throw error;
     }
   }
@@ -467,7 +472,7 @@ class WindsorMultiPlatform {
 
       return [];
     } catch (error) {
-      console.error('Windsor datasources error:', error.message);
+      console.error('Windsor datasources error:', redactKey(error.message));
       // Return empty array instead of throwing — this is a best-effort fallback
       return [];
     }
