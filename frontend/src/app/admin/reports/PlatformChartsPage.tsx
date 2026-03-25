@@ -80,19 +80,19 @@ function QuickEvaluation({ companyId, platformKey, month }: { companyId: string;
         onClick={() => { setOpen(!open); setSent(false); }}
         className="text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
       >
-        <span>{open ? '\u25BE' : '\u25B8'}</span>
-        <span>Gyors \u00e9rt\u00e9kel\u00e9s</span>
+        <span>{open ? '▾' : '▸'}</span>
+        <span>💬 Gyors értékelés küldése</span>
       </button>
       {open && (
         <div className="mt-3 space-y-2">
           {sent ? (
-            <p className="text-sm font-semibold text-green-600 dark:text-green-400">Elk\u00fcldve!</p>
+            <p className="text-sm font-semibold text-green-600 dark:text-green-400">Elküldve!</p>
           ) : (
             <>
               <textarea
                 value={text}
                 onChange={e => setText(e.target.value)}
-                placeholder="\u00cdrd ide az \u00e9rt\u00e9kel\u00e9st..."
+                placeholder="Írd ide az értékelést..."
                 rows={3}
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
               />
@@ -101,7 +101,7 @@ function QuickEvaluation({ companyId, platformKey, month }: { companyId: string;
                 disabled={sending || !text.trim()}
                 className="text-sm font-bold px-4 py-2 rounded-lg bg-[var(--accent)] text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                {sending ? 'K\u00fcld\u00e9s...' : 'K\u00fcld\u00e9s'}
+                {sending ? 'Küldés...' : 'Küldés'}
               </button>
             </>
           )}
