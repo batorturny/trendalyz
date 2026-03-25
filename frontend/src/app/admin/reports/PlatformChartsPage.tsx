@@ -16,7 +16,6 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { canUseFeature } from '@/lib/featureGate';
 import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
-import { ActivityHeatmap } from '@/components/ActivityHeatmap';
 
 export interface PlatformConfig {
   platformKey: string;
@@ -553,17 +552,6 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                 <QuickEvaluation companyId={selectedCompany} platformKey={platform.platformKey} month={selectedMonth} />
               )}
             </div>
-
-            {/* Activity Heatmap */}
-            {!isAllCompanies && periodMonths === 1 && results.length > 0 && (() => {
-              const dailyChart = results.find(c => c.data?.labels?.length > 7 && c.data?.series?.[0]?.data);
-              if (!dailyChart) return null;
-              const heatData = dailyChart.data.labels.map((d: string, i: number) => ({
-                date: d,
-                value: (dailyChart.data.series[0].data[i] as number) || 0,
-              }));
-              return <ActivityHeatmap data={heatData} title="Napi aktivitás" color={platform.borderColor} />;
-            })()}
 
             {/* Chart Sections - only for single company, single month */}
             {!isAllCompanies && periodMonths === 1 && sections.map(({ category, label, charts }) => (
