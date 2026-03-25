@@ -13,11 +13,11 @@ import { useT } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const platformTabs = [
-  { href: '/dashboard/tiktok', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'] },
-  { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'] },
-  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'] },
-  { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'] },
-  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'] },
+  { href: '/dashboard/tiktok', label: 'TikTok', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ORGANIC'], comingSoon: false },
+  { href: '/dashboard/facebook', label: 'Facebook', platform: 'facebook' as const, color: 'var(--platform-facebook)', providers: ['FACEBOOK_ORGANIC', 'FACEBOOK'], comingSoon: false },
+  { href: '/dashboard/youtube', label: 'YouTube', platform: 'youtube' as const, color: 'var(--platform-youtube)', providers: ['YOUTUBE'], comingSoon: false },
+  { href: '/dashboard/tiktok-ads', label: 'TikTok Ads', platform: 'tiktok' as const, color: 'var(--platform-tiktok)', providers: ['TIKTOK_ADS'], comingSoon: false },
+  { href: '/dashboard/instagram', label: 'Instagram', platform: 'instagram' as const, color: 'var(--platform-instagram)', providers: ['INSTAGRAM_ORGANIC', 'INSTAGRAM'], comingSoon: true },
 ];
 
 interface Props {
@@ -56,6 +56,20 @@ export function ClientHeader({ companyName, userEmail, connectedProviders }: Pro
                 return 0;
               }).map(tab => {
                 const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
+
+                if (tab.comingSoon) {
+                  return (
+                    <span
+                      key={tab.href}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--text-secondary)] opacity-40 cursor-not-allowed"
+                      title="Coming soon"
+                    >
+                      <PlatformIcon platform={tab.platform} className="w-4 h-4 grayscale" />
+                      {tab.label}
+                      <span className="text-[9px] font-bold uppercase opacity-70">Soon</span>
+                    </span>
+                  );
+                }
 
                 const isEnabled = tab.providers.some(p => connectedProviders.includes(p));
 
