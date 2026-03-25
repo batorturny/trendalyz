@@ -143,6 +143,19 @@ class ChartGenerator {
         const data = labels.map((d, i) => Math.max(0, byDate[d] - byDate[dates[i]]));
         return { labels, series: [{ name: 'Napi új követők', data }] };
     }
+    generate_tt_follower_change() {
+        // Calculate gained and lost followers from total_followers_count diffs
+        const sorted = [...this.daily].filter(r => r.date && r.total_followers_count > 0)
+            .sort((a, b) => a.date.localeCompare(b.date));
+        const byDate = {};
+        sorted.forEach(r => { if (!byDate[r.date]) byDate[r.date] = parseInt(r.total_followers_count) || 0; });
+        const dates = Object.keys(byDate).sort();
+        if (dates.length < 2) return this.dailyMetric(this.daily, 'daily_lost_followers', 'Elvesztett követők');
+        const labels = dates.slice(1);
+        const gained = labels.map((d, i) => { const diff = byDate[d] - byDate[dates[i]]; return diff > 0 ? diff : 0; });
+        const lost = labels.map((d, i) => { const diff = byDate[d] - byDate[dates[i]]; return diff < 0 ? Math.abs(diff) : 0; });
+        return { labels, series: [{ name: 'Szerzett követők', data: gained }, { name: 'Elvesztett követők', data: lost }] };
+    }
     generate_profile_views() { return this.dailyMetric(this.daily, 'profile_views', 'Profil nézetek'); }
     generate_daily_likes() { return this.dailyMetric(this.daily, 'likes', 'Like-ok'); }
     generate_daily_comments() { return this.dailyMetric(this.daily, 'comments', 'Kommentek'); }
