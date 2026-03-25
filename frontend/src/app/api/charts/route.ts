@@ -705,15 +705,16 @@ export async function POST(req: Request) {
       chartsByPlatform.get(plat)!.push(chartReq);
     }
 
-    // Windsor API key (only needed for non-Meta platforms)
+    // Windsor API key from admin's encrypted key in database
     const adminId = session.user.role === 'ADMIN' ? session.user.id : company.adminId;
     const adminUser = await prisma.user.findUnique({
       where: { id: adminId! },
       select: { windsorApiKeyEnc: true },
     });
-    const windsorApiKey = adminUser?.windsorApiKeyEnc
-      ? decrypt(adminUser.windsorApiKeyEnc)
-      : process.env.WINDSOR_API_KEY;
+    if (!adminUser?.windsorApiKeyEnc) {
+      return NextResponse.json({ error: 'Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon.' }, { status: 400 });
+    }
+    const windsorApiKey = decrypt(adminUser.windsorApiKeyEnc);
 
     // Fetch + generate charts per platform in parallel
     const platformResults = await Promise.all(

@@ -8,7 +8,7 @@ const { decrypt } = require('../utils/encryption');
 
 /**
  * Get Windsor API key for a specific admin user.
- * Priority: admin's personal key → WINDSOR_API_KEY env var.
+ * Only uses the admin's personal encrypted key — no env var fallback.
  */
 async function getWindsorApiKey(adminUserId) {
   if (adminUserId) {
@@ -20,11 +20,6 @@ async function getWindsorApiKey(adminUserId) {
     if (user?.windsorApiKeyEnc) {
       return decrypt(user.windsorApiKeyEnc);
     }
-  }
-
-  // Fallback to central Windsor API key
-  if (process.env.WINDSOR_API_KEY) {
-    return process.env.WINDSOR_API_KEY;
   }
 
   throw new Error('Nincs Windsor API kulcs konfigurálva. Kérjük, add meg a Beállítások oldalon.');

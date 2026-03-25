@@ -27,22 +27,19 @@ export async function GET(req: Request) {
     }
 
     try {
-        // Get admin's Windsor API key (personal or central fallback)
+        // Get admin's Windsor API key from database
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
             select: { windsorApiKeyEnc: true },
         });
 
-        const apiKey = user?.windsorApiKeyEnc
-            ? decrypt(user.windsorApiKeyEnc)
-            : process.env.WINDSOR_API_KEY;
-
-        if (!apiKey) {
+        if (!user?.windsorApiKeyEnc) {
             return NextResponse.json(
-                { error: 'Nincs Windsor API kulcs konfigurálva. Kérjük, add meg a Beállítások oldalon.' },
+                { error: 'Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon.' },
                 { status: 400 }
             );
         }
+        const apiKey = decrypt(user.windsorApiKeyEnc);
 
         // Step 1: Generate co-user URL from Windsor
         const genUrl = `${WINDSOR_ONBOARD}/api/team/generate-co-user-url/?api_key=${apiKey}&allowed_sources=${source}`;

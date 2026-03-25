@@ -19,11 +19,7 @@ async function getAdminWindsorApiKey(userId: string): Promise<string> {
   if (user?.windsorApiKeyEnc) {
     return decrypt(user.windsorApiKeyEnc);
   }
-  // Fallback to central Windsor API key
-  if (process.env.WINDSOR_API_KEY) {
-    return process.env.WINDSOR_API_KEY;
-  }
-  throw new Error('Nincs Windsor API kulcs konfigurálva. Kérjük, add meg a Beállítások oldalon.');
+  throw new Error('Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon.');
 }
 
 async function getAdminPersonalWindsorApiKey(userId: string): Promise<string> {
@@ -373,11 +369,8 @@ export async function syncAllPlatforms(): Promise<SyncDiscoveryResult> {
     const personalKey = await getAdminPersonalWindsorApiKey(session.user.id);
     apiKeys.push(personalKey);
   } catch { /* no personal key */ }
-  if (process.env.WINDSOR_API_KEY && !apiKeys.includes(process.env.WINDSOR_API_KEY)) {
-    apiKeys.push(process.env.WINDSOR_API_KEY);
-  }
   if (apiKeys.length === 0) {
-    throw new Error('Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon vagy állítsd be a WINDSOR_API_KEY env változót.');
+    throw new Error('Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon.');
   }
   console.log(`[Sync] Using ${apiKeys.length} Windsor API key(s): ${apiKeys.map(k => k.slice(0, 6) + '...' + k.slice(-4)).join(', ')}`);
 

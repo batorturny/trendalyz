@@ -68,21 +68,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No TikTok account connected' }, { status: 400 });
     }
 
-    // Get Windsor API key (admin's own key OR central WINDSOR_API_KEY fallback)
+    // Get Windsor API key from admin's encrypted key in database
     const adminId = session.user.role === 'ADMIN' ? session.user.id : company.adminId;
     const adminUser = await prisma.user.findUnique({
       where: { id: adminId! },
       select: { windsorApiKeyEnc: true },
     });
 
-    let windsorApiKey: string;
-    if (adminUser?.windsorApiKeyEnc) {
-      windsorApiKey = decrypt(adminUser.windsorApiKeyEnc);
-    } else if (process.env.WINDSOR_API_KEY) {
-      windsorApiKey = process.env.WINDSOR_API_KEY;
-    } else {
-      return NextResponse.json({ error: 'Windsor API key not configured' }, { status: 400 });
+    if (!adminUser?.windsorApiKeyEnc) {
+      return NextResponse.json({ error: 'Nincs Windsor API kulcs konfigurálva. Add meg a Beállítások oldalon.' }, { status: 400 });
     }
+    const windsorApiKey = decrypt(adminUser.windsorApiKeyEnc);
 
     // Calculate date ranges
     const [year, monthNum] = month.split('-').map(Number);
