@@ -131,7 +131,17 @@ export default class ChartGenerator {
 
     // ===== TIKTOK ORGANIC CHARTS =====
 
-    generate_followers_growth() { return this.dailyMax(this.daily, 'followers_count', 'K\u00f6vet\u0151k'); }
+    generate_followers_growth() {
+        const sorted = [...this.daily].filter((r: any) => r.date && r.total_followers_count > 0)
+            .sort((a: any, b: any) => a.date.localeCompare(b.date));
+        const byDate: Record<string, number> = {};
+        sorted.forEach((r: any) => { if (!byDate[r.date]) byDate[r.date] = parseInt(r.total_followers_count) || 0; });
+        const dates = Object.keys(byDate).sort();
+        if (dates.length < 2) return this.dailyMax(this.daily, 'followers_count', 'Napi új követők');
+        const labels = dates.slice(1);
+        const data = labels.map((d, i) => Math.max(0, byDate[d] - byDate[dates[i]]));
+        return { labels, series: [{ name: 'Napi új követők', data }] };
+    }
     generate_profile_views() { return this.dailyMetric(this.daily, 'profile_views', 'Profil n\u00e9zetek'); }
     generate_daily_likes() { return this.dailyMetric(this.daily, 'likes', 'Like-ok'); }
     generate_daily_comments() { return this.dailyMetric(this.daily, 'comments', 'Kommentek'); }

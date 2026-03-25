@@ -130,7 +130,19 @@ class ChartGenerator {
 
     // ===== TIKTOK ORGANIC CHARTS =====
 
-    generate_followers_growth() { return this.dailyMax(this.daily, 'followers_count', 'Követők'); }
+    generate_followers_growth() {
+        // Calculate daily follower change from total_followers_count (today - yesterday)
+        const sorted = [...this.daily].filter(r => r.date && r.total_followers_count > 0)
+            .sort((a, b) => a.date.localeCompare(b.date));
+        // Deduplicate by date
+        const byDate = {};
+        sorted.forEach(r => { if (!byDate[r.date]) byDate[r.date] = parseInt(r.total_followers_count) || 0; });
+        const dates = Object.keys(byDate).sort();
+        if (dates.length < 2) return this.dailyMax(this.daily, 'followers_count', 'Napi új követők');
+        const labels = dates.slice(1); // skip first day (no previous to compare)
+        const data = labels.map((d, i) => Math.max(0, byDate[d] - byDate[dates[i]]));
+        return { labels, series: [{ name: 'Napi új követők', data }] };
+    }
     generate_profile_views() { return this.dailyMetric(this.daily, 'profile_views', 'Profil nézetek'); }
     generate_daily_likes() { return this.dailyMetric(this.daily, 'likes', 'Like-ok'); }
     generate_daily_comments() { return this.dailyMetric(this.daily, 'comments', 'Kommentek'); }
