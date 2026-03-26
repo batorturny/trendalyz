@@ -45,7 +45,7 @@ export function FeedbackWidget() {
       {/* Floating button — bottom left */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="fixed bottom-6 left-6 z-50 w-10 h-10 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] shadow-lg hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-all flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] shadow-lg hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-all flex items-center justify-center"
         title="Fejlesztési javaslat"
       >
         <MessageSquarePlus className="w-4 h-4" />
@@ -53,7 +53,7 @@ export function FeedbackWidget() {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-18 left-6 w-80 z-50 rounded-2xl shadow-2xl border border-[var(--border)] bg-[var(--surface-raised)] overflow-hidden">
+        <div className="fixed bottom-18 right-6 w-80 z-50 rounded-2xl shadow-2xl border border-[var(--border)] bg-[var(--surface-raised)] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)]">
             <h3 className="text-sm font-bold text-[var(--text-primary)]">💡 Fejlesztési javaslat</h3>
