@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AdminSidebar } from './AdminSidebar';
+import { FeedbackWidget } from '@/components/FeedbackWidget';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -15,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      <FeedbackWidget />
     </div>
   );
 }
