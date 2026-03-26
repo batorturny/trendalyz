@@ -579,6 +579,11 @@ export default function AdminChartsPage() {
   const [multiMonthCount, setMultiMonthCount] = useState(0);
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
+  const selectedCompanyObj = companies.find(c => c.id === selectedCompany);
+  const connectedPlatforms = new Set(selectedCompanyObj?.connectedPlatforms || []);
+  const activePlatforms = isAllCompanies
+    ? PLATFORM_ORDER.filter(p => !DISABLED_PLATFORMS.has(p))
+    : PLATFORM_ORDER.filter(p => connectedPlatforms.has(p) && !DISABLED_PLATFORMS.has(p));
   const monthOptions = useMemo(() => getMonthOptions(24), []);
 
   // Calculate period months
@@ -992,7 +997,7 @@ export default function AdminChartsPage() {
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase">Platform beállítások</h3>
             </div>
-            {PLATFORM_ORDER.map(platKey => {
+            {activePlatforms.map(platKey => {
               const config = PLATFORM_METRICS[platKey];
               const sel = selections[platKey];
               if (!config || !sel) return null;
@@ -1038,7 +1043,7 @@ export default function AdminChartsPage() {
               Összesített KPI-ok
               <span className="text-sm font-normal text-[var(--text-secondary)] ml-3">{multiMonthCount} hónap</span>
             </h2>
-            {PLATFORM_ORDER.map(platKey => {
+            {activePlatforms.map(platKey => {
               const kpiList = platformKPIs[platKey];
               if (!kpiList || kpiList.length === 0) return null;
               const config = PLATFORM_METRICS[platKey];
@@ -1066,7 +1071,7 @@ export default function AdminChartsPage() {
         {/* Single-month per-platform KPIs */}
         {Object.keys(singleMonthPlatformKPIs).length > 0 && (
           <div className="mb-8 space-y-4">
-            {PLATFORM_ORDER.map(platKey => {
+            {activePlatforms.map(platKey => {
               const kpiList = singleMonthPlatformKPIs[platKey];
               if (!kpiList || kpiList.length === 0) return null;
               const config = PLATFORM_METRICS[platKey];
@@ -1091,7 +1096,7 @@ export default function AdminChartsPage() {
         {/* Per-platform chart results */}
         {Object.keys(resultsByPlatform).length > 0 ? (
           <div className="space-y-8">
-            {PLATFORM_ORDER.map(platKey => {
+            {activePlatforms.map(platKey => {
               const group = resultsByPlatform[platKey];
               if (!group) return null;
               const config = PLATFORM_METRICS[platKey];
