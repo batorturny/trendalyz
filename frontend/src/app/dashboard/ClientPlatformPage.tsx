@@ -65,6 +65,10 @@ export function ClientPlatformPage({
   const [autoLoaded, setAutoLoaded] = useState(false);
   const [prevMonthKpis, setPrevMonthKpis] = useState<KPI[] | null>(null);
   const [monthlyAnalysis, setMonthlyAnalysis] = useState<string | null>(null);
+  const [chartCols, setChartCols] = useState<1 | 2>(() => {
+    if (typeof window !== 'undefined') return (localStorage.getItem('trendalyz-chart-cols') === '2' ? 2 : 1) as 1 | 2;
+    return 1;
+  });
   const reportRef = useRef<HTMLDivElement>(null);
 
   const companyId = session?.user?.companyId;
@@ -365,13 +369,28 @@ export function ClientPlatformPage({
               ) : null;
             })()}
 
+            {/* Chart layout toggle */}
+            {periodMonths === 1 && sections.length > 0 && (
+              <div className="flex items-center justify-end gap-2 mb-2" data-pdf-skip="true">
+                <span className="text-xs text-[var(--text-secondary)]">Nézet:</span>
+                <button onClick={() => { setChartCols(1); localStorage.setItem('trendalyz-chart-cols', '1'); }}
+                  className={`p-1.5 rounded-lg transition ${chartCols === 1 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-raised)] text-[var(--text-secondary)]'}`} title="1 oszlop">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="6" rx="1"/><rect x="1" y="9" width="14" height="6" rx="1"/></svg>
+                </button>
+                <button onClick={() => { setChartCols(2); localStorage.setItem('trendalyz-chart-cols', '2'); }}
+                  className={`p-1.5 rounded-lg transition ${chartCols === 2 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-raised)] text-[var(--text-secondary)]'}`} title="2 oszlop">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+                </button>
+              </div>
+            )}
+
             {/* Chart Sections - only for single month */}
             {periodMonths === 1 && sections.map(({ category, label, charts }) => (
               <section key={category}>
                 <h3 className="text-base md:text-xl font-bold mb-3 md:mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                   {label}
                 </h3>
-                <div className="grid grid-cols-1 gap-3 md:gap-4">
+                <div className={`grid gap-3 md:gap-4 ${chartCols === 2 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
                   {charts.map((chart) => {
                     if (chart.type === 'table') {
                       return (
