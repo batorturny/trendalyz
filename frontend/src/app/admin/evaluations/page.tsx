@@ -43,6 +43,7 @@ export default async function EvaluationsPage() {
           clientReply: e.clientReply,
           clientReplyAt: e.clientReplyAt?.toISOString() || null,
           clientReadAt: e.clientReadAt?.toISOString() || null,
+          messages: (e.messages as any) || [],
         }))}
       />
     </div>

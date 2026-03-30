@@ -17,10 +17,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'companyId is required' }, { status: 400 });
   }
 
-  // Access check: admin owns the company OR client belongs to it
-  const canAccess =
-    session.user.role === 'ADMIN' || session.user.companyId === companyId;
-  if (!canAccess) {
+  // Access check: admin must own the company, client must belong to it
+  if (session.user.role === 'ADMIN') {
+    const ownsCompany = await prisma.company.findFirst({ where: { id: companyId, adminId: session.user.id } });
+    if (!ownsCompany) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  } else if (session.user.companyId !== companyId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

@@ -87,7 +87,8 @@ export function EvaluationsOverview({ companies, evaluations: initialEvals }: Pr
   // Companies with reply counts
   const companiesWithBadge = companies.map(c => {
     const evs = evaluations.filter(e => e.companyId === c.id);
-    const unread = evs.filter(e => e.clientReply && !e.clientReadAt).length;
+    // Count evaluations where client replied after the last admin message
+    const unread = evs.filter(e => e.clientReply && e.clientReplyAt && e.adminMessageAt && e.clientReplyAt > e.adminMessageAt).length;
     const totalMsgs = evs.flatMap(e => (e.messages as ChatMessage[] || [])).length;
     return { ...c, unread, totalMsgs };
   });

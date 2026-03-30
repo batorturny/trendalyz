@@ -19,9 +19,11 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Verify access: admin owns company OR client belongs to company
-  const canAccess = session.user.role === 'ADMIN' || session.user.companyId === evaluation.companyId;
-  if (!canAccess) {
+  // Verify access: admin must own the company, client must belong to it
+  if (session.user.role === 'ADMIN') {
+    const ownsCompany = await prisma.company.findFirst({ where: { id: evaluation.companyId, adminId: session.user.id } });
+    if (!ownsCompany) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  } else if (session.user.companyId !== evaluation.companyId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

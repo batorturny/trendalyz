@@ -30,8 +30,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const canAccess =
-    session.user.role === 'ADMIN' || session.user.companyId === evaluation.companyId;
+  const canAccess = session.user.companyId === evaluation.companyId;
   if (!canAccess) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

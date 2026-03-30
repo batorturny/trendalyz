@@ -85,7 +85,12 @@ export function EvaluationBubble({ companyId }: Props) {
   // Reply
   const handleReply = async () => {
     if (!replyText.trim()) return;
-    const ev = evaluations[0];
+    // Reply to the evaluation with the most recent admin message
+    const ev = [...evaluations].sort((a, b) => {
+      const aAt = (a as any).adminMessageAt || '';
+      const bAt = (b as any).adminMessageAt || '';
+      return bAt.localeCompare(aAt);
+    })[0];
     if (!ev) return;
     setSending(true);
     try {
