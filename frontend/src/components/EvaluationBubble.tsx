@@ -102,29 +102,30 @@ export function EvaluationBubble({ companyId }: Props) {
     } catch {} finally { setSending(false); }
   };
 
-  // Per-message emoji reaction (stored in messages JSON)
+  // Per-message emoji reaction (atomic update via messageIndex)
   const handleMessageReaction = async (msgIdx: number, emoji: string) => {
     const targetMsg = chatMessages[msgIdx];
     if (!targetMsg) return;
     setEmojiPickerIdx(null);
 
-    // Find which evaluation contains this message and update it
+    // Find which evaluation contains this message and the index within that evaluation's messages
     for (const ev of evaluations) {
       const msgs = (ev.messages as ChatMessage[] || []);
       const idx = msgs.findIndex(m => m.text === targetMsg.text && m.at === targetMsg.at && m.role === targetMsg.role);
       if (idx === -1) continue;
 
-      const updated = [...msgs];
-      updated[idx] = { ...updated[idx], reaction: updated[idx].reaction === emoji ? undefined : emoji };
+      const newReaction = msgs[idx].reaction === emoji ? null : emoji;
 
       // Optimistic update
+      const updated = [...msgs];
+      updated[idx] = { ...updated[idx], reaction: newReaction || undefined };
       setEvaluations(prev => prev.map(e => e.id === ev.id ? { ...e, messages: updated } : e));
 
-      // Save to server
+      // Save to server atomically
       try {
         await fetch(`/api/evaluations/${ev.id}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: updated }),
+          body: JSON.stringify({ messageIndex: idx, reaction: newReaction }),
         });
       } catch {}
       break;

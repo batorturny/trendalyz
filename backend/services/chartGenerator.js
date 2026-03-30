@@ -30,6 +30,33 @@ class ChartGenerator {
             this.activity = windsorData.activity || [];
             this.data = [...this.daily, ...this.video];
         }
+
+        // Deduplicate Facebook posts by post_id (same post can appear as both post and reel)
+        this.video = this._dedupeByPostId(this.video);
+    }
+
+    _dedupeByPostId(rows) {
+        if (!rows.some(r => r.post_id)) return rows;
+        // Two-pass: first find best row per post_id, then filter
+        const best = new Map();
+        rows.forEach(r => {
+            if (!r.post_id) return;
+            const score = parseInt(r.post_impressions || r.views || r.reach || 0);
+            const prev = best.get(r.post_id);
+            if (!prev || score > parseInt(prev.post_impressions || prev.views || prev.reach || 0)) {
+                best.set(r.post_id, r);
+            }
+        });
+        const seen = new Set();
+        return rows.filter(r => {
+            if (!r.post_id) return true;
+            if (seen.has(r.post_id)) return false;
+            seen.add(r.post_id);
+            // Replace with best version
+            const bestRow = best.get(r.post_id);
+            if (bestRow) Object.assign(r, bestRow);
+            return true;
+        });
     }
 
     generate(chartKey, params = {}) {
@@ -243,18 +270,25 @@ class ChartGenerator {
         const dayData = new Array(7).fill(0);
         const dayCounts = new Array(7).fill(0);
 
-        this.activity.forEach(item => {
-            const hour = parseInt(item.audience_activity_hour);
-            const count = parseInt(item.audience_activity_count) || 0;
-            const dayIndex = hour % 7;
-            dayData[dayIndex] += count;
+        // Group engagement by actual day of week from date field
+        const dateMap = {};
+        this.daily.forEach(item => {
+            if (!item.date) return;
+            const engagement = (parseInt(item.likes) || 0) + (parseInt(item.comments) || 0) + (parseInt(item.shares) || 0);
+            if (!dateMap[item.date]) dateMap[item.date] = 0;
+            dateMap[item.date] += engagement;
+        });
+
+        Object.entries(dateMap).forEach(([date, engagement]) => {
+            const d = new Date(date + 'T00:00:00');
+            const jsDay = d.getDay(); // 0=Sun
+            const dayIndex = jsDay === 0 ? 6 : jsDay - 1; // Mon=0, Sun=6
+            dayData[dayIndex] += engagement;
             dayCounts[dayIndex]++;
         });
 
-        return {
-            labels: dayNames,
-            series: [{ name: 'Átl. aktivitás', data: dayData.map((sum, i) => dayCounts[i] > 0 ? Math.round(sum / dayCounts[i]) : 0) }]
-        };
+        const avgData = dayData.map((total, i) => dayCounts[i] > 0 ? Math.round(total / dayCounts[i]) : 0);
+        return { labels: dayNames, series: [{ name: 'Átlag engagement', data: avgData }] };
     }
 
     generate_engagement_by_hour() {

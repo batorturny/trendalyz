@@ -13,6 +13,8 @@ import { collectChartKeysForConfig } from '@/lib/platformMetrics';
 import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { useT } from '@/lib/i18n';
 import { EvaluationBubble } from '@/components/EvaluationBubble';
+import { SkeletonKPI } from '@/components/SkeletonKPI';
+import { SkeletonChart } from '@/components/SkeletonChart';
 
 interface PlatformConfig {
   platformKey: string;
@@ -455,12 +457,15 @@ export function ClientPlatformPage({
         )}
       </div>
 
-      {/* Loading state */}
-      {loading && (
-        <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
-          <div className="mb-4 animate-pulse flex justify-center">{platform.icon}</div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{t('Riport generálása...')}</h2>
-          <p className="text-[var(--text-secondary)]">{t('Adatok lekérése és feldolgozása folyamatban')}</p>
+      {/* Loading state — skeleton placeholders */}
+      {loading && results.length === 0 && (
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3">
+            {Array.from({ length: 10 }).map((_, i) => <SkeletonKPI key={i} />)}
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:gap-4">
+            {Array.from({ length: 3 }).map((_, i) => <SkeletonChart key={i} />)}
+          </div>
         </div>
       )}
 

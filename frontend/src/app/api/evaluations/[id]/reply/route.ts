@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { appendEvaluationMessage } from '@/lib/evaluation-db';
 import { NextResponse } from 'next/server';
 import { sendEmail, evaluationReplyEmailHtml } from '@/lib/email';
 
@@ -46,18 +47,22 @@ export async function PATCH(
   }
 
   const senderName = session.user.name || session.user.email || 'Ügyfél';
-  const currentMessages = (evaluation.messages as any[] || []);
-  currentMessages.push({ role: 'client', text: reply.trim(), at: new Date().toISOString(), name: senderName });
 
-  const updated = await prisma.evaluation.update({
+  // Update scalar fields first
+  await prisma.evaluation.update({
     where: { id },
     data: {
       clientReply: reply.trim(),
       clientReplyAt: new Date(),
       clientUserId: session.user.id,
-      messages: currentMessages,
     },
   });
+
+  // Atomically append the message (no read-modify-write race)
+  await appendEvaluationMessage(id, { role: 'client', text: reply.trim(), at: new Date().toISOString(), name: senderName });
+
+  // Re-fetch to return the full record with updated messages
+  const updated = await prisma.evaluation.findUniqueOrThrow({ where: { id } });
 
   // Send email notification to admin
   if (evaluation.company.adminId) {

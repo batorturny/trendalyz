@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { appendEvaluationMessage } from '@/lib/evaluation-db';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
@@ -68,21 +69,13 @@ export async function POST(req: Request) {
   const senderName = session.user.name || session.user.email || 'Admin';
   const newMsg = { role: 'admin' as const, text: adminMessage, at: new Date().toISOString(), name: senderName };
 
-  // Fetch existing messages for append
-  const existing = await prisma.evaluation.findUnique({
-    where: { companyId_platform_month: { companyId, platform, month } },
-    select: { messages: true },
-  });
-  const currentMessages = (existing?.messages as any[] || []);
-  currentMessages.push(newMsg);
-
+  // Upsert the evaluation record (creates if needed, updates admin fields)
   const evaluation = await prisma.evaluation.upsert({
     where: { companyId_platform_month: { companyId, platform, month } },
     update: {
       adminMessage,
       adminMessageAt: new Date(),
       adminUserId: session.user.id,
-      messages: currentMessages,
     },
     create: {
       companyId,
@@ -91,9 +84,15 @@ export async function POST(req: Request) {
       adminMessage,
       adminMessageAt: new Date(),
       adminUserId: session.user.id,
-      messages: [newMsg],
+      messages: [],
     },
   });
 
-  return NextResponse.json(evaluation);
+  // Atomically append the message (no read-modify-write race)
+  await appendEvaluationMessage(evaluation.id, newMsg);
+
+  // Re-fetch to return the full record with updated messages
+  const updated = await prisma.evaluation.findUnique({ where: { id: evaluation.id } });
+
+  return NextResponse.json(updated);
 }

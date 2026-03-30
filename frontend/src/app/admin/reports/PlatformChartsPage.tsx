@@ -16,6 +16,8 @@ import { FeatureGate } from '@/components/FeatureGate';
 import { canUseFeature } from '@/lib/featureGate';
 import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
+import { SkeletonKPI } from '@/components/SkeletonKPI';
+import { SkeletonChart } from '@/components/SkeletonChart';
 
 export interface PlatformConfig {
   platformKey: string;
@@ -666,18 +668,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
           </div>
         )}
 
-        {/* Loading state */}
-        {loading && (
-          <div className="text-center py-20 bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl">
-            <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-[var(--text-secondary)]" />
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
-              {isAllCompanies
-                ? `Összesítés... (${companies.length} cég)`
-                : periodMonths > 1
-                  ? `Összesítés... (${periodMonths} hónap)`
-                  : 'Riport generálása...'}
-            </h2>
-            <p className="text-[var(--text-secondary)]">Adatok lekérése és feldolgozása folyamatban</p>
+        {/* Loading state — skeleton placeholders */}
+        {loading && !hasResults && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {Array.from({ length: 10 }).map((_, i) => <SkeletonKPI key={i} />)}
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => <SkeletonChart key={i} />)}
+            </div>
           </div>
         )}
       </div>

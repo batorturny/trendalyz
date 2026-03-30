@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { setMessageReaction } from '@/lib/evaluation-db';
 import { NextResponse } from 'next/server';
 
 // Generic PATCH for updates (admin: message, both: reactions/messages)
@@ -36,26 +37,24 @@ export async function PATCH(
     allowedFields.adminMessageAt = new Date();
     allowedFields.adminUserId = session.user.id;
   }
-  // Messages update: only allow changing reactions on existing messages (not adding/removing)
-  if (Array.isArray(body.messages) && evaluation) {
+  // Atomic reaction updates: { messageIndex: number, reaction: string | null }
+  if (typeof body.messageIndex === 'number' && body.messageIndex >= 0) {
     const existing = (evaluation.messages as any[] || []);
-    if (body.messages.length === existing.length) {
-      const sanitized = existing.map((orig: any, i: number) => ({
-        ...orig,
-        reaction: body.messages[i]?.reaction !== undefined ? body.messages[i].reaction : orig.reaction,
-      }));
-      allowedFields.messages = sanitized;
+    if (body.messageIndex < existing.length) {
+      await setMessageReaction(id, body.messageIndex, body.reaction ?? null);
     }
   }
 
-  if (Object.keys(allowedFields).length === 0) {
-    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+  // Apply scalar field updates if any
+  if (Object.keys(allowedFields).length > 0) {
+    await prisma.evaluation.update({
+      where: { id },
+      data: allowedFields,
+    });
   }
 
-  const updated = await prisma.evaluation.update({
-    where: { id },
-    data: allowedFields,
-  });
+  // Re-fetch to return current state
+  const updated = await prisma.evaluation.findUniqueOrThrow({ where: { id } });
 
   return NextResponse.json(updated);
 }
