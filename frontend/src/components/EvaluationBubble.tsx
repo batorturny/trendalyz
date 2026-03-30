@@ -37,7 +37,7 @@ export function EvaluationBubble({ companyId }: Props) {
       if (!res.ok) return;
       const data = await res.json();
       setEvaluations(Array.isArray(data) ? data.filter((e: Evaluation) => e.adminMessage) : []);
-    } catch {}
+    } catch (err) { console.error('[EvaluationBubble] fetchEvaluations', err); }
   }, [companyId]);
 
   useEffect(() => { fetchEvaluations(); }, [fetchEvaluations]);
@@ -70,7 +70,7 @@ export function EvaluationBubble({ companyId }: Props) {
   useEffect(() => {
     if (!open) return;
     evaluations.filter(e => !e.clientReadAt && e.adminMessage).forEach(ev => {
-      fetch(`/api/evaluations/${ev.id}/read`, { method: 'PATCH' }).catch(() => {});
+      fetch(`/api/evaluations/${ev.id}/read`, { method: 'PATCH' }).catch(err => console.error('[EvaluationBubble] markRead', err));
     });
   }, [open, evaluations]);
 
@@ -99,7 +99,7 @@ export function EvaluationBubble({ companyId }: Props) {
         body: JSON.stringify({ reply: replyText.trim() }),
       });
       if (res.ok) { setReplyText(''); await fetchEvaluations(); }
-    } catch {} finally { setSending(false); }
+    } catch (err) { console.error('[EvaluationBubble] handleReply', err); } finally { setSending(false); }
   };
 
   // Per-message emoji reaction (atomic update via messageIndex)
@@ -127,7 +127,7 @@ export function EvaluationBubble({ companyId }: Props) {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messageIndex: idx, reaction: newReaction }),
         });
-      } catch {}
+      } catch (err) { console.error('[EvaluationBubble] handleMessageReaction', err); }
       break;
     }
   };

@@ -153,8 +153,8 @@ export function ClientPlatformPage({
             });
             const monthKpis = extractKPIs(platform.platformKey, response.charts);
             allMonthKpis.push(monthKpis);
-          } catch {
-            // Skip failed months
+          } catch (err) {
+            console.error('[ClientPlatformPage] fetchMonth skipped', err);
           }
         }
 
@@ -210,7 +210,7 @@ export function ClientPlatformPage({
       fetch(`/api/analysis/client?month=${year}-${mm}`)
         .then(r => r.json())
         .then(data => setMonthlyAnalysis(data.content ?? null))
-        .catch(() => {});
+        .catch(err => console.error('[ClientPlatformPage] fetchAnalysis', err));
     }
   } catch (err) {
     setError(err instanceof Error ? err.message : t('Hiba történt'));

@@ -123,7 +123,7 @@ export async function POST(req: Request) {
                         results.push({ accountId, accountName, status: 'activated', method: 'activate-endpoint' });
                         continue;
                     }
-                } catch { /* try next method */ }
+                } catch (err) { console.error('[Windsor] activate method failed, trying next', err); }
 
                 // Try updating via PATCH
                 try {
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
                         results.push({ accountId, accountName, status: 'activated', method: 'patch' });
                         continue;
                     }
-                } catch { /* try next method */ }
+                } catch (err) { console.error('[Windsor] activate method failed, trying next', err); }
 
                 // Try PUT
                 try {
@@ -155,7 +155,7 @@ export async function POST(req: Request) {
                         results.push({ accountId, accountName, status: 'activated', method: 'put' });
                         continue;
                     }
-                } catch { /* try next method */ }
+                } catch (err) { console.error('[Windsor] activate method failed, trying next', err); }
 
                 results.push({ accountId, accountName, status: 'failed_to_activate' });
             }

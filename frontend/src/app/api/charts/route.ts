@@ -274,7 +274,7 @@ async function fetchFacebookDirectData(pageId: string, token: string, dateFrom: 
           { signal: AbortSignal.timeout(10000) }
         ).then(r => r.json()) as any;
         if (!fansJson.error) fanCount = fansJson.fan_count ?? 0;
-      } catch { /* ignore */ }
+      } catch (err) { console.error('[Charts API] fanCount fetch', err); }
 
       for (const [, day] of byDate) {
         rows.push({
@@ -342,7 +342,7 @@ async function fetchFacebookDirectData(pageId: string, token: string, dateFrom: 
             post_shares: shareCount,
             post_video_views: 0,
           };
-        } catch { return null; }
+        } catch (err) { console.error('[Charts API] FB post fetch', err); return null; }
       }));
       for (const p of fetched) { if (p) postRows.push(p); }
     }
@@ -476,7 +476,7 @@ async function fetchInstagramDirectData(igUserId: string, token: string, dateFro
             media_views: m.plays ?? m.impressions ?? null,
             media_reel_video_views: m.plays ?? null,
           };
-        } catch { return null; }
+        } catch (err) { console.error('[Charts API] IG media fetch', err); return null; }
       }));
       for (const m of mediaRows) { if (m) rows.push(m); }
     }
@@ -757,7 +757,7 @@ export async function POST(req: Request) {
             try {
               const token = decrypt((connection.metadata as any).encryptedAccessToken as string);
               data = await enrichYouTubeVideoTitles(data, token);
-            } catch { /* title enrichment is best-effort */ }
+            } catch (err) { console.error('[Charts API] YouTube title enrichment', err); }
           }
 
           const generator = new ChartGenerator(data, startDate, endDate);

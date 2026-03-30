@@ -68,8 +68,8 @@ function QuickEvaluation({ companyId, platformKey, month }: { companyId: string;
       setSent(true);
       setText('');
       setTimeout(() => { setSent(false); setOpen(false); }, 1500);
-    } catch {
-      // silent fail
+    } catch (err) {
+      console.error('[QuickEvaluation] handleSend', err);
     } finally {
       setSending(false);
     }
@@ -219,7 +219,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     fetch('/api/billing/subscription', { credentials: 'include' })
       .then(res => res.json())
       .then(data => setUserTier(data?.tier || 'FREE'))
-      .catch(() => {});
+      .catch(err => console.error('[PlatformChartsPage] fetchSubscription', err));
   }, [platform.platformKey]);
 
   // Fetch connections when company changes
@@ -278,8 +278,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
             const monthKpis = extractKPIs(platform.platformKey, response.charts);
             allMonthKpis.push(monthKpis);
             lastMonthCharts = response.charts; // keep last month's charts for display
-          } catch {
-            // Skip failed months
+          } catch (err) {
+            console.error('[PlatformChartsPage] fetchMonth skipped', err);
           }
         }
 
@@ -312,8 +312,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                   endDate,
                   charts: platformChartKeys.map(key => ({ key })),
                 });
-              } catch {
-                // Retry once after 2s
+              } catch (err) {
+                console.error('[PlatformChartsPage] chart fetch retry', err);
                 await new Promise(r => setTimeout(r, 2000));
                 return generateCharts({
                   accountId: company.id,

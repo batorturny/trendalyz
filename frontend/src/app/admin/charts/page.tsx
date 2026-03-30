@@ -821,8 +821,8 @@ export default function AdminChartsPage() {
             }
             lastMonthCharts = response.charts;
             successCount++;
-          } catch {
-            // Skip failed months
+          } catch (err) {
+            console.error('[AdminCharts] fetchMonth skipped', err);
           }
         }
 

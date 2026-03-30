@@ -124,11 +124,11 @@ export function inviteEmailHtml(companyName: string, token: string): string {
   const url = `${BASE_URL}/set-password?token=${token}`;
   return layout(`
     ${heading('Meghívást kaptál!')}
-    ${paragraph(`A <strong>${companyName}</strong> cég meghívott, hogy tekintsd meg a havi social media riportjaidat a Trendalyz platformon.`)}
+    ${paragraph(`A <strong>${escapeHtml(companyName)}</strong> cég meghívott, hogy tekintsd meg a havi social media riportjaidat a Trendalyz platformon.`)}
     ${paragraph('Kattints az alábbi gombra a fiókod aktiválásához és a jelszavad beállításához:')}
     ${button(url, 'Fiók aktiválása')}
     <p style="color:${BRAND.textMuted};font-size:12px;text-align:center;">Ez a link 24 órán belül lejár.</p>
-  `, `Meghívás a ${companyName} riportjaihoz — Trendalyz`);
+  `, `Meghívás a ${escapeHtml(companyName)} riportjaihoz — Trendalyz`);
 }
 
 export function resetPasswordEmailHtml(token: string): string {
@@ -162,7 +162,7 @@ export function evaluationReplyEmailHtml(opts: {
     </div>
 
     ${button(`${BASE_URL}/admin/evaluations`, 'Válaszok megtekintése')}
-  `, `${opts.companyName} válaszolt — Trendalyz`);
+  `, `${escapeHtml(opts.companyName)} válaszolt — Trendalyz`);
 }
 
 export function scheduledReportEmailHtml(opts: {
@@ -186,7 +186,7 @@ export function scheduledReportEmailHtml(opts: {
 
   return layout(`
     ${heading(`Elkészült a ${monthLabel} riportod!`)}
-    ${paragraph(`Kedves <strong>${opts.companyName}</strong>,`)}
+    ${paragraph(`Kedves <strong>${escapeHtml(opts.companyName)}</strong>,`)}
     ${paragraph(`A(z) <strong>${monthLabel}</strong> havi social media riportod elkészült és megtekinthető a Trendalyz dashboardon.`)}
 
     <div style="background:${BRAND.bg};border:1px solid ${BRAND.border};border-radius:12px;padding:20px;margin:20px 0;">
@@ -240,8 +240,8 @@ export function reportEmailHtml(opts: {
   const dashUrl = opts.dashboardUrl || `${BASE_URL}/dashboard`;
 
   return layout(`
-    ${heading(opts.companyName)}
-    ${paragraph(`${opts.platformLabel} riport — ${monthLabel}`)}
+    ${heading(escapeHtml(opts.companyName))}
+    ${paragraph(`${escapeHtml(opts.platformLabel)} riport — ${monthLabel}`)}
 
     <table style="width:100%;border-collapse:collapse;background:${BRAND.bg};border-radius:12px;overflow:hidden;">
       <thead>
@@ -257,5 +257,5 @@ export function reportEmailHtml(opts: {
 
     ${button(dashUrl, 'Teljes riport megtekintése')}
     <p style="color:${BRAND.textMuted};font-size:12px;text-align:center;">A részletes chartok és videóelemzés a dashboardon érhető el.</p>
-  `, `${opts.companyName} — ${opts.platformLabel} ${monthLabel} riport`);
+  `, `${escapeHtml(opts.companyName)} — ${escapeHtml(opts.platformLabel)} ${monthLabel} riport`);
 }

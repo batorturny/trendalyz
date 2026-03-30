@@ -1348,8 +1348,6 @@ if (ENABLE_BILLING) {
 // EVALUATION ENDPOINTS
 // ============================================
 
-const VALID_REACTIONS = ['👍', '❤️', '🔥', '🤔'];
-
 // GET /api/evaluations — list evaluations for a company
 app.get('/api/evaluations', requireCompanyAccess(req => req.query.companyId), async (req, res) => {
     try {
@@ -1456,39 +1454,6 @@ app.patch('/api/evaluations/:id/read', async (req, res) => {
     } catch (error) {
         console.error('Error marking evaluation as read:', error);
         res.status(500).json({ error: 'Failed to mark evaluation as read' });
-    }
-});
-
-// PATCH /api/evaluations/:id/react — add/clear reaction (client)
-app.patch('/api/evaluations/:id/react', async (req, res) => {
-    try {
-        const { reaction } = req.body;
-        if (reaction !== null && !VALID_REACTIONS.includes(reaction)) {
-            return res.status(400).json({ error: `Invalid reaction. Must be one of: ${VALID_REACTIONS.join(', ')} or null` });
-        }
-
-        const evaluation = await prisma.evaluation.findUnique({
-            where: { id: req.params.id },
-        });
-        if (!evaluation) {
-            return res.status(404).json({ error: 'Evaluation not found' });
-        }
-
-        if (req.userContext.role !== 'ADMIN' && evaluation.companyId !== req.userContext.companyId) {
-            return res.status(403).json({ error: 'Forbidden - No access to this evaluation' });
-        }
-
-        const updated = await prisma.evaluation.update({
-            where: { id: req.params.id },
-            data: {
-                clientReaction: reaction,
-                clientUserId: req.userContext.userId,
-            },
-        });
-        res.json(updated);
-    } catch (error) {
-        console.error('Error reacting to evaluation:', error);
-        res.status(500).json({ error: 'Failed to save reaction' });
     }
 });
 
