@@ -1329,6 +1329,18 @@ if (ENABLE_BILLING) {
         }
     });
 
+    // Manual trigger for scheduled notification emails (admin only)
+    app.post('/api/reports/trigger-notification', requireAdmin, async (req, res) => {
+        try {
+            const { runScheduledNotifications } = require('./services/scheduledNotificationJob');
+            const result = await runScheduledNotifications();
+            res.json({ success: true, ...result });
+        } catch (error) {
+            console.error('[ScheduledNotify] Manual trigger error:', error);
+            res.status(500).json({ error: 'Értesítés küldés sikertelen' });
+        }
+    });
+
     console.log('PDF generation route enabled');
 }
 
@@ -1559,5 +1571,13 @@ app.listen(PORT, async () => {
         } catch (err) {
             console.error('Failed to start monthly report job:', err.message);
         }
+    }
+
+    // Start scheduled report notification job (lightweight, no PDF — all active companies)
+    try {
+        const { startScheduledNotificationJob } = require('./services/scheduledNotificationJob');
+        startScheduledNotificationJob();
+    } catch (err) {
+        console.error('Failed to start scheduled notification job:', err.message);
     }
 });
