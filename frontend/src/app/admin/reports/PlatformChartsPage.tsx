@@ -80,7 +80,7 @@ function QuickEvaluation({ companyId, platformKey, month }: { companyId: string;
         className="text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
       >
         <span>{open ? '▾' : '▸'}</span>
-        <span>💬 Gyors értékelés küldése</span>
+        <span>Gyors értékelés küldése</span>
       </button>
       {open && (
         <div className="mt-3 space-y-2">
