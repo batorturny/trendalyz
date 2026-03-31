@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { BaseModal } from './BaseModal';
 import { BarChart3, MousePointerClick, FileDown, MessageCircle, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 
-const STORAGE_KEY = 'trendalyz-onboarding-seen-v1';
+export const ONBOARDING_STORAGE_KEY = 'trendalyz-onboarding-seen-v2';
 
 const STEPS = [
   {
@@ -39,19 +39,26 @@ const STEPS = [
   },
 ];
 
-export function OnboardingModal() {
+interface Props {
+  forceOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function OnboardingModal({ forceOpen, onClose }: Props = {}) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !localStorage.getItem(STORAGE_KEY)) {
+    if (forceOpen) { setOpen(true); setStep(0); return; }
+    if (typeof window !== 'undefined' && !localStorage.getItem(ONBOARDING_STORAGE_KEY)) {
       setOpen(true);
     }
-  }, []);
+  }, [forceOpen]);
 
   const handleClose = () => {
-    localStorage.setItem(STORAGE_KEY, '1');
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, '1');
     setOpen(false);
+    onClose?.();
   };
 
   const isLast = step === STEPS.length - 1;

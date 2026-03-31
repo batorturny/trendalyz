@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { extractKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
-import { Building2, Settings, MessageSquare } from 'lucide-react';
+import { Building2, Settings, MessageSquare, HelpCircle } from 'lucide-react';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
@@ -15,7 +15,7 @@ import { useT } from '@/lib/i18n';
 import { EvaluationBubble } from '@/components/EvaluationBubble';
 import { SkeletonKPI } from '@/components/SkeletonKPI';
 import { SkeletonChart } from '@/components/SkeletonChart';
-import { OnboardingModal } from '@/components/OnboardingModal';
+import { OnboardingModal, ONBOARDING_STORAGE_KEY } from '@/components/OnboardingModal';
 
 interface PlatformConfig {
   platformKey: string;
@@ -72,6 +72,7 @@ export function ClientPlatformPage({
     if (typeof window !== 'undefined') return (localStorage.getItem('trendalyz-chart-cols') === '2' ? 2 : 1) as 1 | 2;
     return 1;
   });
+  const [tourOpen, setTourOpen] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const companyId = session?.user?.companyId;
@@ -272,9 +273,18 @@ export function ClientPlatformPage({
 
   return (
     <div>
-      <OnboardingModal />
+      <OnboardingModal forceOpen={tourOpen} onClose={() => setTourOpen(false)} />
       {/* Controls */}
       <div data-no-print className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-[var(--shadow-card)]">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setTourOpen(true)}
+            className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            Hogyan működik?
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Hónap')}</label>
@@ -360,9 +370,13 @@ export function ClientPlatformPage({
                           })()
                       }
                     </p>
-                    <p className="text-[10px] text-[var(--text-secondary)] opacity-60 hidden sm:block">
-                      💡 Kattints a számokra a részletes magyarázathoz
-                    </p>
+                    <button
+                      onClick={() => setTourOpen(true)}
+                      className="hidden sm:flex items-center gap-1 text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                    >
+                      <HelpCircle className="w-3 h-3" />
+                      Kattints a számokra a magyarázathoz
+                    </button>
                   </div>
                   <div
                     className="kpi-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3"
