@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, memo, useMemo } from 'react';
+import { useRef, memo, useMemo, useState } from 'react';
 import { useTheme } from './ThemeProvider';
 import {
   Chart as ChartJS,
@@ -36,11 +36,13 @@ interface ChartProps {
   height?: number;
   title?: string;
   beginAtZero?: boolean;
+  description?: string;
 }
 
-export const Chart = memo(function Chart({ type, labels, data, label, color = '#1a6b8a', height = 300, title, beginAtZero: beginAtZeroProp }: ChartProps) {
+export const Chart = memo(function Chart({ type, labels, data, label, color = '#1a6b8a', height = 300, title, beginAtZero: beginAtZeroProp, description }: ChartProps) {
   const { theme } = useTheme();
   const chartRef = useRef<ChartJS<'bar' | 'line'>>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   // Auto-detect beginAtZero: if the data range is small relative to max, zoom in
   const beginAtZero = (() => {
@@ -170,7 +172,22 @@ export const Chart = memo(function Chart({ type, labels, data, label, color = '#
 
   return (
     <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-card)]">
-      <div className="text-[var(--text-secondary)] text-xs font-bold uppercase mb-3">{title || label}</div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[var(--text-secondary)] text-xs font-bold uppercase">{title || label}</div>
+        {description && (
+          <div className="relative">
+            <button
+              onClick={() => setInfoOpen(v => !v)}
+              className="w-5 h-5 rounded-full border border-[var(--border)] text-[var(--text-secondary)] text-[10px] font-bold flex items-center justify-center hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+            >?</button>
+            {infoOpen && (
+              <div className="absolute right-0 top-7 z-50 w-64 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-lg p-3">
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{description}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <div style={{ height }}>
         {type === 'bar' ? (
           <Bar ref={chartRef as any} data={chartData} options={options as ChartOptions<'bar'>} />

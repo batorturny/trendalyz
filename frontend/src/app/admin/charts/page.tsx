@@ -11,6 +11,7 @@ import { KPICard as PlatformKPICard } from '@/components/KPICard';
 import { CalendarDays, ChevronDown, ChevronRight, Check, BarChart3, Eye, Heart, MessageCircle, Share2, Video, Users, TrendingUp } from 'lucide-react';
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 import { PLATFORM_METRICS, PLATFORM_ORDER, DISABLED_PLATFORMS, type MetricItem, type PlatformMetricConfig } from '@/lib/platformMetrics';
+import { QuickEvaluation } from '@/components/QuickEvaluation';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -1087,6 +1088,7 @@ export default function AdminChartsPage() {
                       <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} description={kpi.description} />
                     ))}
                   </div>
+                  <QuickEvaluation companyId={selectedCompany} platformKey={platKey} month={startMonth} />
                 </div>
               );
             })}

@@ -447,6 +447,7 @@ export function ClientPlatformPage({
                         label={chart.data?.series?.[0]?.name || chart.title}
                         color={chart.color}
                         title={chart.title}
+                        description={chart.description || undefined}
                       />
                     );
                   })}
