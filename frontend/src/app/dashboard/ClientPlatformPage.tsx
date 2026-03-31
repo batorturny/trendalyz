@@ -15,6 +15,7 @@ import { useT } from '@/lib/i18n';
 import { EvaluationBubble } from '@/components/EvaluationBubble';
 import { SkeletonKPI } from '@/components/SkeletonKPI';
 import { SkeletonChart } from '@/components/SkeletonChart';
+import { OnboardingModal } from '@/components/OnboardingModal';
 
 interface PlatformConfig {
   platformKey: string;
@@ -271,6 +272,7 @@ export function ClientPlatformPage({
 
   return (
     <div>
+      <OnboardingModal />
       {/* Controls */}
       <div data-no-print className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-4 md:mb-8 shadow-[var(--shadow-card)]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
@@ -346,20 +348,22 @@ export function ClientPlatformPage({
               });
               return displayKpis.length > 0 ? (
                 <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-4 md:p-6">
-                  {periodMonths > 1 && (
-                    <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                      {t('Összesített KPI-ok')} ({aggregatedCount} {t('hónap')})
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-bold text-[var(--text-secondary)] uppercase">
+                      {periodMonths > 1
+                        ? `${t('Összesített KPI-ok')} (${aggregatedCount} ${t('hónap')})`
+                        : (() => {
+                            if (!selectedMonth) return '';
+                            const [y, mo] = selectedMonth.split('-').map(Number);
+                            const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+                            return `${y}. ${MONTHS[mo - 1]} ${t('számai')}`;
+                          })()
+                      }
                     </p>
-                  )}
-                  {periodMonths === 1 && selectedMonth && (() => {
-                    const [y, mo] = selectedMonth.split('-').map(Number);
-                    const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
-                    return (
-                      <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                        {y}. {MONTHS[mo - 1]} {t('számai')}
-                      </p>
-                    );
-                  })()}
+                    <p className="text-[10px] text-[var(--text-secondary)] opacity-60 hidden sm:block">
+                      💡 Kattints a számokra a részletes magyarázathoz
+                    </p>
+                  </div>
                   <div
                     className="kpi-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3"
                   >
