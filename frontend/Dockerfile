@@ -16,6 +16,14 @@ COPY frontend/ ./
 COPY prisma/ /app/prisma/
 COPY package.json /app/package.json
 
+# Prisma 6+ infers /app as project root (root package.json declares @prisma/client).
+# Without a root node_modules it tries `npm i @prisma/client` and fails with exit 217.
+# Link from the already-installed copy in the frontend workspace.
+RUN mkdir -p /app/node_modules && \
+    ln -sfn /app/frontend/node_modules/@prisma /app/node_modules/@prisma && \
+    ln -sfn /app/frontend/node_modules/.prisma /app/node_modules/.prisma && \
+    ln -sfn /app/frontend/node_modules/prisma /app/node_modules/prisma
+
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
