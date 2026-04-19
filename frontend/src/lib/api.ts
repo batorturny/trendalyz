@@ -171,6 +171,8 @@ export async function generateCharts(params: {
     startDate: string;
     endDate: string;
     charts: { key: string; params?: Record<string, unknown> }[];
+    externalAccountId?: string;
+    provider?: string;
 }): Promise<ChartsResponse> {
     const response = await fetch('/api/charts', {
         method: 'POST',

@@ -647,7 +647,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { accountId, startDate, endDate, charts } = await req.json();
+    const { accountId, startDate, endDate, charts, externalAccountId, provider } = await req.json();
 
     if (!accountId || !startDate || !endDate || !charts || !Array.isArray(charts)) {
       return NextResponse.json({ error: 'accountId, startDate, endDate, and charts array are required' }, { status: 400 });
@@ -684,17 +684,34 @@ export async function POST(req: Request) {
         ],
       },
       select: { provider: true, externalAccountId: true, metadata: true },
+      orderBy: [{ provider: 'asc' }, { createdAt: 'asc' }],
     });
-    const platformConnections = new Map<string, { externalAccountId: string; metadata: any }>(
-      connections.map(c => [c.provider, { externalAccountId: c.externalAccountId, metadata: c.metadata }])
-    );
+
+    // Security: if caller requested a specific externalAccountId, it must belong to this company.
+    if (externalAccountId && !connections.some(c => c.externalAccountId === externalAccountId && (!provider || c.provider === provider))) {
+      return NextResponse.json({ error: 'Forbidden: account does not belong to company' }, { status: 403 });
+    }
+
+    // Build per-platform connection: if externalAccountId provided, pick that one for its platform.
+    // For other platforms, fall back to the first connection (legacy behavior).
+    const platformConnections = new Map<string, { externalAccountId: string; metadata: any }>();
+    for (const c of connections) {
+      if (platformConnections.has(c.provider)) continue;
+      if (externalAccountId && provider && c.provider === provider) {
+        // Skip until we see the selected one
+        if (c.externalAccountId !== externalAccountId) continue;
+      }
+      platformConnections.set(c.provider, { externalAccountId: c.externalAccountId, metadata: c.metadata });
+    }
+    // If a specific account was requested but not yet set (ordering miss), override explicitly.
+    if (externalAccountId && provider) {
+      const match = connections.find(c => c.provider === provider && c.externalAccountId === externalAccountId);
+      if (match) platformConnections.set(provider, { externalAccountId: match.externalAccountId, metadata: match.metadata });
+    }
+
     if (!platformConnections.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
       platformConnections.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null });
     }
-    // Keep backward-compat map for Windsor
-    const platformAccounts = new Map<string, string>(
-      Array.from(platformConnections.entries()).map(([p, c]) => [p, c.externalAccountId])
-    );
 
     // Group charts by platform
     const chartsByPlatform = new Map<string, any[]>();

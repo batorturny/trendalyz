@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
 import { extractKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
-import { Building2, Settings, MessageSquare, HelpCircle } from 'lucide-react';
+import { Building2, Settings, MessageSquare, HelpCircle, ChevronDown } from 'lucide-react';
+import type { IntegrationConnection } from '@/types/integration';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
@@ -73,9 +74,16 @@ export function ClientPlatformPage({
     return 1;
   });
   const [tourOpen, setTourOpen] = useState(false);
+  const [platformConnections, setPlatformConnections] = useState<IntegrationConnection[]>([]);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const companyId = session?.user?.companyId;
+
+  const selectedConnection = useMemo(
+    () => platformConnections.find(c => c.id === selectedConnectionId) ?? null,
+    [platformConnections, selectedConnectionId]
+  );
 
   // Always show dashboard — if no config, show everything
   const isConfigured = true;
@@ -128,6 +136,35 @@ export function ClientPlatformPage({
       .catch(() => setError(t('Nem sikerült betölteni a chart katalógust')));
   }, []);
 
+  // Fetch connections for this company, filter to current platform
+  useEffect(() => {
+    if (!companyId || status !== 'authenticated') return;
+    let cancelled = false;
+    fetch('/api/connections', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then((all: IntegrationConnection[]) => {
+        if (cancelled) return;
+        const filtered = (Array.isArray(all) ? all : [])
+          .filter(c => c.provider === platform.platformKey)
+          .filter(c => c.status === 'CONNECTED' || ((platform.platformKey === 'FACEBOOK_ORGANIC' || platform.platformKey === 'INSTAGRAM_ORGANIC') && c.status === 'ERROR'));
+        setPlatformConnections(filtered);
+        // Pick remembered selection or first
+        const storageKey = `trendalyz-acc-${companyId}-${platform.platformKey}`;
+        const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+        const initial = filtered.find(c => c.id === stored) ?? filtered[0] ?? null;
+        setSelectedConnectionId(initial?.id ?? null);
+      })
+      .catch(err => console.error('[ClientPlatformPage] connections fetch', err));
+    return () => { cancelled = true; };
+  }, [companyId, status, platform.platformKey]);
+
+  // Persist selected account per company+platform
+  useEffect(() => {
+    if (!companyId || !selectedConnectionId) return;
+    const storageKey = `trendalyz-acc-${companyId}-${platform.platformKey}`;
+    try { localStorage.setItem(storageKey, selectedConnectionId); } catch { /* ignore quota errors */ }
+  }, [companyId, platform.platformKey, selectedConnectionId]);
+
   const handleGenerate = useCallback(async () => {
     if (!companyId || !selectedMonth || platformChartKeys.length === 0) return;
 
@@ -138,6 +175,10 @@ export function ClientPlatformPage({
     setAggregatedCount(0);
     setPrevMonthKpis(null);
     setMonthlyAnalysis(null);
+
+    const accountParams = selectedConnection
+      ? { externalAccountId: selectedConnection.externalAccountId, provider: selectedConnection.provider }
+      : {};
 
     try {
       if (periodMonths > 1) {
@@ -152,6 +193,7 @@ export function ClientPlatformPage({
               startDate: range.startDate,
               endDate: range.endDate,
               charts: platformChartKeys.map(key => ({ key })),
+              ...accountParams,
             });
             const monthKpis = extractKPIs(platform.platformKey, response.charts);
             allMonthKpis.push(monthKpis);
@@ -188,12 +230,14 @@ export function ClientPlatformPage({
             startDate,
             endDate,
             charts: platformChartKeys.map(key => ({ key })),
+            ...accountParams,
           }),
           generateCharts({
             accountId: companyId,
             startDate: prevStartDate,
             endDate: prevEndDate,
             charts: platformChartKeys.map(key => ({ key })),
+            ...accountParams,
           }).catch(() => null),
         ]);
 
@@ -219,7 +263,7 @@ export function ClientPlatformPage({
   } finally {
     setLoading(false);
   }
-  }, [companyId, selectedMonth, platformChartKeys, periodMonths, platform.platformKey]);
+  }, [companyId, selectedMonth, platformChartKeys, periodMonths, platform.platformKey, selectedConnection]);
 
   // Auto-generate on first load
   useEffect(() => {
@@ -228,6 +272,16 @@ export function ClientPlatformPage({
       handleGenerate();
     }
   }, [companyId, selectedMonth, platformChartKeys, status, autoLoaded, handleGenerate, isConfigured]);
+
+  // Reload when the user switches accounts (after initial auto-load)
+  const lastLoadedConnIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoLoaded) return;
+    if (!selectedConnectionId) return;
+    if (lastLoadedConnIdRef.current === selectedConnectionId) return;
+    lastLoadedConnIdRef.current = selectedConnectionId;
+    handleGenerate();
+  }, [selectedConnectionId, autoLoaded, handleGenerate]);
 
   async function handleExportPdf() {
     setExporting(true);
@@ -285,6 +339,30 @@ export function ClientPlatformPage({
             Hogyan működik?
           </button>
         </div>
+        {platformConnections.length > 1 && (
+          <div className="mb-4">
+            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">
+              {t('Fiók')} <span className="text-[var(--text-secondary)]/70 normal-case font-normal">({platformConnections.length})</span>
+            </label>
+            <div className="relative">
+              <select
+                value={selectedConnectionId ?? ''}
+                onChange={(e) => setSelectedConnectionId(e.target.value || null)}
+                disabled={loading}
+                className="w-full appearance-none bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl px-4 py-3 pr-10 text-sm font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderLeftWidth: 4, borderLeftColor: platform.borderColor }}
+              >
+                {platformConnections.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.externalAccountName || c.externalAccountId}
+                    {c.status === 'ERROR' ? ` — ${t('hiba')}` : ''}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-[var(--text-secondary)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           <div>
             <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Hónap')}</label>

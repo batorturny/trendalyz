@@ -770,7 +770,7 @@ if (ENABLE_CHART_API) {
     // Generate charts
     app.post('/api/charts', apiLimiter, requireCompanyAccess(req => req.body.accountId), async (req, res) => {
         try {
-            const { accountId, startDate, endDate, charts, forceRefresh } = req.body;
+            const { accountId, startDate, endDate, charts, forceRefresh, externalAccountId, provider } = req.body;
 
             // Validate required fields
             if (!accountId || !startDate || !endDate || !charts || !Array.isArray(charts)) {
@@ -806,6 +806,27 @@ if (ENABLE_CHART_API) {
 
             // Resolve all platform accounts for this company
             const platformAccounts = await resolvePlatformAccounts(company);
+
+            // If caller requested a specific account, override the map entry for that provider.
+            // Security: verify the account belongs to this company.
+            if (externalAccountId && provider) {
+                const override = await prisma.integrationConnection.findFirst({
+                    where: {
+                        companyId: company.id,
+                        provider,
+                        externalAccountId,
+                        OR: [
+                            { status: 'CONNECTED' },
+                            { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
+                        ],
+                    },
+                    select: { provider: true, externalAccountId: true, metadata: true },
+                });
+                if (!override) {
+                    return res.status(403).json({ error: 'Forbidden: account does not belong to company' });
+                }
+                platformAccounts.set(provider, override);
+            }
 
             // Group requested charts by platform
             const chartsByPlatform = new Map();
