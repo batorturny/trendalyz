@@ -7,7 +7,7 @@ import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { MonthPicker } from '@/components/MonthPicker';
-import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
+import { AccountPicker, ALL_ACCOUNTS_ID, buildAccountList, type AccountSelection } from '@/components/AccountPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { Loader2, Mail, AlertTriangle, FileDown } from 'lucide-react';
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
@@ -52,7 +52,8 @@ function bestCols(count: number): number {
 export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [allCatalog, setAllCatalog] = useState<ChartDefinition[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedAccountKey, setSelectedAccountKey] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState<AccountSelection | null>(null);
   const [selectedMonth, setSelectedMonth] = useState('');
   const [periodMonths, setPeriodMonths] = useState(1);
   const [results, setResults] = useState<ChartData[]>([]);
@@ -62,8 +63,6 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [companyConnections, setCompanyConnections] = useState<string[]>([]);
-  const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [prevMonthKpis, setPrevMonthKpis] = useState<KPI[] | null>(null);
   const [userTier, setUserTier] = useState<string>('FREE');
   const [pdfExporting, setPdfExporting] = useState(false);
@@ -75,15 +74,16 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   });
   const reportRef = useRef<HTMLDivElement>(null);
 
-  const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
+  const isAllCompanies = selectedAccountKey === ALL_ACCOUNTS_ID;
+  const selectedCompany = selectedAccount?.companyId ?? '';
 
-  // Filter companies to only those with an active connection for this platform
-  const platformCompanies = useMemo(
-    () => companies.filter(c => c.connectedPlatforms?.includes(platform.platformKey)),
+  // Flat list of all accounts across companies for this platform — drives the AccountPicker.
+  const platformAccounts = useMemo(
+    () => buildAccountList(companies, platform.platformKey),
     [companies, platform.platformKey]
   );
 
-  // Get dashboardConfig for selected company
+  // Get dashboardConfig for selected company (behind the picked account)
   const selectedCompanyObj = useMemo(
     () => companies.find(c => c.id === selectedCompany),
     [companies, selectedCompany]
@@ -134,9 +134,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       .filter(section => section.charts.length > 0);
   }, [platformCatalog, results, isAllCompanies, dashboardConfig]);
 
-  // Check if platform is available for selected company
-  const platformAvailable = !selectedCompany || isAllCompanies ||
-    companyConnections.includes(platform.platformKey);
+  // Account is "available" once a selection exists; aggregate mode is always available.
+  const platformAvailable = isAllCompanies || !!selectedAccount;
 
   useEffect(() => {
     const now = new Date();
@@ -157,29 +156,9 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       .catch(err => console.error('[PlatformChartsPage] fetchSubscription', err));
   }, [platform.platformKey]);
 
-  // Fetch connections when company changes
-  useEffect(() => {
-    if (selectedCompany && selectedCompany !== ALL_COMPANIES_ID) {
-      setConnectionsLoading(true);
-      fetch(`/api/admin/connections/${selectedCompany}`, { credentials: 'include' })
-        .then(res => res.json())
-        .then((conns: any[]) => {
-          setCompanyConnections(Array.isArray(conns) ? conns.map((c: any) => c.provider) : []);
-        })
-        .catch(() => setCompanyConnections([]))
-        .finally(() => setConnectionsLoading(false));
-    } else {
-      setCompanyConnections([]);
-    }
-  }, [selectedCompany]);
-
   async function handleGenerate() {
-    if (!selectedCompany) {
-      setError('Válassz céget!');
-      return;
-    }
-    if (!platformAvailable) {
-      setError(`Ennek a cégnek nincs ${platform.label} integrációja beállítva`);
+    if (!isAllCompanies && !selectedAccount) {
+      setError('Válassz fiókot!');
       return;
     }
     if (platformChartKeys.length === 0) {
@@ -195,9 +174,14 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     setFailedCompanies([]);
     setPrevMonthKpis(null);
 
+    // Params identifying the picked account — backend uses these to override connection resolution.
+    const accountParams = selectedAccount
+      ? { externalAccountId: selectedAccount.externalAccountId, provider: selectedAccount.provider }
+      : {};
+
     try {
-      if (periodMonths > 1 && !isAllCompanies) {
-        // Multi-month: fetch each month separately, aggregate KPIs
+      if (periodMonths > 1 && !isAllCompanies && selectedAccount) {
+        // Multi-month: fetch each month separately for the picked account, aggregate KPIs
         const monthRanges = generateMonthRanges(selectedMonth, periodMonths);
         const allMonthKpis: KPI[][] = [];
         let lastMonthCharts: ChartData[] = [];
@@ -205,14 +189,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         for (const range of monthRanges) {
           try {
             const response = await generateCharts({
-              accountId: selectedCompany,
+              accountId: selectedAccount.companyId,
               startDate: range.startDate,
               endDate: range.endDate,
               charts: platformChartKeys.map(key => ({ key })),
+              ...accountParams,
             });
             const monthKpis = extractKPIs(platform.platformKey, response.charts);
             allMonthKpis.push(monthKpis);
-            lastMonthCharts = response.charts; // keep last month's charts for display
+            lastMonthCharts = response.charts;
           } catch (err) {
             console.error('[PlatformChartsPage] fetchMonth skipped', err);
           }
@@ -223,10 +208,10 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         } else {
           setAggregatedKPIs(aggregateMonthlyKPIs(allMonthKpis));
           setAggregatedCount(allMonthKpis.length);
-          setResults(lastMonthCharts); // show last month's charts
+          setResults(lastMonthCharts);
         }
       } else if (isAllCompanies) {
-        // All companies mode
+        // Aggregate mode: iterate every account on this platform (across companies)
         const [year, month] = selectedMonth.split('-').map(Number);
         const startDate = `${selectedMonth}-01`;
         const lastDay = new Date(year, month, 0).getDate();
@@ -236,38 +221,37 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         const allKpis: KPI[][] = [];
         const failed: Company[] = [];
 
-        for (let i = 0; i < platformCompanies.length; i += BATCH_SIZE) {
-          const batch = platformCompanies.slice(i, i + BATCH_SIZE);
+        for (let i = 0; i < platformAccounts.length; i += BATCH_SIZE) {
+          const batch = platformAccounts.slice(i, i + BATCH_SIZE);
           const batchResults = await Promise.allSettled(
-            batch.map(async (company) => {
-              try {
-                return await generateCharts({
-                  accountId: company.id,
-                  startDate,
-                  endDate,
-                  charts: platformChartKeys.map(key => ({ key })),
-                });
-              } catch (err) {
+            batch.map(async (acc) => {
+              const call = () => generateCharts({
+                accountId: acc.companyId,
+                startDate,
+                endDate,
+                charts: platformChartKeys.map(key => ({ key })),
+                externalAccountId: acc.externalAccountId,
+                provider: acc.provider,
+              });
+              try { return await call(); }
+              catch (err) {
                 console.error('[PlatformChartsPage] chart fetch retry', err);
                 await new Promise(r => setTimeout(r, 2000));
-                return generateCharts({
-                  accountId: company.id,
-                  startDate,
-                  endDate,
-                  charts: platformChartKeys.map(key => ({ key })),
-                });
+                return call();
               }
             })
           );
 
           batchResults.forEach((result, idx) => {
             if (result.status === 'fulfilled' && result.value.charts.length > 0) {
-              const companyKpis = extractKPIs(platform.platformKey, result.value.charts);
-              if (companyKpis.some(k => typeof k.value === 'number' && k.value > 0)) {
-                allKpis.push(companyKpis);
+              const accKpis = extractKPIs(platform.platformKey, result.value.charts);
+              if (accKpis.some(k => typeof k.value === 'number' && k.value > 0)) {
+                allKpis.push(accKpis);
               }
             } else {
-              failed.push(batch[idx]);
+              const acc = batch[idx];
+              const company = companies.find(c => c.id === acc.companyId);
+              if (company) failed.push(company);
             }
           });
         }
@@ -275,23 +259,23 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         setFailedCompanies(failed);
 
         if (allKpis.length === 0) {
-          setError('Egyik cégnek sincs adata ezen a platformon a kiválasztott hónapban');
+          setError('Egyik fióknak sincs adata ezen a platformon a kiválasztott hónapban');
         } else {
           setAggregatedKPIs(mergeKPIs(allKpis));
           setAggregatedCount(allKpis.length);
 
           if (failed.length > 0) {
-            setError(`${failed.length} cég adatait nem sikerült lekérni: ${failed.map(c => c.name).join(', ')}`);
+            const names = [...new Set(failed.map(c => c.name))].join(', ');
+            setError(`${failed.length} fiók adatait nem sikerült lekérni (${names})`);
           }
         }
-      } else {
-        // Single company, single month
+      } else if (selectedAccount) {
+        // Single account, single month
         const [year, month] = selectedMonth.split('-').map(Number);
         const startDate = `${selectedMonth}-01`;
         const lastDay = new Date(year, month, 0).getDate();
         const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
 
-        // Also fetch previous month for % change calculation
         const prevDate = new Date(year, month - 2, 1);
         const prevYear = prevDate.getFullYear();
         const prevMonth = prevDate.getMonth() + 1;
@@ -302,27 +286,27 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
         const [response, prevResponse] = await Promise.all([
           generateCharts({
-            accountId: selectedCompany,
+            accountId: selectedAccount.companyId,
             startDate,
             endDate,
             charts: platformChartKeys.map(key => ({ key })),
+            ...accountParams,
           }),
           generateCharts({
-            accountId: selectedCompany,
+            accountId: selectedAccount.companyId,
             startDate: prevStartDate,
             endDate: prevEndDate,
             charts: platformChartKeys.map(key => ({ key })),
+            ...accountParams,
           }).catch(() => null),
         ]);
 
         setResults(response.charts);
 
-        // Compute KPI changes vs previous month
         if (prevResponse?.charts) {
           const currentKpis = extractKPIs(platform.platformKey, response.charts);
           const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
-          const kpisWithChange = computeKPIChanges(currentKpis, prevKpis);
-          setPrevMonthKpis(kpisWithChange);
+          setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
         }
       }
     } catch (err) {
@@ -359,11 +343,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég kiválasztása</label>
-              <CompanyPicker
-                companies={platformCompanies}
-                value={selectedCompany}
-                onChange={setSelectedCompany}
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Fiók kiválasztása</label>
+              <AccountPicker
+                companies={companies}
+                platformKey={platform.platformKey}
+                value={selectedAccountKey}
+                onChange={(key, sel) => {
+                  setSelectedAccountKey(key);
+                  setSelectedAccount(sel);
+                }}
                 showAll
               />
             </div>
@@ -435,12 +423,12 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
             </div>
           </div>
 
-          {/* Platform not available warning */}
-          {selectedCompany && !isAllCompanies && !connectionsLoading && !platformAvailable && (
+          {/* No accounts configured on this platform */}
+          {platformAccounts.length === 0 && (
             <div className="mt-4 flex items-center gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 text-amber-700 dark:text-amber-300">
               <AlertTriangle className="w-5 h-5 shrink-0" />
               <span className="text-sm font-medium">
-                Ennek a cégnek nincs <strong>{platform.label}</strong> integrációja beállítva.
+                Még egyik cégnél sincs <strong>{platform.label}</strong> fiók konfigurálva.
                 Először adj hozzá egy {platform.label} kapcsolatot a cég beállításainál.
               </span>
             </div>

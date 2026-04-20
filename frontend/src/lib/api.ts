@@ -1,12 +1,21 @@
 // API client for backend communication
 // All calls go through Next.js API proxy routes (same origin)
 
+export interface CompanyConnectionLite {
+    id: string;
+    provider: string;
+    status: string;
+    externalAccountId: string;
+    externalAccountName: string | null;
+}
+
 export interface Company {
     id: string;
     name: string;
     dashboardConfig?: Record<string, { kpis: string[]; charts: string[] }> | null;
     dashboardNotes?: Record<string, string> | null;
     connectedPlatforms?: string[];
+    connections?: CompanyConnectionLite[];
 }
 
 export interface ReportRequest {

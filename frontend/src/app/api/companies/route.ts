@@ -25,8 +25,20 @@ export async function GET() {
         dashboardConfig: true,
         dashboardNotes: true,
         connections: {
-          where: { status: 'CONNECTED' },
-          select: { provider: true, externalAccountId: true },
+          where: {
+            OR: [
+              { status: 'CONNECTED' },
+              { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
+            ],
+          },
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            externalAccountId: true,
+            externalAccountName: true,
+          },
+          orderBy: [{ provider: 'asc' }, { createdAt: 'asc' }],
         },
       },
       orderBy: { name: 'asc' },
