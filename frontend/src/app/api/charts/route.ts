@@ -778,10 +778,10 @@ export async function POST(req: Request) {
           }
 
           const generator = new ChartGenerator(data, startDate, endDate);
-          return platformCharts.map((c: any) => {
-            try { return generator.generate(c.key, c.params || {}); }
+          return Promise.all(platformCharts.map(async (c: any) => {
+            try { return await generator.generate(c.key, c.params || {}); }
             catch (e: any) { return { key: c.key, error: e.message, empty: true }; }
-          });
+          }));
         } catch (e: any) {
           console.error(`[CHART API] ${platform} error:`, e.message);
           return platformCharts.map((c: any) => ({ key: c.key, error: e.message, empty: true }));

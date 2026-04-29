@@ -891,17 +891,18 @@ if (ENABLE_CHART_API) {
                     }
 
                     const generator = new ChartGenerator(platformData, startDate, endDate);
-                    return platformCharts.map(chartReq => {
+                    return Promise.all(platformCharts.map(async (chartReq) => {
                         try {
-                            return generator.generate(chartReq.key, chartReq.params || {});
+                            return await generator.generate(chartReq.key, chartReq.params || {});
                         } catch (error) {
+                            console.error(`[CHART API] generate(${chartReq.key}) failed:`, error?.message || error);
                             return {
                                 key: chartReq.key,
                                 error: 'Chart generation failed',
                                 empty: true
                             };
                         }
-                    });
+                    }));
                 } catch (error) {
                     console.error(`[CHART API] ${platform} fetch error:`, error.message);
                     return platformCharts.map(chartReq => ({

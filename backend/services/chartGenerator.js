@@ -3,6 +3,7 @@
 // ============================================
 
 const { chartCatalog } = require('../config/chartCatalog');
+const { filterAvailableTikTokVideos } = require('./tiktokAvailability');
 
 class ChartGenerator {
     constructor(windsorData, startDate = null, endDate = null) {
@@ -59,7 +60,7 @@ class ChartGenerator {
         });
     }
 
-    generate(chartKey, params = {}) {
+    async generate(chartKey, params = {}) {
         const chartDef = chartCatalog.find(c => c.key === chartKey);
         if (!chartDef) throw new Error(`Unknown chart: ${chartKey}`);
 
@@ -68,7 +69,7 @@ class ChartGenerator {
             return this.generateGeneric(chartDef, params);
         }
 
-        const chartData = this[methodName](params);
+        const chartData = await this[methodName](params);
         return {
             key: chartKey,
             title: chartDef.title,
@@ -303,14 +304,27 @@ class ChartGenerator {
 
     // ===== VIDEO TABLES =====
 
-    generate_all_videos() { return this.generateVideoTable(this.video); }
-    generate_top_3_videos() {
-        const deduped = this._dedupeVideos(this.video);
+    async _availableVideos() {
+        // Memoize per-instance: every video chart on the same generator shares the same filter result.
+        if (!this._availableVideosPromise) {
+            this._availableVideosPromise = filterAvailableTikTokVideos(this.video);
+        }
+        return this._availableVideosPromise;
+    }
+
+    async generate_all_videos() {
+        const live = await this._availableVideos();
+        return this.generateVideoTable(live);
+    }
+    async generate_top_3_videos() {
+        const live = await this._availableVideos();
+        const deduped = this._dedupeVideos(live);
         const sorted = [...deduped].sort((a, b) => b._maxViews - a._maxViews);
         return this._buildVideoTable(sorted.slice(0, 3));
     }
-    generate_worst_3_videos() {
-        const deduped = this._dedupeVideos(this.video).filter(v => v._maxViews > 0);
+    async generate_worst_3_videos() {
+        const live = await this._availableVideos();
+        const deduped = this._dedupeVideos(live).filter(v => v._maxViews > 0);
         const sorted = [...deduped].sort((a, b) => a._maxViews - b._maxViews);
         return this._buildVideoTable(sorted.slice(0, 3));
     }
