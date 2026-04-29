@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData, ChartsResponse } from '@/lib/api';
-import { extractKPIs, aggregateMonthlyKPIs, generateMonthRanges, KPI } from '@/lib/chartHelpers';
+import { Company, CompanyConnectionLite, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData, ChartsResponse } from '@/lib/api';
+import { extractKPIs, aggregateAccountKPIs, KPI } from '@/lib/chartHelpers';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
@@ -19,41 +19,66 @@ import { QuickEvaluation } from '@/components/QuickEvaluation';
 
 // ... (omitted)
 
-function toMonthStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+function toIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function monthToStartDate(m: string): string {
-  return `${m}-01`;
-}
-
-function monthToEndDate(m: string): string {
-  const [y, mo] = m.split('-').map(Number);
-  const last = new Date(y, mo, 0);
-  return last.toISOString().split('T')[0];
-}
-
-function formatMonthLabel(m: string): string {
-  const [y, mo] = m.split('-').map(Number);
-  const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
-  return `${y}. ${MONTHS[mo - 1]}`;
-}
-
-function getMonthOptions(count: number): string[] {
-  const result: string[] = [];
+function previousMonthRange(): { start: string; end: string } {
   const now = new Date();
-  for (let i = 0; i < count; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    result.push(toMonthStr(d));
-  }
-  return result;
+  const firstOfThis = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastOfPrev = new Date(firstOfThis.getTime() - 24 * 60 * 60 * 1000);
+  const firstOfPrev = new Date(lastOfPrev.getFullYear(), lastOfPrev.getMonth(), 1);
+  return { start: toIsoDate(firstOfPrev), end: toIsoDate(lastOfPrev) };
 }
 
-type Preset = { label: string; months: number };
+type Preset = { label: string; range: () => { start: string; end: string } };
 const PRESETS: Preset[] = [
-  { label: 'Elmúlt hónap', months: 1 },
-  { label: 'Elmúlt 3 hónap', months: 3 },
-  { label: 'Elmúlt 6 hónap', months: 6 },
+  {
+    label: 'Tegnap',
+    range: () => {
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      const iso = toIsoDate(y);
+      return { start: iso, end: iso };
+    },
+  },
+  {
+    label: 'Elmúlt 7 nap',
+    range: () => {
+      const end = new Date(); end.setDate(end.getDate() - 1);
+      const start = new Date(end); start.setDate(end.getDate() - 6);
+      return { start: toIsoDate(start), end: toIsoDate(end) };
+    },
+  },
+  {
+    label: 'Elmúlt 30 nap',
+    range: () => {
+      const end = new Date(); end.setDate(end.getDate() - 1);
+      const start = new Date(end); start.setDate(end.getDate() - 29);
+      return { start: toIsoDate(start), end: toIsoDate(end) };
+    },
+  },
+  {
+    label: 'Elmúlt hónap',
+    range: () => previousMonthRange(),
+  },
+  {
+    label: 'Elmúlt 3 hónap',
+    range: () => {
+      const { end } = previousMonthRange();
+      const e = new Date(end);
+      const s = new Date(e.getFullYear(), e.getMonth() - 2, 1);
+      return { start: toIsoDate(s), end };
+    },
+  },
+  {
+    label: 'Elmúlt 6 hónap',
+    range: () => {
+      const { end } = previousMonthRange();
+      const e = new Date(end);
+      const s = new Date(e.getFullYear(), e.getMonth() - 5, 1);
+      return { start: toIsoDate(s), end };
+    },
+  },
 ];
 
 // ============================================
@@ -244,8 +269,41 @@ function MultiSelectDropdown({ label, items, selected, onToggle, onSelectAll, on
   );
 }
 
-// Styled month picker dropdown (matches dark theme)
-function MonthPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+// Styled date input (matches dark theme via Tailwind)
+function DateInput({ value, onChange, max }: { value: string; onChange: (v: string) => void; max?: string }) {
+  return (
+    <input
+      type="date"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      max={max}
+      className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors cursor-pointer"
+    />
+  );
+}
+
+// Helper for connection labels in the multi-select
+function providerShortLabel(provider: string): string {
+  if (provider.startsWith('TIKTOK')) return 'TikTok';
+  if (provider.startsWith('FACEBOOK')) return 'Facebook';
+  if (provider.startsWith('INSTAGRAM')) return 'Instagram';
+  if (provider.startsWith('YOUTUBE')) return 'YouTube';
+  return provider;
+}
+
+function connectionLabel(c: CompanyConnectionLite): string {
+  return `${providerShortLabel(c.provider)} – ${c.externalAccountName || c.externalAccountId}`;
+}
+
+function ConnectionMultiSelect({
+  connections,
+  selected,
+  onChange,
+}: {
+  connections: CompanyConnectionLite[];
+  selected: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -259,35 +317,78 @@ function MonthPicker({ options, value, onChange }: { options: string[]; value: s
     }
   }, [open]);
 
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange(next);
+  };
+
+  const allIds = connections.map(c => c.id);
+  const selectedCount = connections.filter(c => selected.has(c.id)).length;
+  const summary =
+    selectedCount === 0
+      ? 'Egy fiók sem kiválasztva'
+      : selectedCount === connections.length
+        ? `Összes fiók (${selectedCount})`
+        : `${selectedCount}/${connections.length} fiók`;
+
   return (
-    <div ref={ref} className="relative w-full">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
         className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold flex items-center justify-between gap-2 hover:border-[var(--accent)] transition-colors cursor-pointer"
       >
-        <span className="truncate">{formatMonthLabel(value)}</span>
+        <span className="truncate">{summary}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-lg max-h-64 overflow-y-auto">
-          {options.map(m => {
-            const selected = m === value;
-            return (
-              <button
-                key={m}
-                type="button"
-                onClick={() => { onChange(m); setOpen(false); }}
-                className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${selected
-                  ? 'bg-[var(--accent-subtle)] text-[var(--text-primary)] font-bold'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
+        <div className="absolute z-50 top-full mt-1 left-0 w-full min-w-[280px] bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-[var(--shadow-lg)] overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--surface-raised)]">
+            <button
+              onClick={() => onChange(new Set(allIds))}
+              className="text-xs font-semibold text-[var(--accent)] hover:underline"
+            >
+              Mind kijelöl
+            </button>
+            <button
+              onClick={() => onChange(new Set())}
+              className="text-xs font-semibold text-[var(--error)] hover:underline"
+            >
+              Törlés
+            </button>
+          </div>
+          <div className="max-h-[320px] overflow-y-auto py-1">
+            {connections.map(c => {
+              const isSelected = selected.has(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => toggle(c.id)}
+                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${isSelected
+                    ? 'text-[var(--text-primary)] bg-[var(--accent-subtle)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--accent-subtle)] hover:text-[var(--text-primary)]'
                   }`}
-              >
-                <span>{formatMonthLabel(m)}</span>
-                {selected && <Check className="w-3.5 h-3.5 text-[var(--accent)]" />}
-              </button>
-            );
-          })}
+                >
+                  <span
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected
+                      ? 'border-transparent bg-[var(--accent)] text-white'
+                      : 'border-[var(--border)]'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3" />}
+                  </span>
+                  <PlatformIcon platform={getPlatformFromProvider(c.provider)} className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{connectionLabel(c)}</span>
+                  <span className="ml-auto text-[10px] font-mono text-[var(--text-secondary)] truncate max-w-[80px]" title={c.externalAccountId}>
+                    {c.externalAccountId}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -559,10 +660,13 @@ export default function AdminChartsPage() {
   const [catalog, setCatalog] = useState<ChartDefinition[]>([]);
   const [selectedCompany, setSelectedCompany] = useState('');
 
-  const now = new Date();
-  const currentMonth = toMonthStr(now);
-  const [startMonth, setStartMonth] = useState(currentMonth);
-  const [endMonth, setEndMonth] = useState(currentMonth);
+  // Default range: previous full month
+  const defaultRange = useMemo(() => previousMonthRange(), []);
+  const [startDate, setStartDate] = useState<string>(defaultRange.start);
+  const [endDate, setEndDate] = useState<string>(defaultRange.end);
+
+  // Multi-account selection: which IntegrationConnection IDs to include
+  const [selectedConnectionIds, setSelectedConnectionIds] = useState<Set<string>>(new Set());
 
   // Per-platform selections: { platformKey: { kpis: Set, daily: Set, dist: Set } }
   const [selections, setSelections] = useState<Record<string, { kpis: Set<string>; daily: Set<string>; dist: Set<string> }>>({});
@@ -575,25 +679,32 @@ export default function AdminChartsPage() {
   const [aggregateKPIs, setAggregateKPIs] = useState<AggregateKPIs | null>(null);
   const [aggregateProgress, setAggregateProgress] = useState({ done: 0, total: 0 });
 
-  // Per-platform KPIs (single company)
+  // Per-platform KPIs (single company, possibly multi-account)
   const [platformKPIs, setPlatformKPIs] = useState<Record<string, KPI[]>>({});
-  const [multiMonthCount, setMultiMonthCount] = useState(0);
+  const [accountCount, setAccountCount] = useState(0);
 
   const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
   const selectedCompanyObj = companies.find(c => c.id === selectedCompany);
+  const allConnections: CompanyConnectionLite[] = selectedCompanyObj?.connections || [];
   const connectedPlatforms = new Set(selectedCompanyObj?.connectedPlatforms || []);
   const activePlatforms = isAllCompanies
     ? PLATFORM_ORDER.filter(p => !DISABLED_PLATFORMS.has(p))
     : PLATFORM_ORDER.filter(p => connectedPlatforms.has(p) && !DISABLED_PLATFORMS.has(p));
-  const monthOptions = useMemo(() => getMonthOptions(24), []);
 
-  // Calculate period months
-  const periodMonths = useMemo(() => {
-    const [sy, sm] = startMonth.split('-').map(Number);
-    const [ey, em] = endMonth.split('-').map(Number);
-    return (ey - sy) * 12 + (em - sm) + 1;
-  }, [startMonth, endMonth]);
-  const isMultiMonth = periodMonths > 1;
+  // Auto-select all connections when a company is picked, so default behaviour matches the old "everything" experience.
+  useEffect(() => {
+    if (isAllCompanies) {
+      setSelectedConnectionIds(new Set());
+      return;
+    }
+    setSelectedConnectionIds(new Set(allConnections.map(c => c.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCompany, companies]);
+
+  const selectedConnections = useMemo(
+    () => allConnections.filter(c => selectedConnectionIds.has(c.id)),
+    [allConnections, selectedConnectionIds]
+  );
 
   // Initialize selections with all items selected
   useEffect(() => {
@@ -629,24 +740,21 @@ export default function AdminChartsPage() {
     }
   }
 
-  function applyPreset(months: number) {
-    const end = new Date();
-    const start = new Date(end.getFullYear(), end.getMonth() - months + 1, 1);
-    setStartMonth(toMonthStr(start));
-    setEndMonth(toMonthStr(end));
+  function applyPreset(idx: number) {
+    const p = PRESETS[idx];
+    if (!p) return;
+    const { start, end } = p.range();
+    setStartDate(start);
+    setEndDate(end);
   }
 
-  const activePreset = useMemo(() => {
-    for (const p of PRESETS) {
-      const end = new Date();
-      const start = new Date(end.getFullYear(), end.getMonth() - p.months + 1, 1);
-      if (toMonthStr(start) === startMonth && toMonthStr(end) === endMonth) return p.months;
+  const activePresetIdx = useMemo(() => {
+    for (let i = 0; i < PRESETS.length; i++) {
+      const r = PRESETS[i].range();
+      if (r.start === startDate && r.end === endDate) return i;
     }
-    return null;
-  }, [startMonth, endMonth]);
-
-  const startDate = monthToStartDate(startMonth);
-  const endDate = monthToEndDate(endMonth);
+    return -1;
+  }, [startDate, endDate]);
 
   // Collect all needed chart keys from selections
   const allSelectedChartKeys = useMemo(() => {
@@ -745,19 +853,27 @@ export default function AdminChartsPage() {
       setError('Válassz legalább egy elemet!');
       return;
     }
+    if (!isAllCompanies && selectedConnections.length === 0) {
+      setError('Válassz legalább egy fiókot!');
+      return;
+    }
+    if (!startDate || !endDate || startDate > endDate) {
+      setError('Érvénytelen dátum-tartomány');
+      return;
+    }
 
     setLoading(true);
     setError(null);
     setResults([]);
     setAggregateKPIs(null);
     setPlatformKPIs({});
-    setMultiMonthCount(0);
+    setAccountCount(0);
 
     try {
       const chartKeysArray = [...allSelectedChartKeys];
 
       if (isAllCompanies) {
-        // Aggregate mode
+        // Aggregate mode across companies
         setAggregateProgress({ done: 0, total: companies.length });
         const allKeys = [...new Set([...KPI_CHART_KEYS, ...chartKeysArray])];
         const chartRequests = allKeys.map(key => ({ key }));
@@ -788,74 +904,74 @@ export default function AdminChartsPage() {
           }
         }
         setResults(mergedCharts);
-      } else if (isMultiMonth) {
-        // Multi-month single company
-        const monthRanges = generateMonthRanges(endMonth, periodMonths);
-        const chartRequests = chartKeysArray.map(key => ({ key }));
-        const platformMonthKPIs: Record<string, KPI[][]> = {};
-        let lastMonthCharts: ChartData[] = [];
-        let successCount = 0;
-
-        for (const range of monthRanges) {
-          try {
-            const response = await generateCharts({
-              accountId: selectedCompany,
-              startDate: range.startDate,
-              endDate: range.endDate,
-              charts: chartRequests,
-            });
-            // Extract KPIs per platform
-            for (const platKey of PLATFORM_ORDER) {
-              const sel = selections[platKey];
-              if (!sel || sel.kpis.size === 0) continue;
-              const platCharts = response.charts.filter(c => {
-                const def = catalog.find(d => d.key === c.key);
-                return def?.platform === platKey;
-              });
-              if (platCharts.length > 0) {
-                const monthKpis = extractKPIs(platKey, platCharts);
-                if (monthKpis.length > 0) {
-                  if (!platformMonthKPIs[platKey]) platformMonthKPIs[platKey] = [];
-                  platformMonthKPIs[platKey].push(monthKpis);
-                }
-              }
-            }
-            lastMonthCharts = response.charts;
-            successCount++;
-          } catch (err) {
-            console.error('[AdminCharts] fetchMonth skipped', err);
-          }
-        }
-
-        if (successCount === 0) {
-          setError('Nem sikerült adatot lekérni a megadott időszakra');
-        } else {
-          const aggregated: Record<string, KPI[]> = {};
-          for (const [plat, monthKpis] of Object.entries(platformMonthKPIs)) {
-            const allAgg = aggregateMonthlyKPIs(monthKpis);
-            // Filter to only selected KPIs
-            const sel = selections[plat];
-            const selected = sel ? allAgg.filter(k => sel.kpis.has(k.key)) : allAgg;
-            aggregated[plat] = selected.map(k => {
-              const v = k.value;
-              const isZero = (typeof v === 'number' && v === 0)
-                || (typeof v === 'string' && ['0', '0.00%', '0.0', '0%'].includes(v));
-              return isZero ? { ...k, value: 'N/A' } : k;
-            });
-          }
-          setPlatformKPIs(aggregated);
-          setMultiMonthCount(successCount);
-          setResults(lastMonthCharts);
-        }
       } else {
-        // Single company, single month
-        const response = await generateCharts({
-          accountId: selectedCompany,
-          startDate,
-          endDate,
-          charts: chartKeysArray.map(key => ({ key }))
-        });
-        setResults(response.charts);
+        // Single company. One Windsor request per selected account so that
+        // metrics never get merged across distinct external account IDs.
+        // Each request asks ONLY for charts that belong to that connection's platform —
+        // otherwise we'd also re-fetch unrelated platforms N times for free.
+        const responses = await Promise.all(
+          selectedConnections.map(c => {
+            const platformKeys = chartKeysArray.filter(key => {
+              const def = catalog.find(d => d.key === key);
+              return def?.platform === c.provider;
+            });
+            if (platformKeys.length === 0) return Promise.resolve(null);
+            return generateCharts({
+              accountId: selectedCompany,
+              externalAccountId: c.externalAccountId,
+              provider: c.provider,
+              startDate,
+              endDate,
+              charts: platformKeys.map(key => ({ key })),
+            }).catch(err => {
+              console.error(`[AdminCharts] fetch failed for ${c.provider} ${c.externalAccountId}`, err);
+              return null;
+            });
+          })
+        );
+
+        const ok = responses.filter((r): r is ChartsResponse => !!r);
+        if (ok.length === 0) {
+          setError('Nem sikerült adatot lekérni a kiválasztott fiókokhoz');
+          return;
+        }
+
+        // Aggregate KPIs per platform across the picked accounts.
+        const perPlatform: Record<string, KPI[][]> = {};
+        for (const res of ok) {
+          for (const platKey of PLATFORM_ORDER) {
+            const sel = selections[platKey];
+            if (!sel || sel.kpis.size === 0) continue;
+            const platCharts = res.charts.filter(c => {
+              const def = catalog.find(d => d.key === c.key);
+              return def?.platform === platKey;
+            });
+            if (platCharts.length === 0) continue;
+            const kpis = extractKPIs(platKey, platCharts);
+            if (kpis.length === 0) continue;
+            if (!perPlatform[platKey]) perPlatform[platKey] = [];
+            perPlatform[platKey].push(kpis);
+          }
+        }
+
+        const aggregated: Record<string, KPI[]> = {};
+        for (const [plat, accountKpis] of Object.entries(perPlatform)) {
+          const merged = accountKpis.length > 1 ? aggregateAccountKPIs(accountKpis) : accountKpis[0];
+          const sel = selections[plat];
+          const filtered = sel ? merged.filter(k => sel.kpis.has(k.key)) : merged;
+          aggregated[plat] = filtered.map(k => {
+            const v = k.value;
+            const isZero = (typeof v === 'number' && v === 0)
+              || (typeof v === 'string' && ['0', '0.00%', '0.0', '0%'].includes(v));
+            return isZero ? { ...k, value: 'N/A' } : k;
+          });
+        }
+
+        setPlatformKPIs(aggregated);
+        setAccountCount(ok.length);
+        // Charts: only show when a single account is in scope — multi-account chart merging
+        // would silently double-count series, so we hide them and surface aggregated KPIs only.
+        setResults(ok.length === 1 ? ok[0].charts : []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Hiba történt');
@@ -864,40 +980,11 @@ export default function AdminChartsPage() {
     }
   }
 
-  // Per-platform KPIs for single company, single month
-  const singleMonthPlatformKPIs = useMemo(() => {
-    if (isAllCompanies || isMultiMonth || results.length === 0) return {};
-    const kpiMap: Record<string, KPI[]> = {};
-    for (const platKey of PLATFORM_ORDER) {
-      const sel = selections[platKey];
-      if (!sel || sel.kpis.size === 0) continue;
-      const platCharts = results.filter(c => {
-        const def = catalog.find(d => d.key === c.key);
-        return def?.platform === platKey;
-      });
-      if (platCharts.length > 0) {
-        const allKpis = extractKPIs(platKey, platCharts);
-        // Filter to only show KPIs selected by user
-        const filtered = allKpis
-          .filter(k => sel.kpis.has(k.key))
-          .map(k => {
-            const v = k.value;
-            const isZero = (typeof v === 'number' && v === 0)
-              || (typeof v === 'string' && ['0', '0.00%', '0.0', '0%'].includes(v));
-            return isZero ? { ...k, value: 'N/A' } : k;
-          });
-        if (filtered.length > 0) {
-          kpiMap[platKey] = filtered;
-        }
-      }
-    }
-    return kpiMap;
-  }, [results, catalog, selections, isAllCompanies, isMultiMonth]);
-
-  // Group results by platform for rendering
+  // Group results by platform for rendering. Charts are only shown when there's a single
+  // result set in scope (i.e. one company with one selected account); multi-account would
+  // require chart-level merging which is not safe to do without re-aggregating series.
   const resultsByPlatform = useMemo(() => {
-    // If multi-month selected, hide all charts except KPIs
-    if (isMultiMonth) return {};
+    if (results.length === 0) return {};
     const grouped: Record<string, { daily: ChartData[]; distributions: ChartData[] }> = {};
     for (const platKey of PLATFORM_ORDER) {
       const sel = selections[platKey];
@@ -939,7 +1026,7 @@ export default function AdminChartsPage() {
 
         {/* Controls */}
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 md:gap-6 items-end mb-5">
+          <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.4fr_auto] gap-4 md:gap-4 items-end mb-5">
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég</label>
               <CompanyPicker
@@ -951,11 +1038,30 @@ export default function AdminChartsPage() {
             </div>
 
             <div>
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Fiókok</label>
+              {isAllCompanies ? (
+                <div className="px-4 py-3 rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--text-secondary)]">
+                  Összes cég módban a fiók-szűrő nem aktív
+                </div>
+              ) : allConnections.length === 0 ? (
+                <div className="px-4 py-3 rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--text-secondary)]">
+                  Nincs csatlakoztatott fiók
+                </div>
+              ) : (
+                <ConnectionMultiSelect
+                  connections={allConnections}
+                  selected={selectedConnectionIds}
+                  onChange={setSelectedConnectionIds}
+                />
+              )}
+            </div>
+
+            <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Időszak</label>
               <div className="flex items-center gap-2">
-                <MonthPicker options={monthOptions} value={startMonth} onChange={setStartMonth} />
+                <DateInput value={startDate} onChange={setStartDate} max={endDate} />
                 <span className="text-[var(--text-secondary)] font-bold px-1">&mdash;</span>
-                <MonthPicker options={monthOptions.filter(m => m >= startMonth)} value={endMonth} onChange={setEndMonth} />
+                <DateInput value={endDate} onChange={setEndDate} max={toIsoDate(new Date())} />
               </div>
             </div>
 
@@ -976,14 +1082,14 @@ export default function AdminChartsPage() {
           </div>
 
           {/* Presets */}
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex flex-wrap items-center gap-2 mb-6">
             <CalendarDays className="w-4 h-4 text-[var(--text-secondary)]" />
             <span className="text-xs font-bold text-[var(--text-secondary)] uppercase mr-1">Gyors:</span>
-            {PRESETS.map(p => (
+            {PRESETS.map((p, idx) => (
               <button
-                key={p.months}
-                onClick={() => applyPreset(p.months)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activePreset === p.months
+                key={p.label}
+                onClick={() => applyPreset(idx)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activePresetIdx === idx
                   ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
                   : 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
                   }`}
@@ -1037,12 +1143,14 @@ export default function AdminChartsPage() {
         {/* Aggregate KPI Dashboard (all companies mode) */}
         {aggregateKPIs && <AggregateKPIDashboard kpis={aggregateKPIs} />}
 
-        {/* Multi-month per-platform KPIs */}
+        {/* Per-platform aggregated KPIs (single company, 1+ accounts) */}
         {Object.keys(platformKPIs).length > 0 && (
           <div className="mb-8 space-y-6">
-            <h2 className="text-2xl font-bold border-l-4 border-[var(--accent)] pl-3">
+            <h2 className="text-2xl font-bold border-l-4 border-[var(--accent)] pl-3 flex items-baseline gap-3">
               Összesített KPI-ok
-              <span className="text-sm font-normal text-[var(--text-secondary)] ml-3">{multiMonthCount} hónap</span>
+              {accountCount > 1 && (
+                <span className="text-sm font-normal text-[var(--text-secondary)]">{accountCount} fiók</span>
+              )}
             </h2>
             {activePlatforms.map(platKey => {
               const kpiList = platformKPIs[platKey];
@@ -1060,35 +1168,9 @@ export default function AdminChartsPage() {
                       <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} description={kpi.description} />
                     ))}
                   </div>
-                </div>
-              );
-            })}
-            {results.length > 0 && (
-              <p className="text-xs font-bold text-[var(--text-secondary)] uppercase">Az utolsó hónap chartjai</p>
-            )}
-          </div>
-        )}
-
-        {/* Single-month per-platform KPIs */}
-        {Object.keys(singleMonthPlatformKPIs).length > 0 && (
-          <div className="mb-8 space-y-4">
-            {activePlatforms.map(platKey => {
-              const kpiList = singleMonthPlatformKPIs[platKey];
-              if (!kpiList || kpiList.length === 0) return null;
-              const config = PLATFORM_METRICS[platKey];
-              return (
-                <div key={platKey} className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-6">
-                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: config.color }} />
-                    <PlatformIcon platform={config.platform} className="w-4 h-4" />
-                    {config.label}
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {kpiList.map((kpi) => (
-                      <PlatformKPICard key={kpi.label} label={kpi.label} value={kpi.value} description={kpi.description} />
-                    ))}
-                  </div>
-                  <QuickEvaluation companyId={selectedCompany} platformKey={platKey} month={startMonth} />
+                  {accountCount === 1 && (
+                    <QuickEvaluation companyId={selectedCompany} platformKey={platKey} month={startDate.slice(0, 7)} />
+                  )}
                 </div>
               );
             })}

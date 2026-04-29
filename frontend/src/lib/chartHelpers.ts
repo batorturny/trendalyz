@@ -516,6 +516,75 @@ export function aggregateMonthlyKPIs(allMonthKpis: KPI[][]): KPI[] {
 }
 
 /**
+ * Aggregate KPIs across multiple accounts (e.g. several TikTok accounts of the same company).
+ *
+ * Difference from aggregateMonthlyKPIs:
+ *   - 'last' agg KPIs (e.g. follower counts) are SUMMED, because each account's follower base
+ *     is independent and the user wants combined totals.
+ *   - Percentage values are averaged.
+ *   - Other numeric values are summed.
+ */
+export function aggregateAccountKPIs(allAccountKpis: KPI[][]): KPI[] {
+  if (allAccountKpis.length === 0) return [];
+  if (allAccountKpis.length === 1) return allAccountKpis[0];
+
+  const count = allAccountKpis.length;
+  const merged: KPI[] = allAccountKpis[0].map(kpi => ({ ...kpi }));
+  const keyIndex = new Map(merged.map((kpi, idx) => [kpi.key, idx]));
+
+  // Track which KPIs are percentages (for averaging) and remember original strings
+  const isPercent = new Map<string, boolean>();
+  for (const m of merged) {
+    isPercent.set(m.key, typeof m.value === 'string' && m.value.trim().endsWith('%'));
+    if (typeof m.value === 'string') {
+      const parsed = parseFloat(m.value.replace(/[^0-9.-]/g, ''));
+      m.value = isNaN(parsed) ? 0 : parsed;
+    }
+  }
+
+  for (let i = 1; i < count; i++) {
+    for (const rKpi of allAccountKpis[i]) {
+      const idx = keyIndex.get(rKpi.key);
+      if (idx === undefined) continue;
+      const m = merged[idx];
+
+      let rVal: number | string = rKpi.value;
+      if (typeof rVal === 'string') {
+        const parsed = parseFloat(rVal.replace(/[^0-9.-]/g, ''));
+        rVal = isNaN(parsed) ? 0 : parsed;
+      }
+      if (typeof m.value === 'number' && typeof rVal === 'number') {
+        m.value += rVal;
+      }
+    }
+  }
+
+  // Averaging for rates / percentages, formatting back
+  for (const m of merged) {
+    if (typeof m.value !== 'number') continue;
+
+    const isRate = isPercent.get(m.key)
+      || m.agg === 'avg'
+      || /(_er|rate|ctr|_avg_)/i.test(m.key);
+
+    if (isRate) {
+      m.value = m.value / count;
+    }
+
+    if (isPercent.get(m.key)) {
+      m.value = `${m.value.toFixed(2)}%`;
+    } else if (isRate && !Number.isInteger(m.value)) {
+      const fixed = m.value.toFixed(1);
+      m.value = fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed;
+    } else {
+      m.value = Math.round(m.value * 100) / 100;
+    }
+  }
+
+  return merged;
+}
+
+/**
  * Generate per-month date ranges from an end month and period count.
  * Returns array of { startDate, endDate, month } objects, oldest first.
  */
