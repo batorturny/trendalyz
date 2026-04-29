@@ -142,6 +142,38 @@ export function resetPasswordEmailHtml(token: string): string {
   `, 'Jelszó visszaállítás — Trendalyz');
 }
 
+const PLATFORM_LABELS: Record<string, string> = {
+  TIKTOK_ORGANIC: 'TikTok',
+  FACEBOOK_ORGANIC: 'Facebook',
+  YOUTUBE: 'YouTube',
+  TIKTOK_ADS: 'TikTok Ads',
+  INSTAGRAM_ORGANIC: 'Instagram',
+};
+
+export function evaluationMessageEmailHtml(opts: {
+  companyName: string;
+  platform: string;
+  month: string;
+  message: string;
+}): string {
+  const monthLabel = fmtMonth(opts.month);
+  const platformLabel = PLATFORM_LABELS[opts.platform] || opts.platform;
+  const dashboardUrl = `${BASE_URL}/dashboard`;
+
+  return layout(`
+    ${heading('Új értékelést kaptál')}
+    ${paragraph(`Az ügynökség írt egy új értékelést a(z) <strong>${escapeHtml(platformLabel)}</strong> teljesítményedről — ${monthLabel}.`)}
+
+    <div style="background:${BRAND.bg};border-left:4px solid ${BRAND.teal};border-radius:8px;padding:20px;margin:20px 0;">
+      <p style="color:${BRAND.text};font-size:15px;margin:0;white-space:pre-wrap;line-height:1.6;">${escapeHtml(opts.message)}</p>
+    </div>
+
+    ${paragraph('Reagálni az értékelésre, vagy a teljes riportot megnézni a felületen tudod:')}
+    ${button(dashboardUrl, 'Megnyitás a Trendalyzben')}
+    <p style="color:${BRAND.textMuted};font-size:12px;text-align:center;">Bejelentkezés után a megfelelő platform alatt találod az értékelést.</p>
+  `, `Új értékelés — ${escapeHtml(opts.companyName)} — ${monthLabel}`);
+}
+
 export function evaluationReplyEmailHtml(opts: {
   companyName: string;
   platformLabel: string;

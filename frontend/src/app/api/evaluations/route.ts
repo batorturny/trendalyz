@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { appendEvaluationMessage } from '@/lib/evaluation-db';
+import { evaluationMessageEmailHtml, sendEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
@@ -61,6 +62,9 @@ export async function POST(req: Request) {
   // Verify admin owns the company
   const company = await prisma.company.findFirst({
     where: { id: companyId, adminId: session.user.id },
+    include: {
+      users: { where: { role: 'CLIENT' }, select: { email: true } },
+    },
   });
   if (!company) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -93,6 +97,21 @@ export async function POST(req: Request) {
 
   // Re-fetch to return the full record with updated messages
   const updated = await prisma.evaluation.findUnique({ where: { id: evaluation.id } });
+
+  // Notify all CLIENT users of the company in the background — don't block the response
+  // and never fail the save if mailing fails.
+  const recipients = company.users.map(u => u.email).filter(Boolean);
+  if (recipients.length > 0) {
+    const html = evaluationMessageEmailHtml({
+      companyName: company.name,
+      platform,
+      month,
+      message: adminMessage,
+    });
+    Promise.all(recipients.map(to =>
+      sendEmail({ to, subject: `Új értékelés – ${company.name}`, html })
+    )).catch(err => console.error('[evaluations] notify clients failed:', err));
+  }
 
   return NextResponse.json(updated);
 }
