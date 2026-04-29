@@ -643,18 +643,11 @@ export async function renameConnection(connectionId: string, companyId: string, 
   if (!trimmed) throw new Error('A név nem lehet üres');
   if (trimmed.length > 120) throw new Error('A név túl hosszú (max 120 karakter)');
 
-  const connection = await prisma.integrationConnection.findUnique({
-    where: { id: connectionId },
-    select: { companyId: true },
-  });
-  if (!connection || connection.companyId !== companyId) {
-    throw new Error('Integráció nem található');
-  }
-
-  await prisma.integrationConnection.update({
-    where: { id: connectionId },
+  const result = await prisma.integrationConnection.updateMany({
+    where: { id: connectionId, companyId },
     data: { externalAccountName: trimmed },
   });
+  if (result.count === 0) throw new Error('Integráció nem található');
 
   revalidatePath(`/admin/companies/${companyId}`);
 }

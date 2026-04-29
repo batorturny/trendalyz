@@ -4,10 +4,13 @@
 // In-memory TTL cache shared per Node.js process.
 // ============================================
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const TTL_LIVE_MS = 24 * 60 * 60 * 1000;
+const TTL_GONE_MS = 24 * 60 * 60 * 1000;
+const TTL_UNKNOWN_MS = 5 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8000;
+const CONCURRENCY = 8;
 
-const cache = new Map<string, { available: boolean; ts: number }>();
+const cache = new Map<string, { available: boolean; ts: number; ttl: number }>();
 
 interface VideoLike {
   video_id?: string;
@@ -25,9 +28,10 @@ function buildShareUrl(video: VideoLike): string | null {
 
 async function checkOne(url: string): Promise<boolean> {
   const cached = cache.get(url);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.available;
+  if (cached && Date.now() - cached.ts < cached.ttl) return cached.available;
 
   let available = false;
+  let ttl = TTL_GONE_MS;
   try {
     const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
     const res = await fetch(oembedUrl, {
@@ -37,23 +41,46 @@ async function checkOne(url: string): Promise<boolean> {
     if (res.ok) {
       const json = await res.json().catch(() => null) as { status_code?: number; title?: string; html?: string } | null;
       available = !!(json && (json.status_code === 0 || json.title || json.html));
+      ttl = available ? TTL_LIVE_MS : TTL_GONE_MS;
+    } else if (res.status === 404 || res.status === 410) {
+      available = false;
+      ttl = TTL_GONE_MS;
+    } else {
+      // Throttling / transient — fail-open so live videos don't disappear during incidents.
+      ttl = TTL_UNKNOWN_MS;
+      available = true;
     }
   } catch {
-    available = false;
+    ttl = TTL_UNKNOWN_MS;
+    available = true;
   }
 
-  cache.set(url, { available, ts: Date.now() });
+  cache.set(url, { available, ts: Date.now(), ttl });
   return available;
+}
+
+async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T, idx: number) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const idx = next++;
+      if (idx >= items.length) return;
+      out[idx] = await fn(items[idx], idx);
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 export async function filterAvailableTikTokVideos<T extends VideoLike>(videos: T[]): Promise<T[]> {
   if (!Array.isArray(videos) || videos.length === 0) return videos;
-  const checks = videos.map(async (v) => {
+
+  const decisions = await mapWithLimit(videos, CONCURRENCY, async (v) => {
     const url = buildShareUrl(v);
-    if (!url) return { v, keep: true };
-    const keep = await checkOne(url);
-    return { v, keep };
+    if (!url) return true;
+    return await checkOne(url);
   });
-  const results = await Promise.all(checks);
-  return results.filter(r => r.keep).map(r => r.v);
+
+  return videos.filter((_, i) => decisions[i]);
 }

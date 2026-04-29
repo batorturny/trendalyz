@@ -5,15 +5,18 @@
 // Uses TikTok's public oEmbed endpoint with an in-memory TTL cache.
 // ============================================
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const TTL_LIVE_MS = 24 * 60 * 60 * 1000;
+const TTL_GONE_MS = 24 * 60 * 60 * 1000;
+const TTL_UNKNOWN_MS = 5 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 8000;
-const cache = new Map(); // shareUrl -> { available: boolean, ts: number }
+const CONCURRENCY = 8;
+
+const cache = new Map();
 
 function buildShareUrl(video) {
     const direct = video.video_share_url || video.video_embed_url;
     if (direct && /^https?:\/\//.test(direct)) return direct;
     if (video.video_id) {
-        // Fallback — works as oEmbed input even without username when TikTok resolves it
         return `https://www.tiktok.com/video/${video.video_id}`;
     }
     return null;
@@ -21,11 +24,12 @@ function buildShareUrl(video) {
 
 async function checkOne(url) {
     const cached = cache.get(url);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.ts < cached.ttl) {
         return cached.available;
     }
 
     let available = false;
+    let ttl = TTL_GONE_MS;
     try {
         const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
         const res = await fetch(oembedUrl, {
@@ -34,35 +38,53 @@ async function checkOne(url) {
         });
         if (res.ok) {
             const json = await res.json().catch(() => null);
-            // oEmbed returns 200 with HTML/title for live videos.
-            // For deleted/private posts TikTok returns 404 OR 200 with status_code !== 0.
             available = !!(json && (json.status_code === 0 || json.title || json.html));
+            ttl = available ? TTL_LIVE_MS : TTL_GONE_MS;
+        } else if (res.status === 404 || res.status === 410) {
+            available = false;
+            ttl = TTL_GONE_MS;
+        } else {
+            // Throttling / transient — don't poison the cache for a day.
+            ttl = TTL_UNKNOWN_MS;
+            available = true; // fail-open during incidents so live videos don't disappear
         }
     } catch {
-        available = false;
+        ttl = TTL_UNKNOWN_MS;
+        available = true;
     }
 
-    cache.set(url, { available, ts: Date.now() });
+    cache.set(url, { available, ts: Date.now(), ttl });
     return available;
+}
+
+async function mapWithLimit(items, limit, fn) {
+    const out = new Array(items.length);
+    let next = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (true) {
+            const idx = next++;
+            if (idx >= items.length) return;
+            out[idx] = await fn(items[idx], idx);
+        }
+    });
+    await Promise.all(workers);
+    return out;
 }
 
 /**
  * Filter a video list down to currently-available TikTok videos.
  * Non-TikTok rows (no share/embed url, no video_id) pass through unchanged.
- * Runs availability checks in parallel.
  */
 async function filterAvailableTikTokVideos(videos) {
     if (!Array.isArray(videos) || videos.length === 0) return videos;
 
-    const checks = videos.map(async (v) => {
+    const decisions = await mapWithLimit(videos, CONCURRENCY, async (v) => {
         const url = buildShareUrl(v);
-        if (!url) return { v, keep: true }; // unknown source — keep
-        const available = await checkOne(url);
-        return { v, keep: available };
+        if (!url) return true;
+        return await checkOne(url);
     });
 
-    const results = await Promise.all(checks);
-    return results.filter(r => r.keep).map(r => r.v);
+    return videos.filter((_, i) => decisions[i]);
 }
 
 module.exports = { filterAvailableTikTokVideos, checkOne, buildShareUrl };

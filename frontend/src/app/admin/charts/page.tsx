@@ -12,6 +12,7 @@ import { CalendarDays, ChevronDown, ChevronRight, Check, BarChart3, Eye, Heart, 
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 import { PLATFORM_METRICS, PLATFORM_ORDER, DISABLED_PLATFORMS, type MetricItem, type PlatformMetricConfig } from '@/lib/platformMetrics';
 import { QuickEvaluation } from '@/components/QuickEvaluation';
+import { getProviderMeta, type ConnectionProvider } from '@/types/integration';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -21,6 +22,10 @@ import { QuickEvaluation } from '@/components/QuickEvaluation';
 
 function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function toYearMonth(isoDate: string): string {
+  return isoDate.slice(0, 7);
 }
 
 function previousMonthRange(): { start: string; end: string } {
@@ -282,17 +287,8 @@ function DateInput({ value, onChange, max }: { value: string; onChange: (v: stri
   );
 }
 
-// Helper for connection labels in the multi-select
-function providerShortLabel(provider: string): string {
-  if (provider.startsWith('TIKTOK')) return 'TikTok';
-  if (provider.startsWith('FACEBOOK')) return 'Facebook';
-  if (provider.startsWith('INSTAGRAM')) return 'Instagram';
-  if (provider.startsWith('YOUTUBE')) return 'YouTube';
-  return provider;
-}
-
 function connectionLabel(c: CompanyConnectionLite): string {
-  return `${providerShortLabel(c.provider)} – ${c.externalAccountName || c.externalAccountId}`;
+  return `${getProviderMeta(c.provider as ConnectionProvider).label} – ${c.externalAccountName || c.externalAccountId}`;
 }
 
 function ConnectionMultiSelect({
@@ -691,15 +687,20 @@ export default function AdminChartsPage() {
     ? PLATFORM_ORDER.filter(p => !DISABLED_PLATFORMS.has(p))
     : PLATFORM_ORDER.filter(p => connectedPlatforms.has(p) && !DISABLED_PLATFORMS.has(p));
 
-  // Auto-select all connections when a company is picked, so default behaviour matches the old "everything" experience.
+  // Auto-select all connections of the picked company. Reads `allConnections` indirectly
+  // via `selectedCompany`/`companies`; using ID list as the dep avoids re-running on
+  // unrelated re-renders that produce a new array reference for the same content.
+  const allConnectionIdsKey = useMemo(
+    () => allConnections.map(c => c.id).sort().join(','),
+    [allConnections]
+  );
   useEffect(() => {
     if (isAllCompanies) {
       setSelectedConnectionIds(new Set());
       return;
     }
-    setSelectedConnectionIds(new Set(allConnections.map(c => c.id)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCompany, companies]);
+    setSelectedConnectionIds(new Set(allConnectionIdsKey ? allConnectionIdsKey.split(',') : []));
+  }, [selectedCompany, allConnectionIdsKey, isAllCompanies]);
 
   const selectedConnections = useMemo(
     () => allConnections.filter(c => selectedConnectionIds.has(c.id)),
@@ -1014,7 +1015,11 @@ export default function AdminChartsPage() {
     return grouped;
   }, [results, catalog, selections]);
 
-  const selectClass = "w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors appearance-none cursor-pointer";
+  const generateButtonLabel = !loading
+    ? `Generálás (${totalSelectedCount})`
+    : isAllCompanies
+      ? `Betöltés... (${aggregateProgress.done}/${aggregateProgress.total})`
+      : 'Generálás...';
 
   return (
     <WindsorKeyGuard>
@@ -1071,12 +1076,7 @@ export default function AdminChartsPage() {
                 disabled={loading || allSelectedChartKeys.size === 0}
                 className="w-full bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
               >
-                {loading
-                  ? isAllCompanies
-                    ? `Betöltés... (${aggregateProgress.done}/${aggregateProgress.total})`
-                    : 'Generálás...'
-                  : `Generálás (${totalSelectedCount})`
-                }
+                {generateButtonLabel}
               </button>
             </div>
           </div>
@@ -1169,7 +1169,7 @@ export default function AdminChartsPage() {
                     ))}
                   </div>
                   {accountCount === 1 && (
-                    <QuickEvaluation companyId={selectedCompany} platformKey={platKey} month={startDate.slice(0, 7)} />
+                    <QuickEvaluation companyId={selectedCompany} platformKey={platKey} month={toYearMonth(startDate)} />
                   )}
                 </div>
               );
