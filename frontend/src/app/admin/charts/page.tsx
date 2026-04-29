@@ -6,6 +6,7 @@ import { extractKPIs, aggregateAccountKPIs, KPI } from '@/lib/chartHelpers';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
+import { CompanyMultiPicker } from '@/components/CompanyMultiPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { KPICard as PlatformKPICard } from '@/components/KPICard';
 import { CalendarDays, ChevronDown, ChevronRight, Check, BarChart3, Eye, Heart, MessageCircle, Share2, Video, Users, TrendingUp } from 'lucide-react';
@@ -654,7 +655,7 @@ function RenderChart({ chart }: { chart: ChartData }) {
 export default function AdminChartsPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [catalog, setCatalog] = useState<ChartDefinition[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
 
   // Default range: previous full month
   const defaultRange = useMemo(() => previousMonthRange(), []);
@@ -679,13 +680,19 @@ export default function AdminChartsPage() {
   const [platformKPIs, setPlatformKPIs] = useState<Record<string, KPI[]>>({});
   const [accountCount, setAccountCount] = useState(0);
 
-  const isAllCompanies = selectedCompany === ALL_COMPANIES_ID;
-  const selectedCompanyObj = companies.find(c => c.id === selectedCompany);
-  const allConnections: CompanyConnectionLite[] = selectedCompanyObj?.connections || [];
-  const connectedPlatforms = new Set(selectedCompanyObj?.connectedPlatforms || []);
-  const activePlatforms = isAllCompanies
-    ? PLATFORM_ORDER.filter(p => !DISABLED_PLATFORMS.has(p))
-    : PLATFORM_ORDER.filter(p => connectedPlatforms.has(p) && !DISABLED_PLATFORMS.has(p));
+  const selectedCompanies = useMemo(
+    () => companies.filter(c => selectedCompanyIds.has(c.id)),
+    [companies, selectedCompanyIds]
+  );
+  const isMultiCompany = selectedCompanies.length > 1;
+  const isAllCompanies = isMultiCompany;
+  const singleCompany = selectedCompanies.length === 1 ? selectedCompanies[0] : null;
+  const selectedCompany = singleCompany?.id || '';
+  const allConnections: CompanyConnectionLite[] = singleCompany?.connections || [];
+  const connectedPlatforms = isMultiCompany
+    ? new Set(selectedCompanies.flatMap(c => c.connectedPlatforms || []))
+    : new Set(singleCompany?.connectedPlatforms || []);
+  const activePlatforms = PLATFORM_ORDER.filter(p => connectedPlatforms.has(p) && !DISABLED_PLATFORMS.has(p));
 
   // Auto-select all connections of the picked company. Reads `allConnections` indirectly
   // via `selectedCompany`/`companies`; using ID list as the dep avoids re-running on
@@ -695,12 +702,12 @@ export default function AdminChartsPage() {
     [allConnections]
   );
   useEffect(() => {
-    if (isAllCompanies) {
+    if (isMultiCompany) {
       setSelectedConnectionIds(new Set());
       return;
     }
     setSelectedConnectionIds(new Set(allConnectionIdsKey ? allConnectionIdsKey.split(',') : []));
-  }, [selectedCompany, allConnectionIdsKey, isAllCompanies]);
+  }, [selectedCompany, allConnectionIdsKey, isMultiCompany]);
 
   const selectedConnections = useMemo(
     () => allConnections.filter(c => selectedConnectionIds.has(c.id)),
@@ -720,7 +727,9 @@ export default function AdminChartsPage() {
       ]);
       setCompanies(companiesData);
       setCatalog(catalogData.charts);
-      if (companiesData.length > 0) setSelectedCompany(companiesData[0].id);
+      if (companiesData.length > 0) {
+        setSelectedCompanyIds(new Set([companiesData[0].id]));
+      }
 
       // Initialize all platform selections with everything selected (except disabled platforms)
       const initial: Record<string, { kpis: Set<string>; daily: Set<string>; dist: Set<string> }> = {};
@@ -854,7 +863,11 @@ export default function AdminChartsPage() {
       setError('Válassz legalább egy elemet!');
       return;
     }
-    if (!isAllCompanies && selectedConnections.length === 0) {
+    if (selectedCompanies.length === 0) {
+      setError('Válassz legalább egy céget!');
+      return;
+    }
+    if (!isMultiCompany && selectedConnections.length === 0) {
       setError('Válassz legalább egy fiókot!');
       return;
     }
@@ -873,15 +886,15 @@ export default function AdminChartsPage() {
     try {
       const chartKeysArray = [...allSelectedChartKeys];
 
-      if (isAllCompanies) {
-        // Aggregate mode across companies
-        setAggregateProgress({ done: 0, total: companies.length });
+      if (isMultiCompany) {
+        // Aggregate mode across the selected companies
+        setAggregateProgress({ done: 0, total: selectedCompanies.length });
         const allKeys = [...new Set([...KPI_CHART_KEYS, ...chartKeysArray])];
         const chartRequests = allKeys.map(key => ({ key }));
         const companyResponses: { name: string; res: ChartsResponse }[] = [];
         const BATCH_SIZE = 3;
-        for (let i = 0; i < companies.length; i += BATCH_SIZE) {
-          const batch = companies.slice(i, i + BATCH_SIZE);
+        for (let i = 0; i < selectedCompanies.length; i += BATCH_SIZE) {
+          const batch = selectedCompanies.slice(i, i + BATCH_SIZE);
           const batchResults = await Promise.allSettled(
             batch.map(c => generateCharts({ accountId: c.id, startDate, endDate, charts: chartRequests }))
           );
@@ -891,7 +904,7 @@ export default function AdminChartsPage() {
               companyResponses.push({ name: batch[j].name, res: result.value });
             }
           }
-          setAggregateProgress({ done: Math.min(i + BATCH_SIZE, companies.length), total: companies.length });
+          setAggregateProgress({ done: Math.min(i + BATCH_SIZE, selectedCompanies.length), total: selectedCompanies.length });
         }
         const kpis = aggregateFromResponses(companyResponses);
         setAggregateKPIs(kpis);
@@ -1033,20 +1046,19 @@ export default function AdminChartsPage() {
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-6 mb-6 md:mb-8 shadow-[var(--shadow-card)]">
           <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1fr_1.4fr_auto] gap-4 md:gap-4 items-end mb-5">
             <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cég</label>
-              <CompanyPicker
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Cégek</label>
+              <CompanyMultiPicker
                 companies={companies}
-                value={selectedCompany}
-                onChange={setSelectedCompany}
-                showAll
+                selectedIds={selectedCompanyIds}
+                onChange={setSelectedCompanyIds}
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Fiókok</label>
-              {isAllCompanies ? (
+              {isMultiCompany ? (
                 <div className="px-4 py-3 rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--text-secondary)]">
-                  Összes cég módban a fiók-szűrő nem aktív
+                  Több cég módban a fiók-szűrő nem aktív
                 </div>
               ) : allConnections.length === 0 ? (
                 <div className="px-4 py-3 rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--text-secondary)]">
