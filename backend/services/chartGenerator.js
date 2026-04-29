@@ -6,7 +6,7 @@ const { chartCatalog } = require('../config/chartCatalog');
 const { filterAvailableTikTokVideos } = require('./tiktokAvailability');
 
 class ChartGenerator {
-    constructor(windsorData, startDate = null, endDate = null) {
+    constructor(windsorData, startDate = null, endDate = null, options = {}) {
         this.startDate = startDate;
         this.endDate = endDate;
 
@@ -34,6 +34,17 @@ class ChartGenerator {
 
         // Deduplicate Facebook posts by post_id (same post can appear as both post and reel)
         this.video = this._dedupeByPostId(this.video);
+
+        // Hide videos that the admin has excluded from the client view.
+        // Note: only video-derived metrics get filtered — daily aggregate rows from Windsor
+        // (followers, profile_views, daily_likes…) are not video-keyed and pass through.
+        const excluded = options.excludedVideoIds;
+        if (excluded && excluded.size > 0) {
+            this.video = this.video.filter(v => {
+                const id = v.video_id || v.post_id || v.media_id;
+                return !id || !excluded.has(String(id));
+            });
+        }
     }
 
     _dedupeByPostId(rows) {

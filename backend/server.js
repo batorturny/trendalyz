@@ -154,18 +154,16 @@ async function resolvePlatformAccounts(company) {
                 { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
             ],
         },
-        select: { provider: true, externalAccountId: true, metadata: true },
+        select: { provider: true, externalAccountId: true, metadata: true, excludedVideoIds: true },
     });
 
     const accounts = new Map();
     for (const conn of connections) {
-        // Store full connection object so chart endpoint can access tokens for Meta
         accounts.set(conn.provider, conn);
     }
 
-    // Legacy TikTok fallback
     if (!accounts.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
-        accounts.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null });
+        accounts.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null, excludedVideoIds: null });
     }
 
     platformAccountsCache.set(cacheKey, { value: accounts, time: Date.now() });
@@ -820,13 +818,15 @@ if (ENABLE_CHART_API) {
                             { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
                         ],
                     },
-                    select: { provider: true, externalAccountId: true, metadata: true },
+                    select: { provider: true, externalAccountId: true, metadata: true, excludedVideoIds: true },
                 });
                 if (!override) {
                     return res.status(403).json({ error: 'Forbidden: account does not belong to company' });
                 }
                 platformAccounts.set(provider, override);
             }
+
+            const isClientView = req.userContext?.role === 'CLIENT';
 
             // Group requested charts by platform
             const chartsByPlatform = new Map();
@@ -890,7 +890,10 @@ if (ENABLE_CHART_API) {
                         console.log(`[CHART API] ${platform}: ${Array.isArray(platformData) ? platformData.length : 'invalid'} rows${Array.isArray(platformData) && platformData.length === 0 ? ' (NOT cached)' : ' cached'}`);
                     }
 
-                    const generator = new ChartGenerator(platformData, startDate, endDate);
+                    const excludedSet = isClientView && Array.isArray(connection.excludedVideoIds)
+                        ? new Set(connection.excludedVideoIds.map(String))
+                        : null;
+                    const generator = new ChartGenerator(platformData, startDate, endDate, { excludedVideoIds: excludedSet });
                     return Promise.all(platformCharts.map(async (chartReq) => {
                         try {
                             return await generator.generate(chartReq.key, chartReq.params || {});

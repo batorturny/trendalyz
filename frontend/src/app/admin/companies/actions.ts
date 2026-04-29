@@ -636,6 +636,35 @@ export async function deleteConnection(connectionId: string, companyId: string) 
   revalidatePath(`/admin/companies/${companyId}`);
 }
 
+export async function getConnectionExcludedVideoIds(connectionId: string, companyId: string): Promise<string[]> {
+  await requireCompanyOwnership(companyId);
+  const conn = await prisma.integrationConnection.findFirst({
+    where: { id: connectionId, companyId },
+    select: { excludedVideoIds: true },
+  });
+  if (!conn) throw new Error('Integráció nem található');
+  if (!Array.isArray(conn.excludedVideoIds)) return [];
+  return (conn.excludedVideoIds as unknown[]).map(String);
+}
+
+export async function setConnectionExcludedVideoIds(connectionId: string, companyId: string, videoIds: string[]) {
+  await requireCompanyOwnership(companyId);
+
+  if (!Array.isArray(videoIds)) throw new Error('Érvénytelen videó-lista');
+  const cleaned = Array.from(new Set(videoIds.map(v => String(v).trim()).filter(Boolean)));
+  if (cleaned.length > 5000) throw new Error('Túl sok kizárt videó (max 5000)');
+
+  const { Prisma } = await import('@prisma/client');
+  const result = await prisma.integrationConnection.updateMany({
+    where: { id: connectionId, companyId },
+    data: { excludedVideoIds: cleaned.length > 0 ? cleaned : Prisma.DbNull },
+  });
+  if (result.count === 0) throw new Error('Integráció nem található');
+
+  revalidatePath(`/admin/companies/${companyId}`);
+  return { count: cleaned.length };
+}
+
 export async function renameConnection(connectionId: string, companyId: string, newName: string) {
   await requireCompanyOwnership(companyId);
 

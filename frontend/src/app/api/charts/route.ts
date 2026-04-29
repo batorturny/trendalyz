@@ -683,7 +683,7 @@ export async function POST(req: Request) {
           { status: 'ERROR', provider: { in: ['FACEBOOK_ORGANIC', 'INSTAGRAM_ORGANIC'] } },
         ],
       },
-      select: { provider: true, externalAccountId: true, metadata: true },
+      select: { provider: true, externalAccountId: true, metadata: true, excludedVideoIds: true },
       orderBy: [{ provider: 'asc' }, { createdAt: 'asc' }],
     });
 
@@ -692,25 +692,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden: account does not belong to company' }, { status: 403 });
     }
 
+    const isClientView = session.user.role === 'CLIENT';
+
     // Build per-platform connection: if externalAccountId provided, pick that one for its platform.
     // For other platforms, fall back to the first connection (legacy behavior).
-    const platformConnections = new Map<string, { externalAccountId: string; metadata: any }>();
+    const platformConnections = new Map<string, { externalAccountId: string; metadata: any; excludedVideoIds: unknown }>();
     for (const c of connections) {
       if (platformConnections.has(c.provider)) continue;
       if (externalAccountId && provider && c.provider === provider) {
-        // Skip until we see the selected one
         if (c.externalAccountId !== externalAccountId) continue;
       }
-      platformConnections.set(c.provider, { externalAccountId: c.externalAccountId, metadata: c.metadata });
+      platformConnections.set(c.provider, { externalAccountId: c.externalAccountId, metadata: c.metadata, excludedVideoIds: c.excludedVideoIds });
     }
-    // If a specific account was requested but not yet set (ordering miss), override explicitly.
     if (externalAccountId && provider) {
       const match = connections.find(c => c.provider === provider && c.externalAccountId === externalAccountId);
-      if (match) platformConnections.set(provider, { externalAccountId: match.externalAccountId, metadata: match.metadata });
+      if (match) platformConnections.set(provider, { externalAccountId: match.externalAccountId, metadata: match.metadata, excludedVideoIds: match.excludedVideoIds });
     }
 
     if (!platformConnections.has('TIKTOK_ORGANIC') && company.tiktokAccountId) {
-      platformConnections.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null });
+      platformConnections.set('TIKTOK_ORGANIC', { externalAccountId: company.tiktokAccountId, metadata: null, excludedVideoIds: null });
     }
 
     // Group charts by platform
@@ -777,7 +777,10 @@ export async function POST(req: Request) {
             } catch (err) { console.error('[Charts API] YouTube title enrichment', err); }
           }
 
-          const generator = new ChartGenerator(data, startDate, endDate);
+          const excludedSet = isClientView && Array.isArray(connection.excludedVideoIds)
+            ? new Set((connection.excludedVideoIds as unknown[]).map(String))
+            : null;
+          const generator = new ChartGenerator(data, startDate, endDate, { excludedVideoIds: excludedSet });
           return Promise.all(platformCharts.map(async (c: any) => {
             try { return await generator.generate(c.key, c.params || {}); }
             catch (e: any) { return { key: c.key, error: e.message, empty: true }; }

@@ -7,7 +7,7 @@ import { chartCatalog } from './chartCatalog';
 import { filterAvailableTikTokVideos } from './tiktokAvailability';
 
 export default class ChartGenerator {
-    constructor(windsorData, startDate = null, endDate = null) {
+    constructor(windsorData, startDate = null, endDate = null, options = {}) {
         this.startDate = startDate;
         this.endDate = endDate;
 
@@ -35,6 +35,16 @@ export default class ChartGenerator {
 
         // Deduplicate Facebook posts by post_id (same post can appear as both post and reel)
         this.video = this._dedupeByPostId(this.video);
+
+        // Hide videos excluded by the admin for the client view.
+        // Daily aggregate rows are not video-keyed, so they pass through unchanged.
+        const excluded = options.excludedVideoIds;
+        if (excluded && excluded.size > 0) {
+            this.video = this.video.filter(v => {
+                const id = v.video_id || v.post_id || v.media_id;
+                return !id || !excluded.has(String(id));
+            });
+        }
     }
 
     _dedupeByPostId(rows: any[]): any[] {

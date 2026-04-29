@@ -5,7 +5,10 @@ import { deleteConnection, renameConnection, testConnection } from '../actions';
 import { useState } from 'react';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { VideoVisibilityDialog } from './VideoVisibilityDialog';
 import { useT } from '@/lib/i18n';
+
+const VIDEO_VISIBILITY_PROVIDERS = new Set(['TIKTOK_ORGANIC', 'INSTAGRAM_ORGANIC', 'FACEBOOK_ORGANIC', 'YOUTUBE']);
 
 interface Props {
   connection: IntegrationConnection;
@@ -29,6 +32,7 @@ export function ConnectionCard({ connection }: Props) {
   const [name, setName] = useState(connection.externalAccountName ?? '');
   const [saving, setSaving] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [videosOpen, setVideosOpen] = useState(false);
 
   const provider = getProviderMeta(connection.provider);
   const status = STATUS_STYLES[connection.status] || STATUS_STYLES.PENDING;
@@ -188,6 +192,18 @@ export function ConnectionCard({ connection }: Props) {
         >
           {t('Átnevezés')}
         </button>
+        {VIDEO_VISIBILITY_PROVIDERS.has(connection.provider) && (
+          <>
+            <span className="text-[var(--border)]">|</span>
+            <button
+              onClick={() => setVideosOpen(true)}
+              disabled={editing}
+              className="text-xs font-semibold text-[var(--accent)] hover:opacity-70 disabled:opacity-50"
+            >
+              {t('Videók láthatósága')}
+            </button>
+          </>
+        )}
         <span className="text-[var(--border)]">|</span>
         <button
           onClick={() => setConfirmDelete(true)}
@@ -197,6 +213,13 @@ export function ConnectionCard({ connection }: Props) {
           {t('Törlés')}
         </button>
       </div>
+
+      {videosOpen && (
+        <VideoVisibilityDialog
+          connection={connection}
+          onClose={() => setVideosOpen(false)}
+        />
+      )}
 
       <ConfirmDialog
         open={confirmDelete}

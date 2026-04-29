@@ -158,6 +158,9 @@ model IntegrationConnection {
   lastSyncAt          DateTime?
   errorMessage        String?
   metadata            Json?
+  // Video IDs that the admin has hidden from the CLIENT view of this connection.
+  // null/empty array = everything visible. Admin views are never filtered.
+  excludedVideoIds    Json?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
