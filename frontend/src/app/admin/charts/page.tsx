@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Company, CompanyConnectionLite, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData, ChartsResponse } from '@/lib/api';
-import { extractKPIs, aggregateAccountKPIs, KPI } from '@/lib/chartHelpers';
+import { extractKPIs, aggregateAccountKPIs, recomputeDerivedKPIs, KPI } from '@/lib/chartHelpers';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
@@ -971,8 +971,11 @@ export default function AdminChartsPage() {
         const aggregated: Record<string, KPI[]> = {};
         for (const [plat, accountKpis] of Object.entries(perPlatform)) {
           const merged = accountKpis.length > 1 ? aggregateAccountKPIs(accountKpis) : accountKpis[0];
+          // Re-derive ratio / per-unit KPIs from the aggregated base counters so they
+          // don't underflow to 0.00% (which would otherwise be rendered as N/A).
+          const rederived = recomputeDerivedKPIs(merged, plat);
           const sel = selections[plat];
-          const filtered = sel ? merged.filter(k => sel.kpis.has(k.key)) : merged;
+          const filtered = sel ? rederived.filter(k => sel.kpis.has(k.key)) : rederived;
           aggregated[plat] = filtered.map(k => {
             const v = k.value;
             const isZero = (typeof v === 'number' && v === 0)

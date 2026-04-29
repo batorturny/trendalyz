@@ -584,6 +584,106 @@ export function aggregateAccountKPIs(allAccountKpis: KPI[][]): KPI[] {
   return merged;
 }
 
+// ─── DERIVED KPI RECOMPUTATION ────────────────────────────────────────────────
+// After multi-account / multi-month aggregation, ratio KPIs (X / view, avg per video)
+// would otherwise be the *average of per-account ratios* — which underflows to 0.00%
+// for small-share metrics like comment/view. Instead we re-derive these from the
+// already-aggregated base counters so they stay numerically correct.
+//
+// Each entry: derived KPI key → how to compute it from peer KPI values in the same list.
+
+interface DerivedRecipe {
+  needs: string[];
+  compute: (lookup: (key: string) => number) => string | number | null;
+}
+
+function num(v: KPI['value']): number {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string') return 0;
+  const parsed = parseFloat(v.replace(/[^0-9.\-]/g, ''));
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function pct(numerator: number, denominator: number): string | null {
+  if (!denominator) return null;
+  return `${((numerator / denominator) * 100).toFixed(2)}%`;
+}
+
+function divInt(numerator: number, denominator: number): number | null {
+  if (!denominator) return null;
+  return Math.round(numerator / denominator);
+}
+
+function divDec1(numerator: number, denominator: number): string | null {
+  if (!denominator) return null;
+  return (numerator / denominator).toFixed(1);
+}
+
+const DERIVED_KPIS: Record<string, Record<string, DerivedRecipe>> = {
+  TIKTOK_ORGANIC: {
+    tt_like_per_view:       { needs: ['tt_likes', 'tt_total_views'],    compute: g => pct(g('tt_likes'), g('tt_total_views')) },
+    tt_comment_per_view:    { needs: ['tt_comments', 'tt_total_views'], compute: g => pct(g('tt_comments'), g('tt_total_views')) },
+    tt_share_per_view:      { needs: ['tt_shares', 'tt_total_views'],   compute: g => pct(g('tt_shares'), g('tt_total_views')) },
+    tt_avg_views:           { needs: ['tt_total_views', 'tt_videos'],   compute: g => divInt(g('tt_total_views'), g('tt_videos')) },
+    tt_avg_likes:           { needs: ['tt_likes', 'tt_videos'],         compute: g => divInt(g('tt_likes'), g('tt_videos')) },
+    tt_avg_comments:        { needs: ['tt_comments', 'tt_videos'],      compute: g => divInt(g('tt_comments'), g('tt_videos')) },
+    tt_avg_shares:          { needs: ['tt_shares', 'tt_videos'],        compute: g => divInt(g('tt_shares'), g('tt_videos')) },
+    tt_avg_new_followers:   { needs: ['tt_followers', 'tt_videos'],     compute: g => divInt(g('tt_followers'), g('tt_videos')) },
+    tt_interactions_total:  { needs: ['tt_likes', 'tt_comments', 'tt_shares'], compute: g => g('tt_likes') + g('tt_comments') + g('tt_shares') },
+  },
+  FACEBOOK_ORGANIC: {
+    fb_er:                  { needs: ['fb_engagement', 'fb_reach'],     compute: g => pct(g('fb_engagement'), g('fb_reach')) },
+    fb_avg_reach_post:      { needs: ['fb_reach', 'fb_posts'],          compute: g => divInt(g('fb_reach'), g('fb_posts')) },
+    fb_avg_reactions_post:  { needs: ['fb_reactions', 'fb_posts'],      compute: g => divInt(g('fb_reactions'), g('fb_posts')) },
+    fb_avg_comments_post:   { needs: ['fb_comments', 'fb_posts'],       compute: g => divInt(g('fb_comments'), g('fb_posts')) },
+    fb_avg_shares_post:     { needs: ['fb_shares', 'fb_posts'],         compute: g => divInt(g('fb_shares'), g('fb_posts')) },
+  },
+  INSTAGRAM_ORGANIC: {
+    ig_er:                  { needs: ['ig_interactions_total', 'ig_reach_kpi'], compute: g => pct(g('ig_interactions_total'), g('ig_reach_kpi')) },
+    ig_like_per_reach:      { needs: ['ig_likes', 'ig_reach_kpi'],      compute: g => pct(g('ig_likes'), g('ig_reach_kpi')) },
+    ig_interactions_total:  { needs: ['ig_likes', 'ig_comments', 'ig_shares', 'ig_saves'], compute: g => g('ig_likes') + g('ig_comments') + g('ig_shares') + g('ig_saves') },
+    ig_avg_reach_media:     { needs: ['ig_reach_kpi', 'ig_media_count'], compute: g => divInt(g('ig_reach_kpi'), g('ig_media_count')) },
+    ig_avg_likes_media:     { needs: ['ig_likes', 'ig_media_count'],    compute: g => divInt(g('ig_likes'), g('ig_media_count')) },
+    ig_avg_comments_media:  { needs: ['ig_comments', 'ig_media_count'], compute: g => divInt(g('ig_comments'), g('ig_media_count')) },
+    ig_avg_saves_media:     { needs: ['ig_saves', 'ig_media_count'],    compute: g => divInt(g('ig_saves'), g('ig_media_count')) },
+    ig_avg_shares_media:    { needs: ['ig_shares', 'ig_media_count'],   compute: g => divInt(g('ig_shares'), g('ig_media_count')) },
+  },
+  YOUTUBE: {
+    yt_er:                    { needs: ['yt_interactions_total', 'yt_views_kpi'], compute: g => pct(g('yt_interactions_total'), g('yt_views_kpi')) },
+    yt_like_per_view:         { needs: ['yt_likes_kpi', 'yt_views_kpi'],          compute: g => pct(g('yt_likes_kpi'), g('yt_views_kpi')) },
+    yt_comment_per_view:      { needs: ['yt_comments_kpi', 'yt_views_kpi'],       compute: g => pct(g('yt_comments_kpi'), g('yt_views_kpi')) },
+    yt_interactions_total:    { needs: ['yt_likes_kpi', 'yt_comments_kpi', 'yt_shares_kpi'], compute: g => g('yt_likes_kpi') + g('yt_comments_kpi') + g('yt_shares_kpi') },
+    yt_avg_views_video:       { needs: ['yt_views_kpi', 'yt_video_count'],        compute: g => divInt(g('yt_views_kpi'), g('yt_video_count')) },
+    yt_avg_likes_video:       { needs: ['yt_likes_kpi', 'yt_video_count'],        compute: g => divInt(g('yt_likes_kpi'), g('yt_video_count')) },
+    yt_avg_comments_video:    { needs: ['yt_comments_kpi', 'yt_video_count'],     compute: g => divDec1(g('yt_comments_kpi'), g('yt_video_count')) },
+    yt_avg_watch_time_video:  { needs: ['yt_watch', 'yt_video_count'],            compute: g => divDec1(g('yt_watch'), g('yt_video_count')) },
+  },
+};
+
+/**
+ * Recompute derived (ratio / per-unit) KPIs from already-aggregated base counters.
+ * Call this AFTER aggregateAccountKPIs / aggregateMonthlyKPIs to keep ratios numerically correct.
+ *
+ * Returns a new array; KPIs not in the platform's recipe table pass through unchanged.
+ */
+export function recomputeDerivedKPIs(kpis: KPI[], platform: string): KPI[] {
+  const recipes = DERIVED_KPIS[platform];
+  if (!recipes) return kpis;
+
+  const byKey = new Map(kpis.map(k => [k.key, k]));
+  const lookup = (key: string) => num(byKey.get(key)?.value ?? 0);
+
+  return kpis.map(kpi => {
+    const recipe = recipes[kpi.key];
+    if (!recipe) return kpi;
+    if (recipe.needs.some(n => !byKey.has(n))) return kpi;
+
+    const next = recipe.compute(lookup);
+    if (next === null) return kpi;
+    return { ...kpi, value: next };
+  });
+}
+
 /**
  * Generate per-month date ranges from an end month and period count.
  * Returns array of { startDate, endDate, month } objects, oldest first.
