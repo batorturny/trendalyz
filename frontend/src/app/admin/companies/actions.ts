@@ -3,13 +3,10 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
+import { sendEmail, inviteWelcomeEmailHtml } from '@/lib/email';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
-import { Resend } from 'resend';
-import crypto from 'crypto';
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 async function getAdminWindsorApiKey(userId: string): Promise<string> {
   const user = await prisma.user.findUnique({
@@ -111,39 +108,11 @@ export async function createCompany(formData: FormData) {
       });
     }
 
-    // Generate invite token and send set-password email
-    const inviteToken = crypto.randomUUID();
-    const inviteExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await prisma.verificationToken.create({
-      data: { identifier: clientEmail, token: inviteToken, expires: inviteExpires },
+    await sendEmail({
+      to: clientEmail,
+      subject: `Meghívó – ${name} – Trendalyz`,
+      html: inviteWelcomeEmailHtml(name, clientEmail),
     });
-
-    const setPasswordUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/set-password?token=${inviteToken}`;
-
-    if (resend) {
-      await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
-        to: clientEmail,
-        subject: `Meghívó - ${name} Trendalyz`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #0d3b5e;">Trendalyz</h2>
-            <p>Meghívást kaptál a <strong>${name}</strong> cég riportjainak megtekintéséhez.</p>
-            <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
-            <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-              Jelszó beállítása
-            </a>
-            <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
-              Ez a link 24 órán belül lejár. Ha nem te kaptad ezt az emailt, figyelmen kívül hagyhatod.
-            </p>
-          </div>
-        `,
-      });
-    } else {
-      console.log(`\n📧 [DEV] Meghívó email → ${clientEmail} (${name})`);
-      console.log(`🔗 ${setPasswordUrl}\n`);
-    }
   }
 
   revalidatePath('/admin/companies');
@@ -239,39 +208,11 @@ export async function addUserToCompany(companyId: string, formData: FormData) {
     });
   }
 
-  // Generate invite token and send set-password email
-  const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-  await prisma.verificationToken.create({
-    data: { identifier: email, token, expires },
+  await sendEmail({
+    to: email,
+    subject: `Meghívó – ${company.name} – Trendalyz`,
+    html: inviteWelcomeEmailHtml(company.name, email),
   });
-
-  const setPasswordUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/set-password?token=${token}`;
-
-  if (resend) {
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
-      to: email,
-      subject: `Meghívó - ${company.name} Trendalyz`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0d3b5e;">Trendalyz</h2>
-          <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
-          <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
-          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-            Jelszó beállítása
-          </a>
-          <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
-            Ez a link 24 órán belül lejár. Ha nem te kaptad ezt az emailt, figyelmen kívül hagyhatod.
-          </p>
-        </div>
-      `,
-    });
-  } else {
-    console.log(`\n📧 [DEV] Meghívó email → ${email} (${company.name})`);
-    console.log(`🔗 ${setPasswordUrl}\n`);
-  }
 
   revalidatePath(`/admin/companies/${companyId}`);
 }
@@ -286,42 +227,11 @@ export async function resendInvite(userId: string, companyId: string) {
   const company = await prisma.company.findUnique({ where: { id: companyId } });
   if (!company) throw new Error('Cég nem található');
 
-  // Delete old tokens for this user
-  await prisma.verificationToken.deleteMany({ where: { identifier: user.email } });
-
-  // Generate new invite token
-  const token = crypto.randomUUID();
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-  await prisma.verificationToken.create({
-    data: { identifier: user.email, token, expires },
+  await sendEmail({
+    to: user.email,
+    subject: `Meghívó – ${company.name} – Trendalyz`,
+    html: inviteWelcomeEmailHtml(company.name, user.email),
   });
-
-  const setPasswordUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/set-password?token=${token}`;
-
-  if (resend) {
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@trendalyz.hu',
-      to: user.email,
-      subject: `Meghívó újraküldve - ${company.name} Trendalyz`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0d3b5e;">Trendalyz</h2>
-          <p>Meghívást kaptál a <strong>${company.name}</strong> cég riportjainak megtekintéséhez.</p>
-          <p>Kattints az alábbi gombra a jelszavad beállításához:</p>
-          <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(to right, #1a6b8a, #0d3b5e); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-            Jelszó beállítása
-          </a>
-          <p style="color: #64748b; font-size: 12px; margin-top: 20px;">
-            Ez a link 24 órán belül lejár. Ha nem te kaptad ezt az emailt, figyelmen kívül hagyhatod.
-          </p>
-        </div>
-      `,
-    });
-  } else {
-    console.log(`\n📧 [DEV] Meghívó újraküldve → ${user.email} (${company.name})`);
-    console.log(`🔗 ${setPasswordUrl}\n`);
-  }
 
   revalidatePath(`/admin/companies/${companyId}`);
 }

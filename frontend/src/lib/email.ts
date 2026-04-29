@@ -131,6 +131,17 @@ export function inviteEmailHtml(companyName: string, token: string): string {
   `, `Meghívás a ${escapeHtml(companyName)} riportjaihoz — Trendalyz`);
 }
 
+export function inviteWelcomeEmailHtml(companyName: string, email: string): string {
+  const url = `${BASE_URL}/login`;
+  return layout(`
+    ${heading('Meghívást kaptál!')}
+    ${paragraph(`A <strong>${escapeHtml(companyName)}</strong> cég meghívott, hogy a Trendalyz platformon megtekintsd a havi social media riportjaidat.`)}
+    ${paragraph(`Az email címedhez (<strong>${escapeHtml(email)}</strong>) hozzá lett rendelve a fiókod. A belépéshez nem kell jelszót beállítanod — minden alkalommal egy egyszer használatos belépési linket küldünk az email címedre, amikor be akarsz lépni.`)}
+    ${button(url, 'Belépés a Trendalyzbe')}
+    <p style="color:${BRAND.textMuted};font-size:12px;text-align:center;">A belépő oldalon csak az email címedet kell megadni — utána egyetlen kattintással bent vagy.</p>
+  `, `Meghívás a ${escapeHtml(companyName)} riportjaihoz — Trendalyz`);
+}
+
 export function resetPasswordEmailHtml(token: string): string {
   const url = `${BASE_URL}/set-password?token=${token}`;
   return layout(`

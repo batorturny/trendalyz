@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useT } from '@/lib/i18n';
-// Inline SVG eye icons to avoid loading lucide-react bundle on login
+
 function Eye({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,42 +23,64 @@ function EyeOff({ className }: { className?: string }) {
   );
 }
 
+type Mode = 'magic' | 'password' | 'forgot';
+
 export default function LoginForm() {
   const t = useT();
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [mode, setMode] = useState<Mode>('magic');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasGoogle, setHasGoogle] = useState<boolean | null>(null);
+  const [hasEmail, setHasEmail] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/providers')
       .then(res => res.json())
-      .then(providers => { setHasGoogle(!!providers?.google); })
-      .catch(() => { setHasGoogle(false); });
+      .then(providers => {
+        setHasGoogle(!!providers?.google);
+        setHasEmail(!!providers?.email);
+      })
+      .catch(() => { setHasGoogle(false); setHasEmail(false); });
   }, []);
 
-  function switchMode(newMode: 'login' | 'register' | 'forgot') {
+  function switchMode(newMode: Mode) {
     setMode(newMode);
     setError(null);
     setSuccess(null);
     setShowPassword(false);
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleMagicLink(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await signIn('email', { email, redirect: false });
+      if (result?.error) {
+        setError(t('Nem sikerült elküldeni a belépési linket'));
+        setLoading(false);
+        return;
+      }
+      setSuccess(t('Elküldtük a belépési linket. Nézd meg a postaládád!'));
+      setLoading(false);
+    } catch {
+      setError(t('Hálózati hiba'));
+      setLoading(false);
+    }
+  }
+
+  async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
+    const result = await signIn('credentials', { email, password, redirect: false });
 
     if (result?.error) {
       setError(t('Hibás email vagy jelszó'));
@@ -66,46 +88,6 @@ export default function LoginForm() {
     } else {
       const session = await fetch('/api/auth/session').then(r => r.json());
       window.location.href = session?.user?.role === 'CLIENT' ? '/dashboard' : '/admin';
-    }
-  }
-
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || t('Hiba történt'));
-        setLoading(false);
-        return;
-      }
-
-      const loginResult = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (loginResult?.error) {
-        setSuccess(t('Sikeres regisztráció! Most már bejelentkezhetsz.'));
-        setMode('login');
-        setLoading(false);
-      } else {
-        window.location.href = '/admin';
-      }
-    } catch {
-      setError(t('Hálózati hiba'));
-      setLoading(false);
     }
   }
 
@@ -121,15 +103,12 @@ export default function LoginForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         setError(data.error || t('Hiba történt'));
         setLoading(false);
         return;
       }
-
       setSuccess(t('Ha létezik ilyen fiók, elküldtük a jelszó-visszaállító linket az email címedre.'));
       setLoading(false);
     } catch {
@@ -167,7 +146,7 @@ export default function LoginForm() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            {mode === 'login' ? t('Bejelentkezés Google fiókkal') : t('Regisztráció Google fiókkal')}
+            {t('Bejelentkezés Google fiókkal')}
           </button>
         </>
       )}
@@ -213,7 +192,7 @@ export default function LoginForm() {
           )}
 
           <button
-            onClick={() => switchMode('login')}
+            onClick={() => switchMode('magic')}
             className="mt-4 w-full text-center text-sm text-[var(--accent)] hover:opacity-70 font-semibold transition-opacity"
           >
             {t('Vissza a bejelentkezéshez')}
@@ -221,140 +200,127 @@ export default function LoginForm() {
         </>
       ) : (
         <>
-          {/* Mode Toggle */}
-          <div className="flex bg-[var(--surface-raised)] rounded-xl p-1 mb-6">
-            <button
-              onClick={() => switchMode('login')}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                mode === 'login'
-                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              {t('Bejelentkezés')}
-            </button>
-            <button
-              onClick={() => switchMode('register')}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                mode === 'register'
-                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              {t('Regisztráció')}
-            </button>
-          </div>
-
           {success && (
             <div className="mb-4 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/50 rounded-xl p-4 text-emerald-700 dark:text-emerald-300 text-sm">
               {success}
             </div>
           )}
 
-          {mode === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="input-field"
-                  placeholder="email@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Jelszó')}</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="input-field pr-12"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+          {mode === 'magic' ? (
+            hasEmail === false ? (
+              <>
+                <div className="mb-4 bg-amber-50 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/50 rounded-xl p-4 text-amber-700 dark:text-amber-300 text-sm">
+                  {t('Az email-alapú belépés most nem elérhető. Kérlek, használd a jelszavas belépést.')}
                 </div>
-              </div>
-              <div className="flex justify-end">
+                <button
+                  onClick={() => switchMode('password')}
+                  className="w-full text-center text-sm text-[var(--accent)] hover:opacity-70 font-semibold"
+                >
+                  {t('Belépés jelszóval')}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('Bejelentkezés email-linkkel')}</h2>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">
+                    {t('Add meg az email címed és küldünk egy egyszer használatos belépési linket.')}
+                  </p>
+                </div>
+                <form onSubmit={handleMagicLink} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoFocus
+                      className="input-field"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                  >
+                    {loading ? t('Küldés...') : t('Belépési link küldése')}
+                  </button>
+                </form>
                 <button
                   type="button"
-                  onClick={() => switchMode('forgot')}
-                  className="text-sm text-[var(--accent)] hover:opacity-70 font-semibold transition-opacity"
+                  onClick={() => switchMode('password')}
+                  className="mt-4 w-full text-center text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold transition-colors"
                 >
-                  {t('Elfelejtettem a jelszavam')}
+                  {t('Adminoknak: belépés jelszóval')}
                 </button>
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
-              >
-                {loading ? t('Bejelentkezés...') : t('Bejelentkezés')}
-              </button>
-            </form>
+              </>
+            )
           ) : (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Név')}</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input-field"
-                  placeholder={t('Teljes neved')}
-                />
+            <>
+              <div className="mb-6">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('Belépés jelszóval')}</h2>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">{t('Csak admin fiókokhoz')}</p>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="input-field"
-                  placeholder="email@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Jelszó')}</label>
-                <div className="relative">
+              <form onSubmit={handlePasswordLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Email')}</label>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    minLength={6}
-                    className="input-field pr-12"
-                    placeholder={t('Min. 6 karakter')}
+                    className="input-field"
+                    placeholder="email@example.com"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Jelszó')}</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="input-field pr-12"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                    tabIndex={-1}
+                    onClick={() => switchMode('forgot')}
+                    className="text-sm text-[var(--accent)] hover:opacity-70 font-semibold transition-opacity"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {t('Elfelejtettem a jelszavam')}
                   </button>
                 </div>
-              </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                >
+                  {loading ? t('Bejelentkezés...') : t('Bejelentkezés')}
+                </button>
+              </form>
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                type="button"
+                onClick={() => switchMode('magic')}
+                className="mt-4 w-full text-center text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold transition-colors"
               >
-                {loading ? t('Regisztráció...') : t('Fiók létrehozása')}
+                {t('Vissza az email-linkhez')}
               </button>
-            </form>
+            </>
           )}
 
           {googleSection}
