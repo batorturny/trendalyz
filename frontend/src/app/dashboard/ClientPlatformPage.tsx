@@ -3,13 +3,13 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
-import { extractKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
+import { extractKPIs, groupByCategory, computeKPIChanges, KPI } from '@/lib/chartHelpers';
 import { Building2, Settings, MessageSquare, HelpCircle, ChevronDown } from 'lucide-react';
 import type { IntegrationConnection } from '@/types/integration';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
-import { MonthPicker } from '@/components/MonthPicker';
+import { DateRangePicker, getDefaultRange, toIsoDate } from '@/components/DateRangePicker';
 import { collectChartKeysForConfig } from '@/lib/platformMetrics';
 import { exportPdfFromDOM } from '@/lib/exportPdfClient';
 import { useT } from '@/lib/i18n';
@@ -58,11 +58,11 @@ export function ClientPlatformPage({
   const t = useT();
   const { data: session, status } = useSession();
   const [allCatalog, setAllCatalog] = useState<ChartDefinition[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState('');
-  const [periodMonths, setPeriodMonths] = useState(1);
+  const initialRange = useMemo(() => getDefaultRange(), []);
+  const [startDate, setStartDate] = useState<string>(initialRange.start);
+  const [endDate, setEndDate] = useState<string>(initialRange.end);
   const [results, setResults] = useState<ChartData[]>([]);
   const [aggregatedKPIs, setAggregatedKPIs] = useState<KPI[] | null>(null);
-  const [aggregatedCount, setAggregatedCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,14 +127,21 @@ export function ClientPlatformPage({
   }, [platformCatalog, results, dashboardConfig]);
 
   useEffect(() => {
-    const now = new Date();
-    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    setSelectedMonth(`${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`);
-
     getChartCatalog()
       .then(data => setAllCatalog(data.charts))
       .catch(() => setError(t('Nem sikerült betölteni a chart katalógust')));
   }, []);
+
+  // Derived: a "single complete month" means start = first-of-month and end = last-of-same-month
+  const monthAlignedKey = useMemo(() => {
+    if (!startDate || !endDate) return null;
+    const [sy, sm, sd] = startDate.split('-').map(Number);
+    const [ey, em, ed] = endDate.split('-').map(Number);
+    if (sy !== ey || sm !== em || sd !== 1) return null;
+    const lastDay = new Date(sy, sm, 0).getDate();
+    if (ed !== lastDay) return null;
+    return `${sy}-${String(sm).padStart(2, '0')}`;
+  }, [startDate, endDate]);
 
   // Fetch connections for this company, filter to current platform
   useEffect(() => {
@@ -166,13 +173,12 @@ export function ClientPlatformPage({
   }, [companyId, platform.platformKey, selectedConnectionId]);
 
   const handleGenerate = useCallback(async () => {
-    if (!companyId || !selectedMonth || platformChartKeys.length === 0) return;
+    if (!companyId || !startDate || !endDate || platformChartKeys.length === 0) return;
 
     setLoading(true);
     setError(null);
     setResults([]);
     setAggregatedKPIs(null);
-    setAggregatedCount(0);
     setPrevMonthKpis(null);
     setMonthlyAnalysis(null);
 
@@ -181,97 +187,61 @@ export function ClientPlatformPage({
       : {};
 
     try {
-      if (periodMonths > 1) {
-        // Multi-month: fetch each month separately, aggregate KPIs only
-        const monthRanges = generateMonthRanges(selectedMonth, periodMonths);
-        const allMonthKpis: KPI[][] = [];
+      const startMs = new Date(`${startDate}T00:00:00`).getTime();
+      const endMs = new Date(`${endDate}T00:00:00`).getTime();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const dayCount = Math.max(1, Math.round((endMs - startMs) / dayMs) + 1);
+      const prevEnd = new Date(startMs - dayMs);
+      const prevStart = new Date(prevEnd.getTime() - (dayCount - 1) * dayMs);
+      const prevStartStr = toIsoDate(prevStart);
+      const prevEndStr = toIsoDate(prevEnd);
 
-        for (const range of monthRanges) {
-          try {
-            const response = await generateCharts({
-              accountId: companyId,
-              startDate: range.startDate,
-              endDate: range.endDate,
-              charts: platformChartKeys.map(key => ({ key })),
-              ...accountParams,
-            });
-            const monthKpis = extractKPIs(platform.platformKey, response.charts);
-            allMonthKpis.push(monthKpis);
-          } catch (err) {
-            console.error('[ClientPlatformPage] fetchMonth skipped', err);
-          }
-        }
+      const [response, prevResponse] = await Promise.all([
+        generateCharts({
+          accountId: companyId,
+          startDate,
+          endDate,
+          charts: platformChartKeys.map(key => ({ key })),
+          ...accountParams,
+        }),
+        generateCharts({
+          accountId: companyId,
+          startDate: prevStartStr,
+          endDate: prevEndStr,
+          charts: platformChartKeys.map(key => ({ key })),
+          ...accountParams,
+        }).catch(() => null),
+      ]);
 
-        if (allMonthKpis.length === 0) {
-          setError(t('Nem sikerült adatot lekérni a megadott időszakra'));
-        } else {
-          setAggregatedKPIs(aggregateMonthlyKPIs(allMonthKpis));
-          setAggregatedCount(allMonthKpis.length);
-          setResults([{ key: '_placeholder', title: '', description: '', type: '', color: '', data: { labels: [], series: [] }, source: '', generatedAt: '', empty: true }]); // trigger hasResults
-        }
-      } else {
-        const [year, month] = selectedMonth.split('-').map(Number);
-        const startDate = `${selectedMonth}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
+      setResults(response.charts);
 
-        // Also fetch previous month for % change
-        const prevDate = new Date(year, month - 2, 1);
-        const prevYear = prevDate.getFullYear();
-        const prevMonth = prevDate.getMonth() + 1;
-        const prevMM = String(prevMonth).padStart(2, '0');
-        const prevStartDate = `${prevYear}-${prevMM}-01`;
-        const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
-        const prevEndDate = `${prevYear}-${prevMM}-${String(prevLastDay).padStart(2, '0')}`;
-
-        const [response, prevResponse] = await Promise.all([
-          generateCharts({
-            accountId: companyId,
-            startDate,
-            endDate,
-            charts: platformChartKeys.map(key => ({ key })),
-            ...accountParams,
-          }),
-          generateCharts({
-            accountId: companyId,
-            startDate: prevStartDate,
-            endDate: prevEndDate,
-            charts: platformChartKeys.map(key => ({ key })),
-            ...accountParams,
-          }).catch(() => null),
-        ]);
-
-        setResults(response.charts);
-
-        if (prevResponse?.charts) {
-          const currentKpis = extractKPIs(platform.platformKey, response.charts);
-          const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
-          setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
-        }
+      if (prevResponse?.charts) {
+        const currentKpis = extractKPIs(platform.platformKey, response.charts);
+        const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
+        setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
       }
-    // Fetch monthly analysis (only for single month)
-    if (periodMonths === 1) {
-      const [year, month] = selectedMonth.split('-').map(Number);
-      const mm = String(month).padStart(2, '0');
-      fetch(`/api/analysis/client?month=${year}-${mm}`)
-        .then(r => r.json())
-        .then(data => setMonthlyAnalysis(data.content ?? null))
-        .catch(err => console.error('[ClientPlatformPage] fetchAnalysis', err));
+
+      // Monthly AI analysis only makes sense for a single complete month.
+      if (monthAlignedKey) {
+        fetch(`/api/analysis/client?month=${monthAlignedKey}`)
+          .then(r => r.json())
+          .then(data => setMonthlyAnalysis(data.content ?? null))
+          .catch(err => console.error('[ClientPlatformPage] fetchAnalysis', err));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('Hiba történt'));
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError(err instanceof Error ? err.message : t('Hiba történt'));
-  } finally {
-    setLoading(false);
-  }
-  }, [companyId, selectedMonth, platformChartKeys, periodMonths, platform.platformKey, selectedConnection]);
+  }, [companyId, startDate, endDate, platformChartKeys, platform.platformKey, selectedConnection, monthAlignedKey, t]);
 
   // Auto-generate on first load
   useEffect(() => {
-    if (companyId && selectedMonth && platformChartKeys.length > 0 && status === 'authenticated' && !autoLoaded && isConfigured) {
+    if (companyId && startDate && endDate && platformChartKeys.length > 0 && status === 'authenticated' && !autoLoaded && isConfigured) {
       setAutoLoaded(true);
       handleGenerate();
     }
-  }, [companyId, selectedMonth, platformChartKeys, status, autoLoaded, handleGenerate, isConfigured]);
+  }, [companyId, startDate, endDate, platformChartKeys, status, autoLoaded, handleGenerate, isConfigured]);
 
   // Reload when the user switches accounts (after initial auto-load)
   const lastLoadedConnIdRef = useRef<string | null>(null);
@@ -287,7 +257,7 @@ export function ClientPlatformPage({
     setExporting(true);
     setError(null);
     try {
-      const pdfFilename = `${platform.label}_riport_${selectedMonth}`;
+      const pdfFilename = `${platform.label}_riport_${startDate}_${endDate}`;
       const reportEl = reportRef.current;
       if (!reportEl) {
         throw new Error(t('Nincs megjeleníthető riport tartalom'));
@@ -364,9 +334,13 @@ export function ClientPlatformPage({
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <div>
-            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Hónap')}</label>
-            <MonthPicker value={selectedMonth} onChange={setSelectedMonth} periodMonths={periodMonths} onPeriodChange={setPeriodMonths} />
+          <div className="md:col-span-1">
+            <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">{t('Időszak')}</label>
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(s, e) => { setStartDate(s); setEndDate(e); }}
+            />
           </div>
           <div className="flex items-end">
             <button
@@ -400,13 +374,13 @@ export function ClientPlatformPage({
         {results.length > 0 && (
           <div className="space-y-8">
             {/* Monthly Analysis */}
-            {monthlyAnalysis && (
+            {monthlyAnalysis && monthAlignedKey && (
               <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-5 md:p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: platform.borderColor }} />
                   <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                     {(() => {
-                      const [y, mo] = selectedMonth.split('-').map(Number);
+                      const [y, mo] = monthAlignedKey.split('-').map(Number);
                       const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
                       return `${y}. ${MONTHS[mo - 1]} — ${t('havi elemzés')}`;
                     })()}
@@ -429,7 +403,7 @@ export function ClientPlatformPage({
 
             {/* KPI Header */}
             {(() => {
-              const rawKpis = periodMonths > 1 ? (aggregatedKPIs || []) : kpis;
+              const rawKpis = aggregatedKPIs && aggregatedKPIs.length > 0 ? aggregatedKPIs : kpis;
               const displayKpis = rawKpis.filter(kpi => {
                 const v = kpi.value;
                 return v !== 0 && v !== '0' && v !== '0.0' && v !== '0.00%' && v !== '0.0%';
@@ -438,14 +412,13 @@ export function ClientPlatformPage({
                 <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl p-4 md:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-xs font-bold text-[var(--text-secondary)] uppercase">
-                      {periodMonths > 1
-                        ? `${t('Összesített KPI-ok')} (${aggregatedCount} ${t('hónap')})`
-                        : (() => {
-                            if (!selectedMonth) return '';
-                            const [y, mo] = selectedMonth.split('-').map(Number);
+                      {monthAlignedKey
+                        ? (() => {
+                            const [y, mo] = monthAlignedKey.split('-').map(Number);
                             const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
                             return `${y}. ${MONTHS[mo - 1]} ${t('számai')}`;
                           })()
+                        : `${startDate} — ${endDate}`
                       }
                     </p>
                     <button
@@ -468,7 +441,7 @@ export function ClientPlatformPage({
             })()}
 
             {/* Chart layout toggle */}
-            {periodMonths === 1 && sections.length > 0 && (
+            {sections.length > 0 && (
               <div className="flex items-center justify-end gap-2 mb-2" data-pdf-skip="true">
                 <span className="text-xs text-[var(--text-secondary)]">Nézet:</span>
                 <button onClick={() => { setChartCols(1); localStorage.setItem('trendalyz-chart-cols', '1'); }}
@@ -482,8 +455,8 @@ export function ClientPlatformPage({
               </div>
             )}
 
-            {/* Chart Sections - only for single month */}
-            {periodMonths === 1 && sections.map(({ category, label, charts }) => (
+            {/* Chart Sections */}
+            {sections.map(({ category, label, charts }) => (
               <section key={category}>
                 <h3 className="text-base md:text-xl font-bold mb-3 md:mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                   {label}
@@ -574,12 +547,12 @@ export function ClientPlatformPage({
           <p className="text-[var(--text-secondary)]">{t('Ehhez a hónaphoz nem található adat. Próbálj másik hónapot választani.')}</p>
         </div>
       )}
-      {/* Evaluation floating bubble */}
-      {companyId && selectedMonth && (
+      {/* Evaluation floating bubble — only for a complete month */}
+      {companyId && monthAlignedKey && (
         <EvaluationBubble
           companyId={companyId}
           platform={platform.platformKey}
-          month={selectedMonth}
+          month={monthAlignedKey}
         />
       )}
     </div>
