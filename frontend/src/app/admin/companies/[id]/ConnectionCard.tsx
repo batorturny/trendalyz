@@ -1,7 +1,7 @@
 'use client';
 
 import { type IntegrationConnection, getProviderMeta } from '@/types/integration';
-import { deleteConnection, testConnection } from '../actions';
+import { deleteConnection, renameConnection, testConnection } from '../actions';
 import { useState } from 'react';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -25,6 +25,10 @@ export function ConnectionCard({ connection }: Props) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; windsorOnboardUrl?: string; needsWindsorSetup?: boolean } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(connection.externalAccountName ?? '');
+  const [saving, setSaving] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const provider = getProviderMeta(connection.provider);
   const status = STATUS_STYLES[connection.status] || STATUS_STYLES.PENDING;
@@ -32,6 +36,40 @@ export function ConnectionCard({ connection }: Props) {
   const handleDelete = async () => {
     setConfirmDelete(false);
     await deleteConnection(connection.id, connection.companyId);
+  };
+
+  const startEdit = () => {
+    setName(connection.externalAccountName ?? '');
+    setRenameError(null);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setRenameError(null);
+    setName(connection.externalAccountName ?? '');
+  };
+
+  const handleRename = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setRenameError(t('A név nem lehet üres'));
+      return;
+    }
+    if (trimmed === (connection.externalAccountName ?? '')) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    setRenameError(null);
+    try {
+      await renameConnection(connection.id, connection.companyId, trimmed);
+      setEditing(false);
+    } catch (err) {
+      setRenameError(err instanceof Error ? err.message : t('Átnevezés sikertelen'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTest = async () => {
@@ -59,10 +97,46 @@ export function ConnectionCard({ connection }: Props) {
           >
             <PlatformIcon platform={getPlatformFromProvider(connection.provider)} className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="font-semibold text-[var(--text-primary)] text-sm">{provider.label}</div>
-            {connection.externalAccountName && (
-              <div className="text-xs text-[var(--text-secondary)]">{connection.externalAccountName}</div>
+            {editing ? (
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); handleRename(); }
+                    if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+                  }}
+                  autoFocus
+                  disabled={saving}
+                  maxLength={120}
+                  placeholder={t('Megjelenített név')}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] w-56"
+                />
+                <button
+                  onClick={handleRename}
+                  disabled={saving}
+                  className="text-xs font-semibold text-[var(--accent)] hover:opacity-70 disabled:opacity-50"
+                >
+                  {saving ? t('Mentés...') : t('Mentés')}
+                </button>
+                <button
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="text-xs font-semibold text-[var(--text-secondary)] hover:opacity-70 disabled:opacity-50"
+                >
+                  {t('Mégse')}
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs text-[var(--text-secondary)] truncate">
+                {connection.externalAccountName || connection.externalAccountId}
+              </div>
+            )}
+            {renameError && (
+              <div className="text-xs text-[var(--error)] mt-1">{renameError}</div>
             )}
           </div>
         </div>
@@ -98,18 +172,27 @@ export function ConnectionCard({ connection }: Props) {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           onClick={handleTest}
-          disabled={testing}
+          disabled={testing || editing}
           className="text-xs font-semibold text-[var(--accent)] hover:opacity-70 disabled:opacity-50"
         >
           {testing ? t('Tesztelés...') : t('Kapcsolat tesztelése')}
         </button>
         <span className="text-[var(--border)]">|</span>
         <button
+          onClick={startEdit}
+          disabled={editing}
+          className="text-xs font-semibold text-[var(--accent)] hover:opacity-70 disabled:opacity-50"
+        >
+          {t('Átnevezés')}
+        </button>
+        <span className="text-[var(--border)]">|</span>
+        <button
           onClick={() => setConfirmDelete(true)}
-          className="text-xs font-semibold text-[var(--error)] hover:opacity-70"
+          disabled={editing}
+          className="text-xs font-semibold text-[var(--error)] hover:opacity-70 disabled:opacity-50"
         >
           {t('Törlés')}
         </button>
