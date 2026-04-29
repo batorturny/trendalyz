@@ -106,7 +106,7 @@ const translations = {
   'Keresés a feliratban...': 'Search in caption...',
   'Mindet mutat': 'Show all',
   'Mindet rejt': 'Hide all',
-  'Nem találtunk videót az utóbbi évben': 'No videos found in the last year',
+  'Nem találtunk videót az utóbbi 6 hónapban': 'No videos found in the last 6 months',
   'látható': 'visible',
   'Nincs felirat': 'No caption',
   'megtekintés': 'views',

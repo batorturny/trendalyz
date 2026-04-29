@@ -120,17 +120,6 @@ function fmtMonth(ym: string): string {
 // EMAIL TEMPLATES
 // ============================================
 
-export function inviteEmailHtml(companyName: string, token: string): string {
-  const url = `${BASE_URL}/set-password?token=${token}`;
-  return layout(`
-    ${heading('Meghívást kaptál!')}
-    ${paragraph(`A <strong>${escapeHtml(companyName)}</strong> cég meghívott, hogy tekintsd meg a havi social media riportjaidat a Trendalyz platformon.`)}
-    ${paragraph('Kattints az alábbi gombra a fiókod aktiválásához és a jelszavad beállításához:')}
-    ${button(url, 'Fiók aktiválása')}
-    <p style="color:${BRAND.textMuted};font-size:12px;text-align:center;">Ez a link 24 órán belül lejár.</p>
-  `, `Meghívás a ${escapeHtml(companyName)} riportjaihoz — Trendalyz`);
-}
-
 export function inviteWelcomeEmailHtml(companyName: string, email: string): string {
   const url = `${BASE_URL}/login`;
   return layout(`

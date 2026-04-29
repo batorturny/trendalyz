@@ -62,7 +62,6 @@ export function ClientPlatformPage({
   const [startDate, setStartDate] = useState<string>(initialRange.start);
   const [endDate, setEndDate] = useState<string>(initialRange.end);
   const [results, setResults] = useState<ChartData[]>([]);
-  const [aggregatedKPIs, setAggregatedKPIs] = useState<KPI[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -178,7 +177,6 @@ export function ClientPlatformPage({
     setLoading(true);
     setError(null);
     setResults([]);
-    setAggregatedKPIs(null);
     setPrevMonthKpis(null);
     setMonthlyAnalysis(null);
 
@@ -187,38 +185,38 @@ export function ClientPlatformPage({
       : {};
 
     try {
-      const startMs = new Date(`${startDate}T00:00:00`).getTime();
-      const endMs = new Date(`${endDate}T00:00:00`).getTime();
-      const dayMs = 24 * 60 * 60 * 1000;
-      const dayCount = Math.max(1, Math.round((endMs - startMs) / dayMs) + 1);
-      const prevEnd = new Date(startMs - dayMs);
-      const prevStart = new Date(prevEnd.getTime() - (dayCount - 1) * dayMs);
-      const prevStartStr = toIsoDate(prevStart);
-      const prevEndStr = toIsoDate(prevEnd);
-
-      const [response, prevResponse] = await Promise.all([
-        generateCharts({
-          accountId: companyId,
-          startDate,
-          endDate,
-          charts: platformChartKeys.map(key => ({ key })),
-          ...accountParams,
-        }),
-        generateCharts({
-          accountId: companyId,
-          startDate: prevStartStr,
-          endDate: prevEndStr,
-          charts: platformChartKeys.map(key => ({ key })),
-          ...accountParams,
-        }).catch(() => null),
-      ]);
-
+      const chartRequests = platformChartKeys.map(key => ({ key }));
+      const response = await generateCharts({
+        accountId: companyId,
+        startDate,
+        endDate,
+        charts: chartRequests,
+        ...accountParams,
+      });
       setResults(response.charts);
 
-      if (prevResponse?.charts) {
-        const currentKpis = extractKPIs(platform.platformKey, response.charts);
-        const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
-        setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
+      // Previous-period delta only when the picked range is a full calendar month —
+      // arbitrary-window deltas aren't meaningful for "monthly" KPIs and would double
+      // every dashboard's Windsor cost for no UI gain.
+      if (monthAlignedKey) {
+        const startMs = new Date(`${startDate}T00:00:00`).getTime();
+        const endMs = new Date(`${endDate}T00:00:00`).getTime();
+        const dayMs = 24 * 60 * 60 * 1000;
+        const dayCount = Math.max(1, Math.round((endMs - startMs) / dayMs) + 1);
+        const prevEnd = new Date(startMs - dayMs);
+        const prevStart = new Date(prevEnd.getTime() - (dayCount - 1) * dayMs);
+
+        generateCharts({
+          accountId: companyId,
+          startDate: toIsoDate(prevStart),
+          endDate: toIsoDate(prevEnd),
+          charts: chartRequests,
+          ...accountParams,
+        }).then(prevResponse => {
+          const currentKpis = extractKPIs(platform.platformKey, response.charts);
+          const prevKpis = extractKPIs(platform.platformKey, prevResponse.charts);
+          setPrevMonthKpis(computeKPIChanges(currentKpis, prevKpis));
+        }).catch(err => console.error('[ClientPlatformPage] prev-period fetch', err));
       }
 
       // Monthly AI analysis only makes sense for a single complete month.
@@ -235,23 +233,21 @@ export function ClientPlatformPage({
     }
   }, [companyId, startDate, endDate, platformChartKeys, platform.platformKey, selectedConnection, monthAlignedKey, t]);
 
-  // Auto-generate on first load
-  useEffect(() => {
-    if (companyId && startDate && endDate && platformChartKeys.length > 0 && status === 'authenticated' && !autoLoaded && isConfigured) {
-      setAutoLoaded(true);
-      handleGenerate();
-    }
-  }, [companyId, startDate, endDate, platformChartKeys, status, autoLoaded, handleGenerate, isConfigured]);
-
-  // Reload when the user switches accounts (after initial auto-load)
+  // Single load/reload effect. Waits for connections to settle before firing so we
+  // don't burn Windsor calls on a first render where selectedConnection is still null,
+  // then re-runs whenever the user picks a different account.
   const lastLoadedConnIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!autoLoaded) return;
-    if (!selectedConnectionId) return;
-    if (lastLoadedConnIdRef.current === selectedConnectionId) return;
-    lastLoadedConnIdRef.current = selectedConnectionId;
+    if (!companyId || !startDate || !endDate || platformChartKeys.length === 0) return;
+    if (status !== 'authenticated' || !isConfigured) return;
+    // platformConnections === [] is a valid "this platform has no connection" state — load anyway.
+    if (platformConnections.length > 0 && !selectedConnectionId) return;
+    const connKey = selectedConnectionId ?? '__none__';
+    if (lastLoadedConnIdRef.current === connKey) return;
+    lastLoadedConnIdRef.current = connKey;
+    setAutoLoaded(true);
     handleGenerate();
-  }, [selectedConnectionId, autoLoaded, handleGenerate]);
+  }, [companyId, startDate, endDate, platformChartKeys, status, isConfigured, platformConnections.length, selectedConnectionId, handleGenerate]);
 
   async function handleExportPdf() {
     setExporting(true);
@@ -355,7 +351,7 @@ export function ClientPlatformPage({
           <div className="flex items-end">
             <button
               onClick={handleExportPdf}
-              disabled={(results.length === 0 && !aggregatedKPIs) || exporting}
+              disabled={results.length === 0 || exporting}
               className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] font-bold py-3 px-6 rounded-xl hover:bg-[var(--accent-subtle)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               {exporting ? t('PDF készítése...') : t('Letöltés PDF-ben')}
@@ -403,7 +399,7 @@ export function ClientPlatformPage({
 
             {/* KPI Header */}
             {(() => {
-              const rawKpis = aggregatedKPIs && aggregatedKPIs.length > 0 ? aggregatedKPIs : kpis;
+              const rawKpis = kpis;
               const displayKpis = rawKpis.filter(kpi => {
                 const v = kpi.value;
                 return v !== 0 && v !== '0' && v !== '0.0' && v !== '0.00%' && v !== '0.0%';

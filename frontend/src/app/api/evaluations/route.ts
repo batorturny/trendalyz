@@ -98,9 +98,11 @@ export async function POST(req: Request) {
   // Re-fetch to return the full record with updated messages
   const updated = await prisma.evaluation.findUnique({ where: { id: evaluation.id } });
 
-  // Notify all CLIENT users of the company in the background — don't block the response
-  // and never fail the save if mailing fails.
-  const recipients = company.users.map(u => u.email).filter(Boolean);
+  // Fire-and-forget client notification — Coolify/Hetzner long-lived Node keeps the
+  // promise alive past the response. Never blocks the save, never bubbles a Resend outage.
+  const recipients = company.users
+    .map(u => u.email)
+    .filter((e): e is string => !!e);
   if (recipients.length > 0) {
     const html = evaluationMessageEmailHtml({
       companyName: company.name,
@@ -108,7 +110,7 @@ export async function POST(req: Request) {
       month,
       message: adminMessage,
     });
-    Promise.all(recipients.map(to =>
+    Promise.allSettled(recipients.map(to =>
       sendEmail({ to, subject: `Új értékelés – ${company.name}`, html })
     )).catch(err => console.error('[evaluations] notify clients failed:', err));
   }

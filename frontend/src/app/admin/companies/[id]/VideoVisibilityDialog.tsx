@@ -5,6 +5,7 @@ import { X, Check, Loader2 } from 'lucide-react';
 import { generateCharts } from '@/lib/api';
 import { getConnectionExcludedVideoIds, setConnectionExcludedVideoIds } from '../actions';
 import { useT } from '@/lib/i18n';
+import { toIsoDate } from '@/components/DateRangePicker';
 import type { IntegrationConnection } from '@/types/integration';
 
 interface VideoRow {
@@ -22,11 +23,7 @@ interface Props {
   onClose: () => void;
 }
 
-const LOOKBACK_DAYS = 365;
-
-function toIsoDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+const LOOKBACK_DAYS = 180;
 
 export function VideoVisibilityDialog({ connection, onClose }: Props) {
   const t = useT();
@@ -163,7 +160,7 @@ export function VideoVisibilityDialog({ connection, onClose }: Props) {
           ) : filtered.length === 0 ? (
             <div className="px-4 py-12 text-sm text-[var(--text-secondary)] text-center">
               {videos.length === 0
-                ? t('Nem találtunk videót az utóbbi évben')
+                ? t('Nem találtunk videót az utóbbi 6 hónapban')
                 : t('Nincs találat')}
             </div>
           ) : (

@@ -85,16 +85,16 @@ function formatHu(iso: string): string {
   return `${y}. ${MONTH_HU[m - 1]} ${d}.`;
 }
 
-function summarize(start: string, end: string, presets: RangePreset[]): { label: string; subtitle: string | null } {
-  for (const p of presets) {
-    const r = p.range();
+function resolve(start: string, end: string, presets: RangePreset[]): { label: string; subtitle: string | null; activeIdx: number } {
+  for (let i = 0; i < presets.length; i++) {
+    const r = presets[i].range();
     if (r.start === start && r.end === end) {
-      return { label: p.label, subtitle: `${formatHu(start)} – ${formatHu(end)}` };
+      return { label: presets[i].label, subtitle: `${formatHu(start)} – ${formatHu(end)}`, activeIdx: i };
     }
   }
-  if (start && end && start === end) return { label: formatHu(start), subtitle: null };
-  if (start && end) return { label: `${formatHu(start)} – ${formatHu(end)}`, subtitle: null };
-  return { label: 'Válassz időszakot...', subtitle: null };
+  if (start && end && start === end) return { label: formatHu(start), subtitle: null, activeIdx: -1 };
+  if (start && end) return { label: `${formatHu(start)} – ${formatHu(end)}`, subtitle: null, activeIdx: -1 };
+  return { label: 'Válassz időszakot...', subtitle: null, activeIdx: -1 };
 }
 
 interface Props {
@@ -128,12 +128,7 @@ export function DateRangePicker({ startDate, endDate, onChange, presets = DEFAUL
   }, [open, startDate, endDate]);
 
   const today = toIsoDate(new Date());
-  const { label, subtitle } = summarize(startDate, endDate, presets);
-
-  const activePresetIdx = presets.findIndex(p => {
-    const r = p.range();
-    return r.start === startDate && r.end === endDate;
-  });
+  const { label, subtitle, activeIdx: activePresetIdx } = resolve(startDate, endDate, presets);
 
   const applyPreset = (preset: RangePreset) => {
     const r = preset.range();

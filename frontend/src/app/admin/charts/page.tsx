@@ -7,9 +7,10 @@ import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
 import { CompanyPicker, ALL_COMPANIES_ID } from '@/components/CompanyPicker';
 import { CompanyMultiPicker } from '@/components/CompanyMultiPicker';
+import { DateRangePicker, getDefaultRange, toIsoDate } from '@/components/DateRangePicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { KPICard as PlatformKPICard } from '@/components/KPICard';
-import { CalendarDays, ChevronDown, ChevronRight, Check, BarChart3, Eye, Heart, MessageCircle, Share2, Video, Users, TrendingUp } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, BarChart3, Eye, Heart, MessageCircle, Share2, Video, Users, TrendingUp } from 'lucide-react';
 import { WindsorKeyGuard } from '@/components/WindsorKeyGuard';
 import { PLATFORM_METRICS, PLATFORM_ORDER, DISABLED_PLATFORMS, type MetricItem, type PlatformMetricConfig } from '@/lib/platformMetrics';
 import { QuickEvaluation } from '@/components/QuickEvaluation';
@@ -19,73 +20,9 @@ import { getProviderMeta, type ConnectionProvider } from '@/types/integration';
 // HELPER FUNCTIONS
 // ============================================
 
-// ... (omitted)
-
-function toIsoDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 function toYearMonth(isoDate: string): string {
   return isoDate.slice(0, 7);
 }
-
-function previousMonthRange(): { start: string; end: string } {
-  const now = new Date();
-  const firstOfThis = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastOfPrev = new Date(firstOfThis.getTime() - 24 * 60 * 60 * 1000);
-  const firstOfPrev = new Date(lastOfPrev.getFullYear(), lastOfPrev.getMonth(), 1);
-  return { start: toIsoDate(firstOfPrev), end: toIsoDate(lastOfPrev) };
-}
-
-type Preset = { label: string; range: () => { start: string; end: string } };
-const PRESETS: Preset[] = [
-  {
-    label: 'Tegnap',
-    range: () => {
-      const y = new Date(); y.setDate(y.getDate() - 1);
-      const iso = toIsoDate(y);
-      return { start: iso, end: iso };
-    },
-  },
-  {
-    label: 'Elmúlt 7 nap',
-    range: () => {
-      const end = new Date(); end.setDate(end.getDate() - 1);
-      const start = new Date(end); start.setDate(end.getDate() - 6);
-      return { start: toIsoDate(start), end: toIsoDate(end) };
-    },
-  },
-  {
-    label: 'Elmúlt 30 nap',
-    range: () => {
-      const end = new Date(); end.setDate(end.getDate() - 1);
-      const start = new Date(end); start.setDate(end.getDate() - 29);
-      return { start: toIsoDate(start), end: toIsoDate(end) };
-    },
-  },
-  {
-    label: 'Elmúlt hónap',
-    range: () => previousMonthRange(),
-  },
-  {
-    label: 'Elmúlt 3 hónap',
-    range: () => {
-      const { end } = previousMonthRange();
-      const e = new Date(end);
-      const s = new Date(e.getFullYear(), e.getMonth() - 2, 1);
-      return { start: toIsoDate(s), end };
-    },
-  },
-  {
-    label: 'Elmúlt 6 hónap',
-    range: () => {
-      const { end } = previousMonthRange();
-      const e = new Date(end);
-      const s = new Date(e.getFullYear(), e.getMonth() - 5, 1);
-      return { start: toIsoDate(s), end };
-    },
-  },
-];
 
 // ============================================
 // KPI AGGREGATION (all companies mode)
@@ -272,19 +209,6 @@ function MultiSelectDropdown({ label, items, selected, onToggle, onSelectAll, on
         </div>
       )}
     </div>
-  );
-}
-
-// Styled date input (matches dark theme via Tailwind)
-function DateInput({ value, onChange, max }: { value: string; onChange: (v: string) => void; max?: string }) {
-  return (
-    <input
-      type="date"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      max={max}
-      className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-colors cursor-pointer"
-    />
   );
 }
 
@@ -657,26 +581,17 @@ export default function AdminChartsPage() {
   const [catalog, setCatalog] = useState<ChartDefinition[]>([]);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
 
-  // Default range: previous full month
-  const defaultRange = useMemo(() => previousMonthRange(), []);
+  const defaultRange = useMemo(() => getDefaultRange(), []);
   const [startDate, setStartDate] = useState<string>(defaultRange.start);
   const [endDate, setEndDate] = useState<string>(defaultRange.end);
 
-  // Multi-account selection: which IntegrationConnection IDs to include
   const [selectedConnectionIds, setSelectedConnectionIds] = useState<Set<string>>(new Set());
-
-  // Per-platform selections: { platformKey: { kpis: Set, daily: Set, dist: Set } }
   const [selections, setSelections] = useState<Record<string, { kpis: Set<string>; daily: Set<string>; dist: Set<string> }>>({});
-
   const [results, setResults] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Aggregate KPIs state (all companies mode)
   const [aggregateKPIs, setAggregateKPIs] = useState<AggregateKPIs | null>(null);
   const [aggregateProgress, setAggregateProgress] = useState({ done: 0, total: 0 });
-
-  // Per-platform KPIs (single company, possibly multi-account)
   const [platformKPIs, setPlatformKPIs] = useState<Record<string, KPI[]>>({});
   const [accountCount, setAccountCount] = useState(0);
 
@@ -714,7 +629,6 @@ export default function AdminChartsPage() {
     [allConnections, selectedConnectionIds]
   );
 
-  // Initialize selections with all items selected
   useEffect(() => {
     loadData();
   }, []);
@@ -750,22 +664,6 @@ export default function AdminChartsPage() {
     }
   }
 
-  function applyPreset(idx: number) {
-    const p = PRESETS[idx];
-    if (!p) return;
-    const { start, end } = p.range();
-    setStartDate(start);
-    setEndDate(end);
-  }
-
-  const activePresetIdx = useMemo(() => {
-    for (let i = 0; i < PRESETS.length; i++) {
-      const r = PRESETS[i].range();
-      if (r.start === startDate && r.end === endDate) return i;
-    }
-    return -1;
-  }, [startDate, endDate]);
-
   // Collect all needed chart keys from selections
   const allSelectedChartKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -773,19 +671,16 @@ export default function AdminChartsPage() {
     for (const [platKey, sel] of Object.entries(selections)) {
       const config = PLATFORM_METRICS[platKey];
       if (!config) continue;
-      // KPI chart keys
       for (const kpi of config.kpis) {
         if (sel.kpis.has(kpi.key)) {
           kpi.chartKeys.forEach(k => { if (catalogKeys.size === 0 || catalogKeys.has(k)) keys.add(k); });
         }
       }
-      // Daily chart keys
       for (const daily of config.daily) {
         if (sel.daily.has(daily.key)) {
           daily.chartKeys.forEach(k => { if (catalogKeys.size === 0 || catalogKeys.has(k)) keys.add(k); });
         }
       }
-      // Distribution chart keys
       for (const dist of config.distributions) {
         if (sel.dist.has(dist.key)) {
           dist.chartKeys.forEach(k => { if (catalogKeys.size === 0 || catalogKeys.has(k)) keys.add(k); });
@@ -803,7 +698,6 @@ export default function AdminChartsPage() {
     return count;
   }, [selections]);
 
-  // Selection helpers
   function toggleInSet(platformKey: string, category: 'kpis' | 'daily' | 'dist', key: string) {
     setSelections(prev => {
       const platSel = prev[platformKey];
@@ -1078,11 +972,11 @@ export default function AdminChartsPage() {
 
             <div>
               <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Időszak</label>
-              <div className="flex items-center gap-2">
-                <DateInput value={startDate} onChange={setStartDate} max={endDate} />
-                <span className="text-[var(--text-secondary)] font-bold px-1">&mdash;</span>
-                <DateInput value={endDate} onChange={setEndDate} max={toIsoDate(new Date())} />
-              </div>
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(s, e) => { setStartDate(s); setEndDate(e); }}
+              />
             </div>
 
             <div>
@@ -1094,24 +988,6 @@ export default function AdminChartsPage() {
                 {generateButtonLabel}
               </button>
             </div>
-          </div>
-
-          {/* Presets */}
-          <div className="flex flex-wrap items-center gap-2 mb-6">
-            <CalendarDays className="w-4 h-4 text-[var(--text-secondary)]" />
-            <span className="text-xs font-bold text-[var(--text-secondary)] uppercase mr-1">Gyors:</span>
-            {PRESETS.map((p, idx) => (
-              <button
-                key={p.label}
-                onClick={() => applyPreset(idx)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activePresetIdx === idx
-                  ? 'bg-[var(--accent)] text-white dark:text-[var(--surface)]'
-                  : 'bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-subtle)]'
-                  }`}
-              >
-                {p.label}
-              </button>
-            ))}
           </div>
 
           {/* Platform Sections */}
