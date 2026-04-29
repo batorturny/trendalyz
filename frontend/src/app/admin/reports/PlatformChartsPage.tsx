@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Company, getCompanies, getChartCatalog, generateCharts, ChartDefinition, ChartData } from '@/lib/api';
-import { extractKPIs, mergeKPIs, groupByCategory, aggregateMonthlyKPIs, generateMonthRanges, computeKPIChanges, KPI } from '@/lib/chartHelpers';
+import { extractKPIs, mergeKPIs, groupByCategory, computeKPIChanges, KPI } from '@/lib/chartHelpers';
 import { KPICard } from '@/components/KPICard';
 import { ChartLazy as Chart } from '@/components/ChartLazy';
 import { VideoTable } from '@/components/VideoTable';
-import { MonthPicker } from '@/components/MonthPicker';
+import { DateRangePicker, getDefaultRange, toIsoDate } from '@/components/DateRangePicker';
 import { AccountPicker, ALL_ACCOUNTS_ID, buildAccountList, type AccountSelection } from '@/components/AccountPicker';
 import { PlatformIcon, getPlatformFromProvider } from '@/components/PlatformIcon';
 import { Loader2, Mail, AlertTriangle, FileDown } from 'lucide-react';
@@ -54,8 +54,9 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const [allCatalog, setAllCatalog] = useState<ChartDefinition[]>([]);
   const [selectedAccountKey, setSelectedAccountKey] = useState('');
   const [selectedAccount, setSelectedAccount] = useState<AccountSelection | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState('');
-  const [periodMonths, setPeriodMonths] = useState(1);
+  const initialRange = useMemo(() => getDefaultRange(), []);
+  const [startDate, setStartDate] = useState<string>(initialRange.start);
+  const [endDate, setEndDate] = useState<string>(initialRange.end);
   const [results, setResults] = useState<ChartData[]>([]);
   const [aggregatedKPIs, setAggregatedKPIs] = useState<KPI[] | null>(null);
   const [aggregatedCount, setAggregatedCount] = useState(0);
@@ -112,6 +113,18 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
     return platformCatalog.map(c => c.key);
   }, [configuredChartKeys, platformCatalog]);
 
+  // Detect when the picked range is exactly one calendar month — controls "month-only" UI bits
+  // like the QuickEvaluation widget that still needs a YYYY-MM key.
+  const monthAlignedKey = useMemo(() => {
+    if (!startDate || !endDate) return null;
+    const [sy, sm, sd] = startDate.split('-').map(Number);
+    const [ey, em, ed] = endDate.split('-').map(Number);
+    if (sy !== ey || sm !== em || sd !== 1) return null;
+    const lastDay = new Date(sy, sm, 0).getDate();
+    if (ed !== lastDay) return null;
+    return `${sy}-${String(sm).padStart(2, '0')}`;
+  }, [startDate, endDate]);
+
   const kpis = useMemo(() => {
     if (isAllCompanies) return aggregatedKPIs || [];
     // Use prevMonthKpis if available (has change values), otherwise extract from results
@@ -138,10 +151,6 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
   const platformAvailable = isAllCompanies || !!selectedAccount;
 
   useEffect(() => {
-    const now = new Date();
-    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    setSelectedMonth(`${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`);
-
     Promise.all([getCompanies(), getChartCatalog()])
       .then(([companiesData, catalogData]) => {
         setCompanies(companiesData);
@@ -180,43 +189,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
       : {};
 
     try {
-      if (periodMonths > 1 && !isAllCompanies && selectedAccount) {
-        // Multi-month: fetch each month separately for the picked account, aggregate KPIs
-        const monthRanges = generateMonthRanges(selectedMonth, periodMonths);
-        const allMonthKpis: KPI[][] = [];
-        let lastMonthCharts: ChartData[] = [];
-
-        for (const range of monthRanges) {
-          try {
-            const response = await generateCharts({
-              accountId: selectedAccount.companyId,
-              startDate: range.startDate,
-              endDate: range.endDate,
-              charts: platformChartKeys.map(key => ({ key })),
-              ...accountParams,
-            });
-            const monthKpis = extractKPIs(platform.platformKey, response.charts);
-            allMonthKpis.push(monthKpis);
-            lastMonthCharts = response.charts;
-          } catch (err) {
-            console.error('[PlatformChartsPage] fetchMonth skipped', err);
-          }
-        }
-
-        if (allMonthKpis.length === 0) {
-          setError('Nem sikerült adatot lekérni a megadott időszakra');
-        } else {
-          setAggregatedKPIs(aggregateMonthlyKPIs(allMonthKpis));
-          setAggregatedCount(allMonthKpis.length);
-          setResults(lastMonthCharts);
-        }
-      } else if (isAllCompanies) {
+      if (isAllCompanies) {
         // Aggregate mode: iterate every account on this platform (across companies)
-        const [year, month] = selectedMonth.split('-').map(Number);
-        const startDate = `${selectedMonth}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
-
         const BATCH_SIZE = 3;
         const allKpis: KPI[][] = [];
         const failed: Company[] = [];
@@ -259,7 +233,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         setFailedCompanies(failed);
 
         if (allKpis.length === 0) {
-          setError('Egyik fióknak sincs adata ezen a platformon a kiválasztott hónapban');
+          setError('Egyik fióknak sincs adata ezen a platformon a kiválasztott időszakban');
         } else {
           setAggregatedKPIs(mergeKPIs(allKpis));
           setAggregatedCount(allKpis.length);
@@ -270,19 +244,15 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
           }
         }
       } else if (selectedAccount) {
-        // Single account, single month
-        const [year, month] = selectedMonth.split('-').map(Number);
-        const startDate = `${selectedMonth}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        const endDate = `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
-
-        const prevDate = new Date(year, month - 2, 1);
-        const prevYear = prevDate.getFullYear();
-        const prevMonth = prevDate.getMonth() + 1;
-        const prevMM = String(prevMonth).padStart(2, '0');
-        const prevStartDate = `${prevYear}-${prevMM}-01`;
-        const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
-        const prevEndDate = `${prevYear}-${prevMM}-${String(prevLastDay).padStart(2, '0')}`;
+        // Single account: one request for the picked range, plus a same-length preceding window for the delta.
+        const startMs = new Date(`${startDate}T00:00:00`).getTime();
+        const endMs = new Date(`${endDate}T00:00:00`).getTime();
+        const dayMs = 24 * 60 * 60 * 1000;
+        const dayCount = Math.max(1, Math.round((endMs - startMs) / dayMs) + 1);
+        const prevEnd = new Date(startMs - dayMs);
+        const prevStart = new Date(prevEnd.getTime() - (dayCount - 1) * dayMs);
+        const prevStartStr = toIsoDate(prevStart);
+        const prevEndStr = toIsoDate(prevEnd);
 
         const [response, prevResponse] = await Promise.all([
           generateCharts({
@@ -294,8 +264,8 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
           }),
           generateCharts({
             accountId: selectedAccount.companyId,
-            startDate: prevStartDate,
-            endDate: prevEndDate,
+            startDate: prevStartStr,
+            endDate: prevEndStr,
             charts: platformChartKeys.map(key => ({ key })),
             ...accountParams,
           }).catch(() => null),
@@ -318,9 +288,9 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
   const hasResults = isAllCompanies
     ? (aggregatedKPIs && aggregatedKPIs.length > 0)
-    : (periodMonths > 1 ? (aggregatedKPIs && aggregatedKPIs.length > 0) : results.length > 0);
+    : results.length > 0;
 
-  const rawKpis = periodMonths > 1 && !isAllCompanies ? (aggregatedKPIs || []) : kpis;
+  const rawKpis = kpis;
   // Hide KPIs with zero/empty values — they clutter the dashboard
   const displayKpis = rawKpis.filter(kpi => {
     const v = kpi.value;
@@ -357,12 +327,11 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Hónap</label>
-              <MonthPicker
-                value={selectedMonth}
-                onChange={setSelectedMonth}
-                periodMonths={periodMonths}
-                onPeriodChange={setPeriodMonths}
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Időszak</label>
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(s, e) => { setStartDate(s); setEndDate(e); }}
               />
             </div>
 
@@ -375,17 +344,19 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
               >
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generálás...</> : 'Riport generálása'}
               </button>
-              {hasResults && !isAllCompanies && periodMonths === 1 && (
+              {hasResults && !isAllCompanies && (
                 <>
-                  <FeatureGate feature="email_reports" tier={userTier}>
-                    <button
-                      onClick={() => setShowEmailModal(true)}
-                      className="btn-press py-3 px-4 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] hover:from-[#8ec8d8] hover:to-[#1a6b8a] flex items-center gap-2 font-bold"
-                      title="Riport küldés emailben"
-                    >
-                      <Mail className="w-4 h-4" />
-                    </button>
-                  </FeatureGate>
+                  {monthAlignedKey && (
+                    <FeatureGate feature="email_reports" tier={userTier}>
+                      <button
+                        onClick={() => setShowEmailModal(true)}
+                        className="btn-press py-3 px-4 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] hover:from-[#8ec8d8] hover:to-[#1a6b8a] flex items-center gap-2 font-bold"
+                        title="Riport küldés emailben"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </button>
+                    </FeatureGate>
+                  )}
                   <FeatureGate feature="pdf_export" tier={userTier}>
                     <button
                       onClick={async () => {
@@ -393,7 +364,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                         setPdfExporting(true);
                         try {
                           const companyName = companies.find(c => c.id === selectedCompany)?.name || 'riport';
-                          const pdfFilename = `${companyName}-${platform.label}-${selectedMonth}`;
+                          const pdfFilename = `${companyName}-${platform.label}-${startDate}_${endDate}`;
 
                           // Client-side DOM capture — includes charts as rendered Canvas
                           const reportEl = reportRef.current;
@@ -451,17 +422,19 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                   Összesített KPI-ok ({aggregatedCount} cég)
                 </p>
               )}
-              {periodMonths > 1 && !isAllCompanies && (
-                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                  Összesített KPI-ok ({aggregatedCount} hónap)
-                </p>
-              )}
-              {periodMonths === 1 && !isAllCompanies && selectedMonth && (() => {
-                const [y, mo] = selectedMonth.split('-').map(Number);
-                const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+              {!isAllCompanies && (() => {
+                if (monthAlignedKey) {
+                  const [y, mo] = monthAlignedKey.split('-').map(Number);
+                  const MONTHS = ['január', 'február', 'március', 'április', 'május', 'június', 'július', 'augusztus', 'szeptember', 'október', 'november', 'december'];
+                  return (
+                    <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
+                      {y}. {MONTHS[mo - 1]} számai
+                    </p>
+                  );
+                }
                 return (
                   <p className="text-xs font-bold text-[var(--text-secondary)] uppercase mb-4">
-                    {y}. {MONTHS[mo - 1]} számai
+                    {startDate} — {endDate}
                   </p>
                 );
               })()}
@@ -479,14 +452,14 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                 ))}
               </div>
               {/* Quick evaluation — only for single company */}
-              {selectedCompany && !isAllCompanies && selectedMonth && (
-                <QuickEvaluation companyId={selectedCompany} platformKey={platform.platformKey} month={selectedMonth} />
+              {selectedCompany && !isAllCompanies && monthAlignedKey && (
+                <QuickEvaluation companyId={selectedCompany} platformKey={platform.platformKey} month={monthAlignedKey} />
               )}
             </div>
 
             {/* Chart Sections - only for single company, single month */}
             {/* Chart layout toggle */}
-            {!isAllCompanies && periodMonths === 1 && sections.length > 0 && (
+            {!isAllCompanies && sections.length > 0 && (
               <div className="flex items-center justify-end gap-2 mb-2" data-pdf-skip="true">
                 <span className="text-xs text-[var(--text-secondary)]">Nézet:</span>
                 <button
@@ -506,7 +479,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
               </div>
             )}
 
-            {!isAllCompanies && periodMonths === 1 && sections.map(({ category, label, charts }) => (
+            {!isAllCompanies && sections.map(({ category, label, charts }) => (
               <section key={category}>
                 <h3 className="text-xl font-bold mb-4 border-l-4 pl-3" style={{ borderColor: platform.borderColor }}>
                   {label}
@@ -605,12 +578,12 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
         )}
       </div>
       {/* Email modal */}
-      {showEmailModal && selectedCompany && !isAllCompanies && (
+      {showEmailModal && selectedCompany && !isAllCompanies && monthAlignedKey && (
         <SendReportModal
           companyId={selectedCompany}
           companyName={companies.find(c => c.id === selectedCompany)?.name || ''}
           platform={platform.platformKey}
-          month={selectedMonth}
+          month={monthAlignedKey}
           onClose={() => setShowEmailModal(false)}
         />
       )}
