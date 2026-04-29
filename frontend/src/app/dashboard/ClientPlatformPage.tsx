@@ -359,7 +359,7 @@ export function ClientPlatformPage({
           </div>
         </div>
         {error && (
-          <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
+          <div className="mt-4 alert-error rounded-xl p-4">
             {error}
           </div>
         )}
@@ -419,7 +419,7 @@ export function ClientPlatformPage({
                     </p>
                     <button
                       onClick={() => setTourOpen(true)}
-                      className="hidden sm:flex items-center gap-1 text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                      className="hidden sm:flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
                     >
                       <HelpCircle className="w-3 h-3" />
                       Kattints a számokra a magyarázathoz

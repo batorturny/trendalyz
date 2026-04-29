@@ -12,7 +12,16 @@
     --accent: #1a6b8a;
     --accent-subtle: rgba(26, 107, 138, 0.08);
     --success: #059669;
+    --success-bg: #dcfce7;
+    --success-fg: #166534;
     --error: #dc2626;
+    --error-bg: #fee2e2;
+    --error-fg: #991b1b;
+    --warning: #d97706;
+    --warning-bg: #fef3c7;
+    --warning-fg: #92400e;
+    --neutral-bg: #f1f5f9;
+    --neutral-fg: #475569;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
@@ -34,7 +43,16 @@
     --accent: #8ec8d8;
     --accent-subtle: rgba(142, 200, 216, 0.08);
     --success: #34d399;
+    --success-bg: rgba(16, 185, 129, 0.18);
+    --success-fg: #6ee7b7;
     --error: #f87171;
+    --error-bg: rgba(239, 68, 68, 0.18);
+    --error-fg: #fca5a5;
+    --warning: #fbbf24;
+    --warning-bg: rgba(245, 158, 11, 0.18);
+    --warning-fg: #fcd34d;
+    --neutral-bg: rgba(148, 163, 184, 0.18);
+    --neutral-fg: #cbd5e1;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
@@ -123,13 +141,17 @@
     border-color: var(--text-secondary);
   }
 
-  /* Gradient button */
+  /* Gradient button — uses brand accent so dark-mode swaps automatically */
   .btn-gradient {
     background: linear-gradient(135deg, #1a6b8a, #0d3b5e);
     background-size: 200% 200%;
     color: #fff;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
+  }
+  .dark .btn-gradient {
+    background: linear-gradient(135deg, #1a6b8a, #8ec8d8);
+    color: var(--surface);
   }
   .btn-gradient:hover { opacity: 0.92; box-shadow: 0 4px 20px rgba(26, 107, 138, 0.3); }
   .btn-gradient:active { transform: scale(0.95); transition: transform 0.08s ease-in; }
@@ -141,6 +163,37 @@
     cursor: pointer;
   }
   .btn-press:active { transform: scale(0.88); transition: transform 0.08s ease-in; }
+
+  /* Status pill / alert banner — semantic, theme-aware */
+  .alert-success {
+    background-color: var(--success-bg);
+    color: var(--success-fg);
+    border: 1px solid var(--success-bg);
+  }
+  .alert-error {
+    background-color: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid var(--error-bg);
+  }
+  .alert-warning {
+    background-color: var(--warning-bg);
+    color: var(--warning-fg);
+    border: 1px solid var(--warning-bg);
+  }
+  .alert-neutral {
+    background-color: var(--neutral-bg);
+    color: var(--neutral-fg);
+    border: 1px solid var(--neutral-bg);
+  }
+
+  /* Section caption / eyebrow label */
+  .label-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 }
 
 /* Mobile optimizations */

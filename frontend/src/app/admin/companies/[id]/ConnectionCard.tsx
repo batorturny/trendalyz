@@ -14,11 +14,11 @@ interface Props {
   connection: IntegrationConnection;
 }
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  CONNECTED: { bg: 'bg-emerald-100 dark:bg-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-400', label: 'Kapcsolódva' },
-  DISCONNECTED: { bg: 'bg-gray-100 dark:bg-slate-500/20', text: 'text-gray-600 dark:text-slate-400', label: 'Leválasztva' },
-  ERROR: { bg: 'bg-red-100 dark:bg-red-500/20', text: 'text-red-700 dark:text-red-400', label: 'Hiba' },
-  PENDING: { bg: 'bg-yellow-100 dark:bg-yellow-500/20', text: 'text-yellow-700 dark:text-yellow-400', label: 'Függőben' },
+const STATUS_STYLES: Record<string, { className: string; label: string }> = {
+  CONNECTED: { className: 'alert-success', label: 'Kapcsolódva' },
+  DISCONNECTED: { className: 'alert-neutral', label: 'Leválasztva' },
+  ERROR: { className: 'alert-error', label: 'Hiba' },
+  PENDING: { className: 'alert-warning', label: 'Függőben' },
 };
 
 // Status labels are translated at render time via t() in the component
@@ -144,7 +144,7 @@ export function ConnectionCard({ connection }: Props) {
             )}
           </div>
         </div>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${status.bg} ${status.text}`}>
+        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${status.className}`}>
           {t(status.label)}
         </span>
       </div>

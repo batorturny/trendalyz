@@ -350,7 +350,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
                     <FeatureGate feature="email_reports" tier={userTier}>
                       <button
                         onClick={() => setShowEmailModal(true)}
-                        className="btn-press py-3 px-4 rounded-xl bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] hover:from-[#8ec8d8] hover:to-[#1a6b8a] flex items-center gap-2 font-bold"
+                        className="btn-press btn-gradient py-3 px-4 rounded-xl flex items-center gap-2 font-bold"
                         title="Riport küldés emailben"
                       >
                         <Mail className="w-4 h-4" />
@@ -396,7 +396,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
 
           {/* No accounts configured on this platform */}
           {platformAccounts.length === 0 && (
-            <div className="mt-4 flex items-center gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 text-amber-700 dark:text-amber-300">
+            <div className="mt-4 flex items-center gap-3 alert-warning rounded-xl p-4">
               <AlertTriangle className="w-5 h-5 shrink-0" />
               <span className="text-sm font-medium">
                 Még egyik cégnél sincs <strong>{platform.label}</strong> fiók konfigurálva.
@@ -406,7 +406,7 @@ export function PlatformChartsPage({ platform }: { platform: PlatformConfig }) {
           )}
 
           {error && (
-            <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
+            <div className="mt-4 alert-error rounded-xl p-4">
               {error}
             </div>
           )}

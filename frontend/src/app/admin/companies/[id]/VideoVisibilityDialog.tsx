@@ -95,6 +95,12 @@ export function VideoVisibilityDialog({ connection, onClose }: Props) {
     }
   };
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   const filtered = search.trim()
     ? videos.filter(v => (v.caption || '').toLowerCase().includes(search.toLowerCase()))
     : videos;
@@ -103,12 +109,15 @@ export function VideoVisibilityDialog({ connection, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="video-visibility-title"
         className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <div>
-            <h2 className="text-lg font-bold text-[var(--text-primary)]">
+            <h2 id="video-visibility-title" className="text-lg font-bold text-[var(--text-primary)]">
               {t('Videók láthatósága')}
             </h2>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
@@ -190,7 +199,7 @@ export function VideoVisibilityDialog({ connection, onClose }: Props) {
                       <div className="text-sm text-[var(--text-primary)] line-clamp-2">
                         {v.caption || <span className="text-[var(--text-secondary)] italic">{t('Nincs felirat')}</span>}
                       </div>
-                      <div className="text-[11px] text-[var(--text-secondary)] mt-0.5 flex items-center gap-3 flex-wrap">
+                      <div className="text-xs text-[var(--text-secondary)] mt-0.5 flex items-center gap-3 flex-wrap">
                         <span>{v.date}</span>
                         <span>{v.views?.toLocaleString('hu-HU') ?? 0} {t('megtekintés')}</span>
                         <span>{v.likes?.toLocaleString('hu-HU') ?? 0} like</span>

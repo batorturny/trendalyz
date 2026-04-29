@@ -165,7 +165,7 @@ export default function LoginForm() {
           </div>
 
           {success ? (
-            <div className="mb-4 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/50 rounded-xl p-4 text-emerald-700 dark:text-emerald-300 text-sm">
+            <div className="mb-4 alert-success rounded-xl p-4 text-sm">
               {success}
             </div>
           ) : (
@@ -201,7 +201,7 @@ export default function LoginForm() {
       ) : (
         <>
           {success && (
-            <div className="mb-4 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/50 rounded-xl p-4 text-emerald-700 dark:text-emerald-300 text-sm">
+            <div className="mb-4 alert-success rounded-xl p-4 text-sm">
               {success}
             </div>
           )}
@@ -209,7 +209,7 @@ export default function LoginForm() {
           {mode === 'magic' ? (
             hasEmail === false ? (
               <>
-                <div className="mb-4 bg-amber-50 dark:bg-amber-500/20 border border-amber-200 dark:border-amber-500/50 rounded-xl p-4 text-amber-700 dark:text-amber-300 text-sm">
+                <div className="mb-4 alert-warning rounded-xl p-4 text-sm">
                   {t('Az email-alapú belépés most nem elérhető. Kérlek, használd a jelszavas belépést.')}
                 </div>
                 <button
@@ -243,8 +243,14 @@ export default function LoginForm() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                    className="w-full bg-[var(--accent)] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:brightness-110 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
                   >
+                    {loading && (
+                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="10" opacity="0.25" />
+                        <path d="M22 12a10 10 0 0 1-10 10" strokeLinecap="round" />
+                      </svg>
+                    )}
                     {loading ? t('Küldés...') : t('Belépési link küldése')}
                   </button>
                 </form>
@@ -328,7 +334,7 @@ export default function LoginForm() {
       )}
 
       {error && (
-        <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">
+        <div className="mt-4 alert-error rounded-xl p-4 text-sm">
           {error}
         </div>
       )}

@@ -168,7 +168,7 @@ export function DateRangePicker({ startDate, endDate, onChange, presets = DEFAUL
       {open && (
         <div className="absolute z-50 top-full mt-2 left-0 w-full min-w-[320px] bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-[var(--shadow-lg)] overflow-hidden">
           <div className="px-4 pt-3 pb-2 border-b border-[var(--border)] bg-[var(--surface-raised)]">
-            <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Gyors választás</p>
+            <p className="label-eyebrow">Gyors választás</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5 p-2">
             {presets.map((p, i) => {
@@ -191,7 +191,7 @@ export function DateRangePicker({ startDate, endDate, onChange, presets = DEFAUL
           </div>
 
           <div className="border-t border-[var(--border)] px-4 py-3 bg-[var(--surface-raised)]">
-            <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Egyéni időszak</p>
+            <p className="label-eyebrow mb-2">Egyéni időszak</p>
             <div className="flex items-center gap-2">
               <input
                 type="date"

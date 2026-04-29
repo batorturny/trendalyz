@@ -303,7 +303,7 @@ function ConnectionMultiSelect({
                   </span>
                   <PlatformIcon platform={getPlatformFromProvider(c.provider)} className="w-4 h-4 shrink-0" />
                   <span className="truncate">{connectionLabel(c)}</span>
-                  <span className="ml-auto text-[10px] font-mono text-[var(--text-secondary)] truncate max-w-[80px]" title={c.externalAccountId}>
+                  <span className="ml-auto text-xs font-mono text-[var(--text-secondary)] truncate max-w-[80px]" title={c.externalAccountId}>
                     {c.externalAccountId}
                   </span>
                 </button>
@@ -359,13 +359,23 @@ function PlatformSection({
 
   const totalItems = config.kpis.length + config.daily.length + config.distributions.length;
 
+  const toggleCollapsed = () => { if (!disabled) setCollapsed(!collapsed); };
+
   return (
     <div className={`bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl overflow-hidden transition-opacity ${disabled ? 'opacity-40 grayscale' : ''}`}>
-      <button
-        type="button"
-        onClick={() => !disabled && setCollapsed(!collapsed)}
-        disabled={disabled}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent-subtle)] transition-colors disabled:cursor-not-allowed disabled:hover:bg-transparent"
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-expanded={!collapsed}
+        aria-disabled={disabled}
+        onClick={toggleCollapsed}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+            e.preventDefault();
+            toggleCollapsed();
+          }
+        }}
+        className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${disabled ? 'cursor-not-allowed' : 'hover:bg-[var(--accent-subtle)] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-inset'}`}
       >
         {collapsed
           ? <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -374,7 +384,7 @@ function PlatformSection({
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: config.color }} />
         <PlatformIcon platform={config.platform} className="w-4 h-4" />
         <span className="font-bold text-sm text-[var(--text-primary)]">{config.label}</span>
-        {disabled && <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded">Fejlesztés alatt</span>}
+        {disabled && <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded">Fejlesztés alatt</span>}
         <span className="ml-auto flex items-center gap-2">
           {totalSelected > 0 && !disabled && (
             <>
@@ -384,18 +394,19 @@ function PlatformSection({
               >
                 {totalSelected}/{totalItems}
               </span>
-              <span
-                role="button"
+              <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); onClearPlatform(); }}
-                className="text-xs w-5 h-5 rounded-full bg-[var(--error)] text-white flex items-center justify-center font-bold hover:brightness-110 transition-all cursor-pointer"
+                className="text-xs w-5 h-5 rounded-full bg-[var(--error)] text-white flex items-center justify-center font-bold hover:brightness-110 transition-all"
+                aria-label="Összes törlése"
                 title="Összes törlése"
               >
                 ×
-              </span>
+              </button>
             </>
           )}
         </span>
-      </button>
+      </div>
 
       {!collapsed && !disabled && (
         <div className="px-4 pb-4 pt-1 space-y-3">
@@ -525,7 +536,7 @@ function AggKPICard({ icon, label, value }: { icon: React.ReactNode; label: stri
     <div className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl p-4">
       <div className="text-[var(--text-secondary)] mb-2">{icon}</div>
       <div className="text-xl font-bold text-[var(--text-primary)]">{value}</div>
-      <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{label}</div>
+      <div className="text-xs text-[var(--text-secondary)] mt-0.5">{label}</div>
     </div>
   );
 }
@@ -983,7 +994,7 @@ export default function AdminChartsPage() {
               <button
                 onClick={handleGenerate}
                 disabled={loading || allSelectedChartKeys.size === 0}
-                className="w-full bg-gradient-to-r from-[#1a6b8a] to-[#0d3b5e] text-white dark:text-[var(--surface)] font-bold py-3 px-6 rounded-xl hover:from-[#8ec8d8] hover:to-[#1a6b8a] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150"
+                className="btn-gradient w-full font-bold py-3 px-6 rounded-xl"
               >
                 {generateButtonLabel}
               </button>
@@ -1025,7 +1036,7 @@ export default function AdminChartsPage() {
           </div>
 
           {error && (
-            <div className="mt-4 bg-red-50 dark:bg-red-500/20 border border-red-200 dark:border-red-500/50 rounded-xl p-4 text-red-700 dark:text-red-300">
+            <div className="mt-4 alert-error rounded-xl p-4">
               {error}
             </div>
           )}
