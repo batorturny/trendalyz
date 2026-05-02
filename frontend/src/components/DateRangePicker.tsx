@@ -151,7 +151,7 @@ export function DateRangePicker({ startDate, endDate, onChange, presets = DEFAUL
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-left focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all flex items-center justify-between gap-3 hover:border-[var(--text-secondary)]"
+        className="w-full min-h-[64px] bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-left focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all flex items-center justify-between gap-3 hover:border-[var(--text-secondary)]"
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <CalendarDays className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />

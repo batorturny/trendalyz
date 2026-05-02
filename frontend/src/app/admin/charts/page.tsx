@@ -38,6 +38,8 @@ interface AggregateKPIs {
   totalFollowers: number;
   avgEngagementRate: number;
   likesPerVideo: number;
+  commentsPerVideo: number;
+  sharesPerVideo: number;
   interactionsPerVideo: number;
   viewsPerVideo: number;
   perCompany: {
@@ -63,23 +65,35 @@ function aggregateFromResponses(responses: { name: string; res: ChartsResponse }
   const perCompany: AggregateKPIs['perCompany'] = [];
   let totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
   let totalVideos = 0, totalFollowers = 0;
+  let erSum = 0, erCount = 0;
 
   for (const { name, res } of responses) {
-    // Use extractKPIs — same logic as individual company chart view
     const tt = extractKPIs('TIKTOK_ORGANIC', res.charts);
     const fb = extractKPIs('FACEBOOK_ORGANIC', res.charts);
     const ig = extractKPIs('INSTAGRAM_ORGANIC', res.charts);
     const yt = extractKPIs('YOUTUBE', res.charts);
 
-    const companyViews = kpiNum(tt, 'tt_profile_views') + kpiNum(fb, 'fb_reach') + kpiNum(ig, 'ig_reach_kpi') + kpiNum(yt, 'yt_views_kpi');
-    const companyLikes = kpiNum(tt, 'tt_likes') + kpiNum(fb, 'fb_reactions') + kpiNum(ig, 'ig_likes') + kpiNum(yt, 'yt_likes_kpi');
-    const companyComments = kpiNum(tt, 'tt_comments') + kpiNum(fb, 'fb_comments') + kpiNum(ig, 'ig_comments') + kpiNum(yt, 'yt_comments_kpi');
-    const companyShares = kpiNum(tt, 'tt_shares') + kpiNum(fb, 'fb_shares') + kpiNum(ig, 'ig_shares') + kpiNum(yt, 'yt_shares_kpi');
+    // Use video-derived totals so the Like / View / etc. counters stay coherent with the
+    // video-level ER%. Daily-aggregated KPIs (tt_likes, tt_profile_views) come from a
+    // different Windsor stream and would mix profile-level numbers with content-level ones.
+    const companyViews = kpiNum(tt, 'tt_total_views') + kpiNum(fb, 'fb_reach') + kpiNum(ig, 'ig_reach_kpi') + kpiNum(yt, 'yt_views_kpi');
+    const companyLikes = kpiNum(tt, 'tt_avg_likes') * kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_reactions') + kpiNum(ig, 'ig_likes') + kpiNum(yt, 'yt_likes_kpi');
+    const companyComments = kpiNum(tt, 'tt_avg_comments') * kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_comments') + kpiNum(ig, 'ig_comments') + kpiNum(yt, 'yt_comments_kpi');
+    const companyShares = kpiNum(tt, 'tt_avg_shares') * kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_shares') + kpiNum(ig, 'ig_shares') + kpiNum(yt, 'yt_shares_kpi');
     const companyVideos = kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_posts') + kpiNum(ig, 'ig_media_count') + kpiNum(yt, 'yt_video_count');
     const companyFollowers = kpiNum(tt, 'tt_total_followers') + kpiNum(fb, 'fb_followers') + kpiNum(ig, 'ig_followers') + kpiNum(yt, 'yt_subs');
 
-    const companyInteractions = companyLikes + companyComments + companyShares;
-    const companyER = companyViews > 0 ? Math.min(companyInteractions / companyViews * 100, 100) : 0;
+    // Per-company ER% = average of the per-platform video-level ER% values that actually
+    // produced content. Avoids the daily-aggregate divide-by-profile-views trap that used
+    // to clamp every cell to 100%.
+    const platformERs: number[] = [];
+    if (kpiNum(tt, 'tt_videos') > 0) platformERs.push(kpiNum(tt, 'tt_er'));
+    if (kpiNum(fb, 'fb_posts') > 0) platformERs.push(kpiNum(fb, 'fb_er'));
+    if (kpiNum(ig, 'ig_media_count') > 0) platformERs.push(kpiNum(ig, 'ig_er'));
+    if (kpiNum(yt, 'yt_video_count') > 0) platformERs.push(kpiNum(yt, 'yt_avg_er_video') || kpiNum(yt, 'yt_er'));
+    const companyER = platformERs.length > 0
+      ? platformERs.reduce((s, v) => s + v, 0) / platformERs.length
+      : 0;
 
     totalViews += companyViews;
     totalLikes += companyLikes;
@@ -87,16 +101,19 @@ function aggregateFromResponses(responses: { name: string; res: ChartsResponse }
     totalShares += companyShares;
     totalVideos += companyVideos;
     totalFollowers += companyFollowers;
+    if (companyER > 0) { erSum += companyER; erCount++; }
 
     perCompany.push({ name, views: companyViews, likes: companyLikes, comments: companyComments, shares: companyShares, videos: companyVideos, engagementRate: companyER });
   }
 
   const totalInteractions = totalLikes + totalComments + totalShares;
-  const avgER = totalViews > 0 ? Math.min(totalInteractions / totalViews * 100, 100) : 0;
+  const avgER = erCount > 0 ? erSum / erCount : 0;
   return {
     companyCount: responses.length, totalViews, totalLikes, totalComments, totalShares,
     totalVideos, totalFollowers, avgEngagementRate: avgER,
     likesPerVideo: totalVideos > 0 ? totalLikes / totalVideos : 0,
+    commentsPerVideo: totalVideos > 0 ? totalComments / totalVideos : 0,
+    sharesPerVideo: totalVideos > 0 ? totalShares / totalVideos : 0,
     interactionsPerVideo: totalVideos > 0 ? totalInteractions / totalVideos : 0,
     viewsPerVideo: totalVideos > 0 ? totalViews / totalVideos : 0,
     perCompany,
@@ -484,9 +501,11 @@ function AggregateKPIDashboard({ kpis }: { kpis: AggregateKPIs }) {
         <AggKPICard icon={<Video className="w-4 h-4" />} label="Összes videó/poszt" value={formatNum(kpis.totalVideos)} />
         <AggKPICard icon={<Users className="w-4 h-4" />} label="Összes követő" value={formatNum(kpis.totalFollowers)} />
         <AggKPICard icon={<TrendingUp className="w-4 h-4" />} label="Átlag ER%" value={kpis.avgEngagementRate.toFixed(2) + '%'} />
-        <AggKPICard icon={<Heart className="w-4 h-4" />} label="Like / videó" value={formatNum(kpis.likesPerVideo)} />
-        <AggKPICard icon={<BarChart3 className="w-4 h-4" />} label="Interakció / videó" value={formatNum(kpis.interactionsPerVideo)} />
         <AggKPICard icon={<Eye className="w-4 h-4" />} label="Megtekintés / videó" value={formatNum(kpis.viewsPerVideo)} />
+        <AggKPICard icon={<Heart className="w-4 h-4" />} label="Like / videó" value={formatNum(kpis.likesPerVideo)} />
+        <AggKPICard icon={<MessageCircle className="w-4 h-4" />} label="Komment / videó" value={formatNum(kpis.commentsPerVideo)} />
+        <AggKPICard icon={<Share2 className="w-4 h-4" />} label="Megosztás / videó" value={formatNum(kpis.sharesPerVideo)} />
+        <AggKPICard icon={<BarChart3 className="w-4 h-4" />} label="Interakció / videó" value={formatNum(kpis.interactionsPerVideo)} />
       </div>
       {kpis.perCompany.length > 1 && (
         <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-[var(--shadow-card)]">
@@ -813,16 +832,10 @@ export default function AdminChartsPage() {
         }
         const kpis = aggregateFromResponses(companyResponses);
         setAggregateKPIs(kpis);
-        const selectedSet = allSelectedChartKeys;
-        const mergedCharts: ChartData[] = [];
-        for (const { res } of companyResponses) {
-          for (const chart of res.charts) {
-            if (selectedSet.has(chart.key) && !chart.empty && !chart.error) {
-              mergedCharts.push(chart);
-            }
-          }
-        }
-        setResults(mergedCharts);
+        // Multi-company mode shows aggregated KPIs only — chart series across companies
+        // can't be merged meaningfully (different X axes, double-counting risk), so we
+        // skip rendering them entirely.
+        setResults([]);
       } else {
         // Single company. One Windsor request per selected account so that
         // metrics never get merged across distinct external account IDs.

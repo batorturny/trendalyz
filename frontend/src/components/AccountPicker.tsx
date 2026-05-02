@@ -125,7 +125,7 @@ export function AccountPicker({ companies, platformKey, value, onChange, showAll
       <button
         type="button"
         onClick={toggleOpen}
-        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-left font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all flex items-center justify-between gap-2 hover:border-[var(--text-secondary)]"
+        className="w-full min-h-[64px] bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-left font-semibold focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition-all flex items-center justify-between gap-2 hover:border-[var(--text-secondary)]"
       >
         <span className={value ? 'text-[var(--text-primary)] truncate' : 'text-[var(--text-secondary)]'}>
           {displayText}
