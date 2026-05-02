@@ -208,6 +208,11 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
       const vidCount = vidRows.length;
       const totalVidViews = tableSum(videos, 'views');
       const totalVidReach = tableSum(videos, 'reach');
+      // Video-derived totals — used by cross-company aggregation so it doesn't have to
+      // multiply rounded per-video averages back by video count.
+      const totalVideoLikes = tableSum(videos, 'likes');
+      const totalVideoComments = tableSum(videos, 'comments');
+      const totalVideoShares = tableSum(videos, 'shares');
 
       return addDescriptions([
         { key: 'tt_followers', label: 'Össz. követőnövekedés', value: sumSeries(followers) },
@@ -217,6 +222,9 @@ export function extractKPIs(platformKey: string, results: ChartData[]): KPI[] {
         { key: 'tt_likes', label: 'Like-ok', value: totalLikes },
         { key: 'tt_comments', label: 'Kommentek', value: totalComments },
         { key: 'tt_shares', label: 'Megosztások', value: totalShares },
+        { key: 'tt_video_likes_total', label: 'Video like-ok', value: totalVideoLikes },
+        { key: 'tt_video_comments_total', label: 'Video kommentek', value: totalVideoComments },
+        { key: 'tt_video_shares_total', label: 'Video megosztások', value: totalVideoShares },
         { key: 'tt_er', label: 'ER%', value: `${tableAvg(videos, 'engagementRate').toFixed(2)}%`, agg: 'avg' },
         { key: 'tt_videos', label: 'Videók száma', value: vidCount },
         { key: 'tt_bio_clicks', label: 'Bio link kattintás', value: sumSeries(bioClicks) },

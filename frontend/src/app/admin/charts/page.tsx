@@ -61,36 +61,43 @@ function kpiNum(kpis: KPI[], key: string): number {
   return isNaN(n) ? 0 : n;
 }
 
+// Per-platform metric→KPI key mapping. Aggregator stays platform-agnostic.
+// Likes/comments/shares prefer video-level totals when available — daily-stream KPIs
+// (`tt_likes`, `tt_profile_views`) mix profile-level numbers with content-level ones,
+// which is why earlier "ER%" calculations clamped to 100%.
+const PLATFORM_KEYS = {
+  TIKTOK_ORGANIC: { views: 'tt_total_views', likes: 'tt_video_likes_total', comments: 'tt_video_comments_total', shares: 'tt_video_shares_total', videos: 'tt_videos', followers: 'tt_total_followers', er: 'tt_er' },
+  FACEBOOK_ORGANIC: { views: 'fb_reach', likes: 'fb_reactions', comments: 'fb_comments', shares: 'fb_shares', videos: 'fb_posts', followers: 'fb_followers', er: 'fb_er' },
+  INSTAGRAM_ORGANIC: { views: 'ig_reach_kpi', likes: 'ig_likes', comments: 'ig_comments', shares: 'ig_shares', videos: 'ig_media_count', followers: 'ig_followers', er: 'ig_er' },
+  YOUTUBE: { views: 'yt_views_kpi', likes: 'yt_likes_kpi', comments: 'yt_comments_kpi', shares: 'yt_shares_kpi', videos: 'yt_video_count', followers: 'yt_subs', er: 'yt_avg_er_video', erFallback: 'yt_er' },
+} as const;
+
 function aggregateFromResponses(responses: { name: string; res: ChartsResponse }[]): AggregateKPIs {
   const perCompany: AggregateKPIs['perCompany'] = [];
   let totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
   let totalVideos = 0, totalFollowers = 0;
-  let erSum = 0, erCount = 0;
 
   for (const { name, res } of responses) {
-    const tt = extractKPIs('TIKTOK_ORGANIC', res.charts);
-    const fb = extractKPIs('FACEBOOK_ORGANIC', res.charts);
-    const ig = extractKPIs('INSTAGRAM_ORGANIC', res.charts);
-    const yt = extractKPIs('YOUTUBE', res.charts);
+    const platformSets = (Object.entries(PLATFORM_KEYS) as Array<[keyof typeof PLATFORM_KEYS, typeof PLATFORM_KEYS[keyof typeof PLATFORM_KEYS]]>)
+      .map(([platform, keys]) => ({ keys, kpis: extractKPIs(platform, res.charts) }));
 
-    // Use video-derived totals so the Like / View / etc. counters stay coherent with the
-    // video-level ER%. Daily-aggregated KPIs (tt_likes, tt_profile_views) come from a
-    // different Windsor stream and would mix profile-level numbers with content-level ones.
-    const companyViews = kpiNum(tt, 'tt_total_views') + kpiNum(fb, 'fb_reach') + kpiNum(ig, 'ig_reach_kpi') + kpiNum(yt, 'yt_views_kpi');
-    const companyLikes = kpiNum(tt, 'tt_avg_likes') * kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_reactions') + kpiNum(ig, 'ig_likes') + kpiNum(yt, 'yt_likes_kpi');
-    const companyComments = kpiNum(tt, 'tt_avg_comments') * kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_comments') + kpiNum(ig, 'ig_comments') + kpiNum(yt, 'yt_comments_kpi');
-    const companyShares = kpiNum(tt, 'tt_avg_shares') * kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_shares') + kpiNum(ig, 'ig_shares') + kpiNum(yt, 'yt_shares_kpi');
-    const companyVideos = kpiNum(tt, 'tt_videos') + kpiNum(fb, 'fb_posts') + kpiNum(ig, 'ig_media_count') + kpiNum(yt, 'yt_video_count');
-    const companyFollowers = kpiNum(tt, 'tt_total_followers') + kpiNum(fb, 'fb_followers') + kpiNum(ig, 'ig_followers') + kpiNum(yt, 'yt_subs');
-
-    // Per-company ER% = average of the per-platform video-level ER% values that actually
-    // produced content. Avoids the daily-aggregate divide-by-profile-views trap that used
-    // to clamp every cell to 100%.
+    let companyViews = 0, companyLikes = 0, companyComments = 0, companyShares = 0;
+    let companyVideos = 0, companyFollowers = 0;
     const platformERs: number[] = [];
-    if (kpiNum(tt, 'tt_videos') > 0) platformERs.push(kpiNum(tt, 'tt_er'));
-    if (kpiNum(fb, 'fb_posts') > 0) platformERs.push(kpiNum(fb, 'fb_er'));
-    if (kpiNum(ig, 'ig_media_count') > 0) platformERs.push(kpiNum(ig, 'ig_er'));
-    if (kpiNum(yt, 'yt_video_count') > 0) platformERs.push(kpiNum(yt, 'yt_avg_er_video') || kpiNum(yt, 'yt_er'));
+    for (const { keys, kpis } of platformSets) {
+      const videos = kpiNum(kpis, keys.videos);
+      companyViews += kpiNum(kpis, keys.views);
+      companyLikes += kpiNum(kpis, keys.likes);
+      companyComments += kpiNum(kpis, keys.comments);
+      companyShares += kpiNum(kpis, keys.shares);
+      companyVideos += videos;
+      companyFollowers += kpiNum(kpis, keys.followers);
+      if (videos > 0) {
+        const er = kpiNum(kpis, keys.er) || ('erFallback' in keys ? kpiNum(kpis, keys.erFallback) : 0);
+        platformERs.push(er);
+      }
+    }
+
     const companyER = platformERs.length > 0
       ? platformERs.reduce((s, v) => s + v, 0) / platformERs.length
       : 0;
@@ -101,13 +108,16 @@ function aggregateFromResponses(responses: { name: string; res: ChartsResponse }
     totalShares += companyShares;
     totalVideos += companyVideos;
     totalFollowers += companyFollowers;
-    if (companyER > 0) { erSum += companyER; erCount++; }
 
     perCompany.push({ name, views: companyViews, likes: companyLikes, comments: companyComments, shares: companyShares, videos: companyVideos, engagementRate: companyER });
   }
 
+  // Average ER% across companies that produced content on at least one platform.
+  // Includes legitimate 0% engagement, excludes companies that had no content at all.
+  const ers = perCompany.filter(c => c.videos > 0).map(c => c.engagementRate);
+  const avgER = ers.length > 0 ? ers.reduce((s, v) => s + v, 0) / ers.length : 0;
   const totalInteractions = totalLikes + totalComments + totalShares;
-  const avgER = erCount > 0 ? erSum / erCount : 0;
+
   return {
     companyCount: responses.length, totalViews, totalLikes, totalComments, totalShares,
     totalVideos, totalFollowers, avgEngagementRate: avgER,
